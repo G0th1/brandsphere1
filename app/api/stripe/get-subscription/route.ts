@@ -10,8 +10,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 export async function GET(request: Request) {
   try {
     // Get customerId from the URL
-    const url = new URL(request.url);
-    const customerId = url.searchParams.get('customerId');
+    const { searchParams } = new URL(request.url);
+    const customerId = searchParams.get('customerId');
     
     if (!customerId) {
       return NextResponse.json(

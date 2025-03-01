@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
@@ -48,7 +48,8 @@ const plans: Record<string, Plan> = {
   }
 }
 
-export default function CheckoutPage() {
+// Komponent som använder searchParams
+function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -129,141 +130,157 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <main className="flex-1 container mx-auto p-6">
-        <Button 
-          variant="ghost" 
-          className="mb-6" 
-          onClick={() => router.push('/pricing')}
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to pricing plans
-        </Button>
-        
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Information</CardTitle>
-                <CardDescription>
-                  Fill in your payment details to activate your subscription
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="flex-1 container mx-auto p-6">
+      <Button 
+        variant="ghost" 
+        className="mb-6" 
+        onClick={() => router.push('/pricing')}
+      >
+        <ChevronLeft className="mr-2 h-4 w-4" />
+        Back to pricing plans
+      </Button>
+      
+      <div className="max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Information</CardTitle>
+              <CardDescription>
+                Fill in your payment details to activate your subscription
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="cardName">Name on card</Label>
+                  <Input
+                    id="cardName"
+                    placeholder="John Doe"
+                    value={cardName}
+                    onChange={(e) => setCardName(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="cardNumber">Card number</Label>
+                  <Input
+                    id="cardNumber"
+                    placeholder="1234 5678 9012 3456"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                    maxLength={19}
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="cardName">Name on card</Label>
+                    <Label htmlFor="cardExpiry">Expiry date</Label>
                     <Input
-                      id="cardName"
-                      placeholder="John Doe"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
+                      id="cardExpiry"
+                      placeholder="MM/YY"
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                      maxLength={5}
                       required
                     />
                   </div>
-                  
                   <div className="space-y-2">
-                    <Label htmlFor="cardNumber">Card number</Label>
+                    <Label htmlFor="cardCvc">CVC</Label>
                     <Input
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                      maxLength={19}
+                      id="cardCvc"
+                      placeholder="123"
+                      value={cardCvc}
+                      onChange={(e) => setCardCvc(e.target.value.replace(/[^0-9]/g, ''))}
+                      maxLength={3}
                       required
                     />
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cardExpiry">Expiry date</Label>
-                      <Input
-                        id="cardExpiry"
-                        placeholder="MM/YY"
-                        value={cardExpiry}
-                        onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                        maxLength={5}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cardCvc">CVC</Label>
-                      <Input
-                        id="cardCvc"
-                        placeholder="123"
-                        value={cardCvc}
-                        onChange={(e) => setCardCvc(e.target.value.replace(/[^0-9]/g, ''))}
-                        maxLength={3}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Pay {plan.price}
-                      </>
-                    )}
-                  </Button>
-                  
-                  <div className="text-center text-xs text-muted-foreground flex items-center justify-center mt-4">
-                    <Lock className="h-3 w-3 mr-1" /> Secure payment with encryption
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-            
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>{plan.name}</CardTitle>
-                  <CardDescription>
-                    {plan.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-6">
-                    <p className="text-3xl font-bold">{plan.price}<span className="text-base font-normal text-muted-foreground">{plan.period}</span></p>
-                    <p className="text-sm text-muted-foreground mt-1">Pay monthly, cancel anytime</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {plan.features.map((feature, i) => (
-                      <div key={i} className="flex items-start">
-                        <Check className="h-4 w-4 text-green-500 mr-2 mt-1" />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter className="bg-muted/30 px-6 py-4">
-                  <div className="text-sm text-muted-foreground space-y-2">
-                    <p>14-day money-back guarantee</p>
-                    <p>Full access to all Pro features</p>
-                  </div>
-                </CardFooter>
-              </Card>
-              
-              <div className="mt-4 text-sm text-muted-foreground text-center space-y-2">
-                <p>Have questions? <a href="/contact" className="text-primary underline">Contact us</a></p>
-                <p>By completing this purchase you agree to our <a href="/terms" className="text-primary underline">terms of service</a>.</p>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Pay {plan.price}
+                    </>
+                  )}
+                </Button>
+                
+                <div className="text-center text-xs text-muted-foreground flex items-center justify-center mt-4">
+                  <Lock className="h-3 w-3 mr-1" /> Secure payment with encryption
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>{plan.name}</CardTitle>
+              <CardDescription>
+                {plan.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6">
+                <p className="text-3xl font-bold">{plan.price}<span className="text-base font-normal text-muted-foreground">{plan.period}</span></p>
+                <p className="text-sm text-muted-foreground mt-1">Pay monthly, cancel anytime</p>
               </div>
-            </div>
+              
+              <div className="space-y-2">
+                {plan.features.map((feature, i) => (
+                  <div key={i} className="flex items-start">
+                    <Check className="h-4 w-4 text-green-500 mr-2 mt-1" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter className="bg-muted/30 px-6 py-4">
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>14-day money-back guarantee</p>
+                <p>Full access to all Pro features</p>
+              </div>
+            </CardFooter>
+          </Card>
+          
+          <div className="mt-4 text-sm text-muted-foreground text-center space-y-2">
+            <p>Have questions? <a href="/contact" className="text-primary underline">Contact us</a></p>
+            <p>By completing this purchase you agree to our <a href="/terms" className="text-primary underline">terms of service</a>.</p>
           </div>
         </div>
-      </main>
+      </div>
+    </div>
+  )
+}
+
+// Loading fallback för suspense
+function CheckoutLoading() {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  )
+}
+
+// Huvud-komponenten som wrapar suspense
+export default function CheckoutPage() {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar />
+      <Suspense fallback={<CheckoutLoading />}>
+        <CheckoutContent />
+      </Suspense>
       <Footer />
     </div>
   )
