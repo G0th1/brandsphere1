@@ -1,0 +1,60 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+# Vi behåller .env.example i git för att visa vilka variabler som krävs
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Project specific
+/project/
+/.vscode/
+
+# Temporära filer och testfiler
+/temp*/
+*-test.js
+*-test.ts
+test-*.js
+test-*.ts
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Vercel build output
+.vercel/
+
+# Lokal katalogstruktur
+/Downloads/ 

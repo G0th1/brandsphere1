@@ -1,0 +1,15 @@
+# Ignorera lokala filer och kataloger som inte behövs för bygget
+Downloads/
+.git/
+.github/
+test-*.js
+test-*.ts
+*.log
+.env.local.new
+.bolt
+Downloads/project-bolt-sb1-9wvhppmr (1)/
+
+# Ignorer filer som enbart är för utvecklingsmiljön
+README.md
+.gitignore
+.vscode/
