@@ -3,23 +3,32 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetTrigger 
-} from '@/components/ui/sheet'
-import { Menu } from 'lucide-react'
+import { MobileMenu } from '@/components/mobile-menu'
+import { usePathname } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState } from 'react'
 
 const navLinks = [
   { href: '/features', label: 'Funktioner' },
   { href: '/pricing', label: 'Priser' },
-  { href: '/resources', label: 'Resurser' },
-  { href: '/about', label: 'Om oss' },
+  { href: '/blog', label: 'Blogg' },
+  { href: '/contact', label: 'Kontakt' },
 ]
 
 export function Navbar() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const supabase = createClientComponentClient()
+  const pathname = usePathname()
+  
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      setIsAuthenticated(!!data.session)
+    }
+    
+    checkSession()
+  }, [supabase, pathname])
+  
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
@@ -43,7 +52,20 @@ export function Navbar() {
           ))}
         </nav>
         
-        <div className="flex items-center gap-4">
+        {isAuthenticated ? (
+          <div className="hidden md:flex items-center gap-4">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">
+                Dashboard
+              </Button>
+            </Link>
+            <Link href="/api/auth/signout">
+              <Button variant="outline" size="sm">
+                Logga ut
+              </Button>
+            </Link>
+          </div>
+        ) : (
           <div className="hidden md:flex items-center gap-4">
             <Link href="/login">
               <Button variant="ghost" size="sm">
@@ -56,44 +78,10 @@ export function Navbar() {
               </Button>
             </Link>
           </div>
+        )}
           
-          {/* Mobile Navigation */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Öppna meny</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle>BrandSphereAI</SheetTitle>
-              </SheetHeader>
-              <nav className="flex flex-col gap-4 mt-8">
-                {navLinks.map((link) => (
-                  <Link 
-                    key={link.href} 
-                    href={link.href}
-                    className="px-2 py-1 text-lg font-medium transition-colors hover:text-primary"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                <div className="h-px w-full bg-border my-4" />
-                <Link href="/login">
-                  <Button variant="ghost" className="w-full justify-start">
-                    Logga in
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button className="w-full">
-                    Skapa konto
-                  </Button>
-                </Link>
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
+        {/* Mobile Navigation */}
+        <MobileMenu isAuthenticated={isAuthenticated} />
       </div>
     </header>
   )

@@ -1,21 +1,24 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { User } from "@supabase/supabase-js"
 import Link from "next/link"
 import { 
   Calendar, 
   BarChart3, 
-  LineChart, 
-  MessageSquare, 
+  FilePenLine, 
   PlusCircle, 
-  Settings, 
   Instagram, 
   Twitter, 
   Facebook, 
-  LogOut 
+  LogOut,
+  ArrowRight,
+  CheckCircle,
+  Lock,
+  Zap,
+  X
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -27,13 +30,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [subscription, setSubscription] = useState('free')
+  const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
 
   useEffect(() => {
@@ -46,11 +51,33 @@ export default function DashboardPage() {
       }
       
       setUser(session.user)
+      
+      // Hämta prenumerationsstatus från profiles-tabellen
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', session.user.id)
+        .single()
+      
+      if (data && !profileError) {
+        setSubscription(data.subscription_tier || 'free')
+      }
+      
       setLoading(false)
     }
     
     getUser()
-  }, [router, supabase])
+    
+    // Kolla om användaren just har uppgraderat
+    const upgraded = searchParams?.get('upgraded')
+    if (upgraded === 'true') {
+      setShowUpgradeSuccess(true)
+      // Ta bort parametern från URL:en efter 5 sekunder
+      setTimeout(() => {
+        window.history.replaceState({}, '', '/dashboard')
+      }, 5000)
+    }
+  }, [router, supabase, searchParams])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -64,6 +91,53 @@ export default function DashboardPage() {
       </div>
     )
   }
+
+  const stats = [
+    {
+      title: "Totala inlägg",
+      value: subscription === 'pro' ? "87" : "12",
+      icon: FilePenLine,
+      description: "Senaste 30 dagarna",
+    },
+    {
+      title: "Engagemang",
+      value: subscription === 'pro' ? "12.5k" : "1.2k",
+      icon: BarChart3,
+      description: "Likes, kommentarer, delningar",
+    },
+    {
+      title: "Aktiva konton",
+      value: subscription === 'pro' ? "8" : "2",
+      icon: Instagram,
+      description: "Anslutna till plattformen",
+      locked: subscription !== 'pro' && true,
+    },
+    {
+      title: "Schemalagda inlägg",
+      value: subscription === 'pro' ? "24" : "3",
+      icon: Calendar,
+      description: "Kommande publiceringar",
+      locked: subscription !== 'pro' && true,
+    },
+  ]
+
+  const upcomingPosts = [
+    {
+      title: "5 tips för effektiv digital marknadsföring",
+      platform: "LinkedIn",
+      scheduled: "Idag, 14:30",
+    },
+    {
+      title: "Lanserar ny produkt nästa vecka! #spännande",
+      platform: "Twitter",
+      scheduled: "Imorgon, 10:15",
+    },
+    {
+      title: "Bakom kulisserna på vårt senaste event",
+      platform: "Instagram",
+      scheduled: "23 jun, 18:00",
+    },
+  ]
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -90,196 +164,172 @@ export default function DashboardPage() {
         </div>
       </header>
       
-      <main className="flex-1 container px-4 md:px-6 py-8">
-        <div className="flex flex-col gap-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
-              Välkommen till din dashboard
-            </h1>
-            <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: "100ms" }}>
-              Hantera och analysera ditt innehåll på sociala medier från en plats.
-            </p>
-          </div>
+      <main className="flex-1 py-8">
+        <div className="container px-4 md:px-6">
+          {showUpgradeSuccess && (
+            <div className="mb-6">
+              <Alert className="bg-green-50 text-green-900 border-green-200">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <AlertTitle className="text-green-800">Uppgradering slutförd!</AlertTitle>
+                <AlertDescription className="text-green-700">
+                  Du har nu tillgång till Pro-funktionerna! Utforska alla nya möjligheter.
+                </AlertDescription>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-2 right-2 text-green-600 hover:text-green-800 hover:bg-green-100" 
+                  onClick={() => setShowUpgradeSuccess(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </Alert>
+            </div>
+          )}
           
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: "200ms" }}>
-            {[
-              { 
-                title: "Totalt inlägg", 
-                value: "24", 
-                trend: "+12.5%", 
-                description: "Från föregående månad", 
-                icon: MessageSquare 
-              },
-              { 
-                title: "Engagemang", 
-                value: "1,249", 
-                trend: "+18.2%", 
-                description: "Från föregående månad", 
-                icon: BarChart3 
-              },
-              { 
-                title: "Aktiva konton", 
-                value: "3", 
-                trend: "+1", 
-                description: "Från föregående månad", 
-                icon: Instagram 
-              },
-              { 
-                title: "Planerade inlägg", 
-                value: "12", 
-                trend: "+3", 
-                description: "För nästa vecka", 
-                icon: Calendar 
-              },
-            ].map((stat, index) => (
-              <Card key={index} className="overflow-hidden">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-sm font-medium">
-                    {stat.title}
-                  </CardTitle>
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <span className="text-green-600">{stat.trend}</span> 
-                    {stat.description}
-                  </p>
+          <div className="flex flex-col gap-8">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
+                Välkommen till din dashboard
+              </h1>
+              <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: "100ms" }}>
+                Hantera och analysera ditt innehåll på sociala medier från en plats.
+              </p>
+            </div>
+            
+            {subscription === 'free' && (
+              <Card className="border-accent/50 bg-accent/5 animate-fade-in" style={{ animationDelay: "150ms" }}>
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                        <Zap className="h-5 w-5 text-accent" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">Uppgradera till Pro</h3>
+                        <p className="text-muted-foreground text-sm">Få obegränsade inlägg och avancerade funktioner</p>
+                      </div>
+                    </div>
+                    <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                      <Link href="/dashboard/upgrade">
+                        Uppgradera nu
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-2 animate-fade-in" style={{ animationDelay: "300ms" }}>
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Kommande inlägg</CardTitle>
-                <CardDescription>
-                  Dina schemalagda inlägg för kommande dagar
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { 
-                      platform: "Instagram", 
-                      title: "Produktlansering", 
-                      date: "Idag, 15:30", 
-                      icon: Instagram,
-                      color: "text-pink-500"
-                    },
-                    { 
-                      platform: "Twitter", 
-                      title: "Industri-nyheter", 
-                      date: "Imorgon, 09:00", 
-                      icon: Twitter,
-                      color: "text-blue-500"
-                    },
-                    { 
-                      platform: "Facebook", 
-                      title: "Kundrecension", 
-                      date: "25 Jul, 12:00", 
-                      icon: Facebook,
-                      color: "text-indigo-500"
-                    },
-                  ].map((post, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center gap-3 p-3 rounded-md border hover:bg-muted/50 transition-colors"
-                    >
-                      <div className={`rounded-full p-2 bg-muted flex items-center justify-center ${post.color}`}>
-                        <post.icon className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium">{post.title}</h4>
-                        <p className="text-xs text-muted-foreground">{post.platform} · {post.date}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Settings className="h-4 w-4" />
-                        <span className="sr-only">Inställningar</span>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter className="border-t pt-4">
-                <Button variant="outline" className="w-full gap-1">
-                  <PlusCircle className="h-4 w-4" />
-                  Skapa nytt inlägg
-                </Button>
-              </CardFooter>
-            </Card>
+            )}
             
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Plattformsöversikt</CardTitle>
-                <CardDescription>
-                  Prestationsstatistik för dina sociala medieplattformar
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    {
-                      platform: "Instagram",
-                      followers: "2,456",
-                      engagement: "3.8%",
-                      trend: "+5.6%",
-                      icon: Instagram,
-                      color: "text-pink-500"
-                    },
-                    {
-                      platform: "Twitter",
-                      followers: "1,894",
-                      engagement: "2.2%",
-                      trend: "+1.2%",
-                      icon: Twitter,
-                      color: "text-blue-500"
-                    },
-                    {
-                      platform: "Facebook",
-                      followers: "4,671",
-                      engagement: "1.9%",
-                      trend: "+0.8%",
-                      icon: Facebook,
-                      color: "text-indigo-500"
-                    }
-                  ].map((platform, index) => (
-                    <div key={index} className="flex items-center gap-4">
-                      <div className={`rounded-full p-2 bg-muted flex items-center justify-center ${platform.color}`}>
-                        <platform.icon className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 flex justify-between items-center">
-                        <div>
-                          <h4 className="text-sm font-medium">{platform.platform}</h4>
-                          <p className="text-xs text-muted-foreground">{platform.followers} följare</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: "200ms" }}>
+              {stats.map((stat, index) => (
+                <Card key={index} className={stat.locked ? "border-muted bg-muted/20" : ""}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <stat.icon className="h-5 w-5 text-muted-foreground" />
+                      {stat.locked && (
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Pro
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">{platform.engagement}</div>
-                          <p className="text-xs text-green-600">{platform.trend}</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-                <div className="h-[200px] mt-6 flex items-center justify-center border rounded-md bg-muted/10">
-                  <div className="text-center">
-                    <LineChart className="h-8 w-8 mx-auto text-muted-foreground/60" />
-                    <p className="text-sm mt-2 text-muted-foreground">Detaljerad statistik kommer snart</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <p className="text-xs text-muted-foreground mt-1">{stat.title}</p>
+                    <p className="text-xs text-muted-foreground">{stat.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in" style={{ animationDelay: "300ms" }}>
+              <Card className="col-span-1 md:col-span-2">
+                <CardHeader>
+                  <CardTitle>Kommande inlägg</CardTitle>
+                  <CardDescription>
+                    Dina schemalagda inlägg för kommande dagar
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    {upcomingPosts.slice(0, subscription === 'pro' ? 3 : 1).map((post, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 rounded-md border">
+                        <div className="flex-shrink-0">
+                          {post.platform === "Instagram" && <Instagram className="h-5 w-5 text-pink-500" />}
+                          {post.platform === "Twitter" && <Twitter className="h-5 w-5 text-blue-500" />}
+                          {post.platform === "LinkedIn" && <FilePenLine className="h-5 w-5 text-blue-700" />}
+                          {post.platform === "Facebook" && <Facebook className="h-5 w-5 text-blue-600" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{post.title}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <span>{post.platform}</span>
+                            <span>•</span>
+                            <span>{post.scheduled}</span>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" className="flex-shrink-0">
+                          Redigera
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    {subscription === 'free' && upcomingPosts.length > 1 && (
+                      <div className="border border-dashed rounded-md flex flex-col items-center justify-center p-6 text-center">
+                        <Lock className="h-8 w-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground max-w-xs">
+                          Uppgradera till Pro för att se och schemalägga fler inlägg
+                        </p>
+                        <Button asChild variant="link" size="sm" className="mt-2">
+                          <Link href="/dashboard/upgrade">
+                            Uppgradera nu
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-              <CardFooter className="border-t pt-4">
-                <Button variant="outline" className="w-full">
-                  Visa fullständig analys
-                </Button>
-              </CardFooter>
-            </Card>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tips för bättre innehåll</CardTitle>
+                  <CardDescription>
+                    AI-genererade rekommendationer
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-muted/30 rounded-md">
+                      <h4 className="font-medium text-sm mb-1">Använd hashtags strategiskt</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Begränsa antalet hashtags till 3-5 per inlägg för bättre engagemang.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-muted/30 rounded-md">
+                      <h4 className="font-medium text-sm mb-1">Bästa tiden att posta</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Baserat på din målgrupp, posta mellan 18-20 på vardagar för bäst resultat.
+                      </p>
+                    </div>
+                    
+                    {subscription !== 'pro' && (
+                      <div className="border border-dashed rounded-md p-3 flex flex-col items-center text-center">
+                        <Lock className="h-5 w-5 text-muted-foreground mb-1" />
+                        <p className="text-xs text-muted-foreground">
+                          Uppgradera för att få fler personaliserade tips
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </main>
-      
-      <Footer />
     </div>
   )
 } 
