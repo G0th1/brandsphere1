@@ -1,260 +1,284 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { Navbar } from '@/components/navbar'
-import { Footer } from '@/components/footer'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Chrome, Facebook, Twitter, Linkedin, Instagram, Info, BarChart2, Calendar, Settings } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { contentService, ScheduledPost } from '../../services/content-service'
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { User } from "@supabase/supabase-js"
+import Link from "next/link"
+import { 
+  Calendar, 
+  BarChart3, 
+  LineChart, 
+  MessageSquare, 
+  PlusCircle, 
+  Settings, 
+  Instagram, 
+  Twitter, 
+  Facebook, 
+  LogOut 
+} from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Navbar } from "@/components/navbar"
+import { Footer } from "@/components/footer"
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [connectedAccounts, setConnectedAccounts] = useState<string[]>([]);
-  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Function to connect an account (in a real implementation this would use APIs)
-  const connectAccount = (platform: string) => {
-    // In a real implementation this would open the OAuth flow
-    // For MVP we just simulate that the account has been connected
-    if (!connectedAccounts.includes(platform)) {
-      setConnectedAccounts([...connectedAccounts, platform]);
-    }
-  };
-  
-  // Fetch scheduled posts from Supabase
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const supabase = createClientComponentClient()
+
   useEffect(() => {
-    const fetchScheduledPosts = async () => {
-      try {
-        const posts = await contentService.getScheduledPosts();
-        setScheduledPosts(posts);
-      } catch (error) {
-        console.error('Error fetching scheduled posts:', error);
-      } finally {
-        setLoading(false);
+    const getUser = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error || !session) {
+        router.replace("/login")
+        return
       }
-    };
+      
+      setUser(session.user)
+      setLoading(false)
+    }
     
-    fetchScheduledPosts();
-  }, []);
-  
+    getUser()
+  }, [router, supabase])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.replace("/login")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-xl">Laddar...</div>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <main className="flex-1 container mx-auto p-6">
-        <div className="flex justify-between items-center mb-8">
+    <div className="min-h-screen flex flex-col">
+      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">B</div>
+              <span className="text-lg font-bold tracking-tight">BrandSphereAI</span>
+            </Link>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden md:inline-block">
+                {user?.email}
+              </span>
+              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Logga ut</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      <main className="flex-1 container px-4 md:px-6 py-8">
+        <div className="flex flex-col gap-8">
           <div>
-            <h1 className="text-3xl font-bold">Welcome to BrandSphereAI!</h1>
-            <p className="text-muted-foreground mt-1">
-              Your platform for creating and managing social media content with AI support.
+            <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
+              Välkommen till din dashboard
+            </h1>
+            <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: "100ms" }}>
+              Hantera och analysera ditt innehåll på sociala medier från en plats.
             </p>
           </div>
-          <Button onClick={() => router.push('/dashboard/create')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Post
-          </Button>
-        </div>
-
-        {/* MVP Step-by-step guide */}
-        <Card className="mb-8 border-primary/20">
-          <CardHeader className="bg-primary/5">
-            <CardTitle className="flex items-center">
-              <Info className="mr-2 h-5 w-5 text-primary" />
-              MVP Status: Get Started in 3 Steps
-            </CardTitle>
-            <CardDescription>
-              This version is an MVP (Minimum Viable Product) to test core features. Follow these steps:
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <ol className="space-y-6">
-              <li className="flex items-start">
-                <div className={`${connectedAccounts.length > 0 ? "bg-primary" : "bg-muted"} text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center mr-3 flex-shrink-0 mt-0.5`}>1</div>
-                <div>
-                  <h3 className="font-medium">Connect your first social media account</h3>
-                  <p className="text-muted-foreground mt-1 mb-2">Start by connecting your Facebook or YouTube account.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant={connectedAccounts.includes('facebook') ? "default" : "outline"} 
-                      size="sm"
-                      onClick={() => connectAccount('facebook')}
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: "200ms" }}>
+            {[
+              { 
+                title: "Totalt inlägg", 
+                value: "24", 
+                trend: "+12.5%", 
+                description: "Från föregående månad", 
+                icon: MessageSquare 
+              },
+              { 
+                title: "Engagemang", 
+                value: "1,249", 
+                trend: "+18.2%", 
+                description: "Från föregående månad", 
+                icon: BarChart3 
+              },
+              { 
+                title: "Aktiva konton", 
+                value: "3", 
+                trend: "+1", 
+                description: "Från föregående månad", 
+                icon: Instagram 
+              },
+              { 
+                title: "Planerade inlägg", 
+                value: "12", 
+                trend: "+3", 
+                description: "För nästa vecka", 
+                icon: Calendar 
+              },
+            ].map((stat, index) => (
+              <Card key={index} className="overflow-hidden">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-sm font-medium">
+                    {stat.title}
+                  </CardTitle>
+                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="text-green-600">{stat.trend}</span> 
+                    {stat.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-2 animate-fade-in" style={{ animationDelay: "300ms" }}>
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Kommande inlägg</CardTitle>
+                <CardDescription>
+                  Dina schemalagda inlägg för kommande dagar
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { 
+                      platform: "Instagram", 
+                      title: "Produktlansering", 
+                      date: "Idag, 15:30", 
+                      icon: Instagram,
+                      color: "text-pink-500"
+                    },
+                    { 
+                      platform: "Twitter", 
+                      title: "Industri-nyheter", 
+                      date: "Imorgon, 09:00", 
+                      icon: Twitter,
+                      color: "text-blue-500"
+                    },
+                    { 
+                      platform: "Facebook", 
+                      title: "Kundrecension", 
+                      date: "25 Jul, 12:00", 
+                      icon: Facebook,
+                      color: "text-indigo-500"
+                    },
+                  ].map((post, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center gap-3 p-3 rounded-md border hover:bg-muted/50 transition-colors"
                     >
-                      <Facebook className="mr-2 h-4 w-4" />
-                      {connectedAccounts.includes('facebook') ? 'Connected' : 'Connect Facebook'}
-                    </Button>
-                    <Button 
-                      variant={connectedAccounts.includes('youtube') ? "default" : "outline"} 
-                      size="sm"
-                      onClick={() => connectAccount('youtube')}
-                    >
-                      <Chrome className="mr-2 h-4 w-4" />
-                      {connectedAccounts.includes('youtube') ? 'Connected' : 'Connect YouTube'}
-                    </Button>
-                  </div>
-                </div>
-              </li>
-              
-              <li className="flex items-start">
-                <div className={`${scheduledPosts.length > 0 ? "bg-primary" : "bg-muted"} text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center mr-3 flex-shrink-0 mt-0.5`}>2</div>
-                <div>
-                  <h3 className="font-medium">Create your first post</h3>
-                  <p className="text-muted-foreground mt-1 mb-2">Try creating a post with AI assistance and schedule it.</p>
-                  <Button size="sm" onClick={() => router.push('/dashboard/create')}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Post
-                  </Button>
-                </div>
-              </li>
-              
-              <li className="flex items-start">
-                <div className="bg-muted text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center mr-3 flex-shrink-0 mt-0.5">3</div>
-                <div>
-                  <h3 className="font-medium">Give feedback</h3>
-                  <p className="text-muted-foreground mt-1 mb-2">Help us improve the service by telling us what you think.</p>
-                  <Button variant="outline" size="sm" onClick={() => router.push('/feedback')}>
-                    Send feedback
-                  </Button>
-                </div>
-              </li>
-            </ol>
-          </CardContent>
-        </Card>
-
-        {/* Dashboard Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <BarChart2 className="h-4 w-4 mr-2 text-blue-500" />
-                Performance Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Posts published</p>
-              <div className="mt-4 h-[60px] flex items-center justify-center border rounded-md bg-muted/20">
-                <p className="text-xs text-muted-foreground">Statistics available after publishing</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Calendar className="h-4 w-4 mr-2 text-green-500" />
-                Upcoming Posts
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{scheduledPosts.length}</div>
-              <p className="text-xs text-muted-foreground">Scheduled posts</p>
-              <div className="mt-4 h-[60px] overflow-auto">
-                {loading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-xs text-muted-foreground">Loading...</p>
-                  </div>
-                ) : scheduledPosts.length === 0 ? (
-                  <div className="flex items-center justify-center h-full border rounded-md bg-muted/20">
-                    <p className="text-xs text-muted-foreground">No scheduled posts</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {scheduledPosts.slice(0, 2).map((post) => (
-                      <div key={post.id} className="text-xs p-2 border rounded-md">
-                        <p className="font-medium truncate">{post.title}</p>
-                        <p className="text-muted-foreground">
-                          {new Date(post.scheduledFor).toLocaleDateString('en-US')}
-                        </p>
+                      <div className={`rounded-full p-2 bg-muted flex items-center justify-center ${post.color}`}>
+                        <post.icon className="h-4 w-4" />
                       </div>
-                    ))}
-                    {scheduledPosts.length > 2 && (
-                      <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => router.push('/dashboard/scheduled')}>
-                        View all ({scheduledPosts.length})
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium">{post.title}</h4>
+                        <p className="text-xs text-muted-foreground">{post.platform} · {post.date}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Settings className="h-4 w-4" />
+                        <span className="sr-only">Inställningar</span>
                       </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Settings className="h-4 w-4 mr-2 text-orange-500" />
-                Account Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{connectedAccounts.length}</div>
-              <p className="text-xs text-muted-foreground">Connected accounts</p>
-              <div className="mt-4 h-[60px] flex items-center justify-center">
-                {connectedAccounts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No connected accounts</p>
-                ) : (
-                  <div className="flex space-x-2">
-                    {connectedAccounts.includes('facebook') && <Facebook className="h-6 w-6 text-blue-600" />}
-                    {connectedAccounts.includes('youtube') && <Chrome className="h-6 w-6 text-red-600" />}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Platforms to Connect</CardTitle>
-            <CardDescription>
-              In this MVP version, we support connecting to the following social media platforms:
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card className="border border-blue-200">
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <Facebook className="h-8 w-8 text-blue-600 mr-3" />
-                  <div>
-                    <h3 className="font-medium">Facebook</h3>
-                    <p className="text-sm text-muted-foreground">Connect pages and create posts</p>
-                  </div>
+                    </div>
+                  ))}
                 </div>
-                <Button 
-                  className="w-full mt-4" 
-                  variant={connectedAccounts.includes('facebook') ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => connectAccount('facebook')}
-                >
-                  {connectedAccounts.includes('facebook') ? 'Connected' : 'Connect Facebook'}
-                </Button>
               </CardContent>
+              <CardFooter className="border-t pt-4">
+                <Button variant="outline" className="w-full gap-1">
+                  <PlusCircle className="h-4 w-4" />
+                  Skapa nytt inlägg
+                </Button>
+              </CardFooter>
             </Card>
             
-            <Card className="border border-red-200">
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <Chrome className="h-8 w-8 text-red-600 mr-3" />
-                  <div>
-                    <h3 className="font-medium">YouTube</h3>
-                    <p className="text-sm text-muted-foreground">Manage video descriptions and titles</p>
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Plattformsöversikt</CardTitle>
+                <CardDescription>
+                  Prestationsstatistik för dina sociala medieplattformar
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    {
+                      platform: "Instagram",
+                      followers: "2,456",
+                      engagement: "3.8%",
+                      trend: "+5.6%",
+                      icon: Instagram,
+                      color: "text-pink-500"
+                    },
+                    {
+                      platform: "Twitter",
+                      followers: "1,894",
+                      engagement: "2.2%",
+                      trend: "+1.2%",
+                      icon: Twitter,
+                      color: "text-blue-500"
+                    },
+                    {
+                      platform: "Facebook",
+                      followers: "4,671",
+                      engagement: "1.9%",
+                      trend: "+0.8%",
+                      icon: Facebook,
+                      color: "text-indigo-500"
+                    }
+                  ].map((platform, index) => (
+                    <div key={index} className="flex items-center gap-4">
+                      <div className={`rounded-full p-2 bg-muted flex items-center justify-center ${platform.color}`}>
+                        <platform.icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 flex justify-between items-center">
+                        <div>
+                          <h4 className="text-sm font-medium">{platform.platform}</h4>
+                          <p className="text-xs text-muted-foreground">{platform.followers} följare</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium">{platform.engagement}</div>
+                          <p className="text-xs text-green-600">{platform.trend}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-[200px] mt-6 flex items-center justify-center border rounded-md bg-muted/10">
+                  <div className="text-center">
+                    <LineChart className="h-8 w-8 mx-auto text-muted-foreground/60" />
+                    <p className="text-sm mt-2 text-muted-foreground">Detaljerad statistik kommer snart</p>
                   </div>
                 </div>
-                <Button 
-                  className="w-full mt-4" 
-                  variant={connectedAccounts.includes('youtube') ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => connectAccount('youtube')}
-                >
-                  {connectedAccounts.includes('youtube') ? 'Connected' : 'Connect YouTube'}
-                </Button>
               </CardContent>
+              <CardFooter className="border-t pt-4">
+                <Button variant="outline" className="w-full">
+                  Visa fullständig analys
+                </Button>
+              </CardFooter>
             </Card>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
+      
       <Footer />
     </div>
   )

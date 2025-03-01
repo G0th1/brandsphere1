@@ -1,11 +1,38 @@
-import { AnalyticsProvider } from '@/components/providers/analytics-provider'
-import { Toaster } from '@/components/providers/toast-provider'
-import { AuthProvider } from '@/contexts/auth-context'
-import { ThemeProvider } from '@/components/providers/theme-provider'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+// Importera providers
+import { ThemeProvider } from '@/components/providers/theme-provider'
+import { AuthProvider } from '@/contexts/auth-context'
+
+// Konfigurera Inter font
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+})
+
+export const metadata = {
+  title: 'BrandSphereAI - Hantera dina sociala medier smartare',
+  description: 'BrandSphereAI hjälper dig att skapa, schemaläggа och analysera innehåll för sociala medier med hjälp av artificiell intelligens.',
+  keywords: 'AI, sociala medier, innehållsplanering, schemaläggning, innehållsanalys',
+  authors: [{ name: 'BrandSphereAI Team' }],
+  creator: 'BrandSphereAI',
+  openGraph: {
+    type: 'website',
+    locale: 'sv_SE',
+    url: 'https://brandsphereai.com',
+    title: 'BrandSphereAI - Hantera dina sociala medier smartare',
+    description: 'BrandSphereAI hjälper dig att skapa, schemaläggа och analysera innehåll för sociala medier med hjälp av artificiell intelligens.',
+    siteName: 'BrandSphereAI',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'BrandSphereAI - Hantera dina sociala medier smartare',
+    description: 'BrandSphereAI hjälper dig att skapa, schemaläggа och analysera innehåll för sociala medier med hjälp av artificiell intelligens.',
+    creator: '@brandsphereai',
+  },
+}
 
 export default function RootLayout({
   children,
@@ -13,24 +40,17 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="sv" suppressHydrationWarning>
-      <head>
-        <title>BrandSphereAI</title>
-        <meta name="description" content="Din intelligenta plattform för innehållshantering på sociala medier" />
-      </head>
-      <body className={inter.className}>
+    <html lang="sv" className={`${inter.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <AnalyticsProvider>
-            <AuthProvider>
-              {children}
-              <Toaster />
-            </AuthProvider>
-          </AnalyticsProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

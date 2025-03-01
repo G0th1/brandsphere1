@@ -1,60 +1,98 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Settings } from "lucide-react"
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetTrigger 
+} from '@/components/ui/sheet'
+import { Menu } from 'lucide-react'
+
+const navLinks = [
+  { href: '/features', label: 'Funktioner' },
+  { href: '/pricing', label: 'Priser' },
+  { href: '/resources', label: 'Resurser' },
+  { href: '/about', label: 'Om oss' },
+]
 
 export function Navbar() {
-  const pathname = usePathname()
-  
-  const isActive = (path: string) => pathname === path
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Link href="/" className="text-xl font-bold">
-            BrandSphereAI
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+        <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">B</div>
+            <span className="text-lg font-bold tracking-tight">BrandSphereAI</span>
           </Link>
         </div>
         
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link 
-            href="/" 
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              isActive('/') ? 'text-foreground' : 'text-muted-foreground'
-            }`}
-          >
-            Hem
-          </Link>
-          <Link 
-            href="/features" 
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              isActive('/features') ? 'text-foreground' : 'text-muted-foreground'
-            }`}
-          >
-            Funktioner
-          </Link>
-          <Link 
-            href="/pricing" 
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              isActive('/pricing') ? 'text-foreground' : 'text-muted-foreground'
-            }`}
-          >
-            Priser
-          </Link>
+          {navLinks.map((link) => (
+            <Link 
+              key={link.href} 
+              href={link.href}
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
         
-        <div className="flex items-center gap-2">
-          <Link href="/login">
-            <Button variant="ghost">Logga in</Button>
-          </Link>
-          <Link href="/signup">
-            <Button className="bg-primary hover:bg-primary/90 text-white">
-              Skapa konto
-            </Button>
-          </Link>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4">
+            <Link href="/login">
+              <Button variant="ghost" size="sm">
+                Logga in
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button size="sm">
+                Skapa konto
+              </Button>
+            </Link>
+          </div>
+          
+          {/* Mobile Navigation */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Öppna meny</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>BrandSphereAI</SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-4 mt-8">
+                {navLinks.map((link) => (
+                  <Link 
+                    key={link.href} 
+                    href={link.href}
+                    className="px-2 py-1 text-lg font-medium transition-colors hover:text-primary"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <div className="h-px w-full bg-border my-4" />
+                <Link href="/login">
+                  <Button variant="ghost" className="w-full justify-start">
+                    Logga in
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button className="w-full">
+                    Skapa konto
+                  </Button>
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
