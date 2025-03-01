@@ -32,8 +32,5 @@
                                         }
                                     ]
                     }
-                ],
-    "buildEnvironment":  {
-                             "NODE_VERSION":  "18.x"
-                         }
+                ]
 }
