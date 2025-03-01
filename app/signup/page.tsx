@@ -9,13 +9,13 @@ import { Eye, EyeOff, ArrowRight, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
@@ -32,18 +32,18 @@ export default function Signup() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     // Validera lösenordet
     if (password.length < 6) {
-      setError("Lösenordet måste vara minst 6 tecken");
+      setError("Password must be at least 6 characters");
       return;
     }
-    
+
     if (password !== confirmPassword) {
-      setError("Lösenorden matchar inte");
+      setError("Passwords do not match");
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -58,11 +58,13 @@ export default function Signup() {
       if (error) {
         setError(error.message);
       } else {
+        // Save email to localStorage for the verification page
+        localStorage.setItem("signupEmail", email);
         router.push("/signup/verify");
       }
     } catch (error) {
-      console.error("Registreringsfel:", error);
-      setError("Ett fel uppstod vid registrering. Försök igen.");
+      console.error("Registration error:", error);
+      setError("An error occurred during registration. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -71,7 +73,7 @@ export default function Signup() {
   const handleOAuthSignUp = async (provider: 'github') => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -79,7 +81,7 @@ export default function Signup() {
           redirectTo: `${window.location.origin}/auth/callback`
         }
       });
-      
+
       if (error) setError(error.message);
     } catch (error) {
       console.error("OAuth-fel:", error);
@@ -91,8 +93,8 @@ export default function Signup() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-4 py-8">
-      <Link 
-        href="/" 
+      <Link
+        href="/"
         className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight animate-fade-in"
       >
         <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
@@ -103,9 +105,9 @@ export default function Signup() {
 
       <Card className="w-full max-w-md overflow-hidden animate-slide-up">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">Skapa konto</CardTitle>
+          <CardTitle className="text-2xl">Create account</CardTitle>
           <CardDescription>
-            Ange dina uppgifter för att skapa ett nytt konto
+            Enter your details to create a new account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -117,16 +119,16 @@ export default function Signup() {
             onClick={() => handleOAuthSignUp('github')}
           >
             <Github className="mr-2 h-4 w-4" />
-            Registrera med Github
+            Register with Github
           </Button>
-          
+
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
               <Separator />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-card px-2 text-muted-foreground">
-                Eller med e-post
+                Or with email
               </span>
             </div>
           </div>
@@ -147,7 +149,7 @@ export default function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Lösenord</Label>
+              <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -157,13 +159,13 @@ export default function Signup() {
                   required
                   autoComplete="new-password"
                   disabled={loading}
-                  placeholder="Minst 6 tecken"
+                  placeholder="Minimum 6 characters"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
-                  aria-label={showPassword ? "Dölj lösenord" : "Visa lösenord"}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -173,9 +175,9 @@ export default function Signup() {
                 </button>
               </div>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Bekräfta lösenord</Label>
+              <Label htmlFor="confirmPassword">Confirm password</Label>
               <Input
                 id="confirmPassword"
                 type={showPassword ? "text" : "password"}
@@ -191,24 +193,24 @@ export default function Signup() {
               <div className="text-sm text-destructive">{error}</div>
             )}
 
-            <Button 
-              type="submit" 
-              className="w-full group" 
+            <Button
+              type="submit"
+              className="w-full group"
               disabled={loading}
             >
-              {loading ? "Registrerar..." : "Skapa konto"}
+              {loading ? "Registering..." : "Create account"}
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Har du redan ett konto?{" "}
-            <Link 
-              href="/login" 
+            Already have an account?{" "}
+            <Link
+              href="/login"
               className="font-medium text-primary hover:underline"
             >
-              Logga in
+              Log in
             </Link>
           </p>
         </CardFooter>

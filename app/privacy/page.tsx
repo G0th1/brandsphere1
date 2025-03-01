@@ -11,98 +11,98 @@ export default function PrivacyPolicyPage() {
           <div className="space-y-8 animate-fade-in">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                Integritetspolicy
+                Privacy Policy
               </h1>
               <p className="text-muted-foreground">
-                Senast uppdaterad: 1 juni 2023
+                Last updated: June 1, 2023
               </p>
             </div>
 
             <div className="prose prose-gray max-w-none dark:prose-invert">
               <p>
-                Vi på Bolt värnar om din personliga integritet och strävar alltid efter att skydda dina personuppgifter på bästa sätt. Denna integritetspolicy förklarar hur vi samlar in, använder, lagrar och delar personuppgifter när du använder vår tjänst.
+                At BrandSphereAI, we value your personal privacy and always strive to protect your personal data in the best possible way. This privacy policy explains how we collect, use, store, and share personal data when you use our service.
               </p>
 
-              <h2>1. Vilka uppgifter vi samlar in</h2>
+              <h2>1. What information we collect</h2>
               <p>
-                Vi samlar in följande typer av information från våra användare:
+                We collect the following types of information from our users:
               </p>
               <ul>
-                <li><strong>Kontoinformation:</strong> När du registrerar dig för våra tjänster samlar vi in ditt namn, e-postadress, företagsnamn och andra uppgifter du lämnar under registreringsprocessen.</li>
-                <li><strong>Användardata:</strong> Information om hur du använder våra tjänster, inklusive interaktioner, funktioner du använder och tid som tillbringas på plattformen.</li>
-                <li><strong>Enhetsinformation:</strong> Information om den enhet du använder för att komma åt vår tjänst, inklusive hårdvarumodell, operativsystem, webbläsare och IP-adress.</li>
-                <li><strong>Betalningsinformation:</strong> Om du köper en betald prenumeration samlar vi in betalningsinformation. Dock lagrar vi inte fullständiga kreditkortsuppgifter på våra servrar.</li>
-                <li><strong>Kommunikation:</strong> När du kommunicerar med oss via e-post, kontaktformulär eller andra kanaler, sparar vi dessa meddelanden.</li>
+                <li><strong>Account information:</strong> When you register for our services, we collect your name, email address, company name, and other information you provide during the registration process.</li>
+                <li><strong>Usage data:</strong> Information about how you use our services, including interactions, features you use, and time spent on the platform.</li>
+                <li><strong>Device information:</strong> Information about the device you use to access our service, including hardware model, operating system, browser, and IP address.</li>
+                <li><strong>Payment information:</strong> If you purchase a paid subscription, we collect payment information. However, we do not store complete credit card details on our servers.</li>
+                <li><strong>Communication:</strong> When you communicate with us via email, contact form, or other channels, we save these messages.</li>
               </ul>
 
-              <h2>2. Hur vi använder dina uppgifter</h2>
+              <h2>2. How we use your information</h2>
               <p>
-                Vi använder dina personuppgifter för följande ändamål:
+                We use your personal data for the following purposes:
               </p>
               <ul>
-                <li>Tillhandahålla och förbättra våra tjänster</li>
-                <li>Behandla betalningar och hantera din prenumeration</li>
-                <li>Skicka dig viktig information om din tjänst, inklusive uppdateringar och säkerhetsmeddelanden</li>
-                <li>Svara på dina frågor och ge support</li>
-                <li>Anpassa och förbättra din upplevelse av vår tjänst</li>
-                <li>Analysera användningsmönster och förbättra vår webbplats och tjänster</li>
-                <li>Upptäcka, förhindra och hantera bedräglig aktivitet eller säkerhetsproblem</li>
+                <li>Provide and improve our services</li>
+                <li>Process payments and manage your subscription</li>
+                <li>Send you important information about your service, including updates and security notices</li>
+                <li>Respond to your questions and provide support</li>
+                <li>Customize and improve your experience of our service</li>
+                <li>Analyze usage patterns and improve our website and services</li>
+                <li>Detect, prevent, and handle fraudulent activity or security issues</li>
               </ul>
 
-              <h2>3. Hur vi delar dina uppgifter</h2>
+              <h2>3. How we share your information</h2>
               <p>
-                Vi säljer aldrig dina personuppgifter till tredje part. Vi kan dock dela dina uppgifter i följande situationer:
+                We never sell your personal data to third parties. However, we may share your information in the following situations:
               </p>
               <ul>
-                <li><strong>Tjänsteleverantörer:</strong> Vi använder tredjepartsleverantörer för att hjälpa oss att driva vår verksamhet (t.ex. betalningsprocessorer, hostingleverantörer). Dessa har tillgång till dina uppgifter endast för att utföra dessa uppgifter och är förpliktade att inte använda eller avslöja dem för andra ändamål.</li>
-                <li><strong>Affärsöverföringar:</strong> Om vi är involverade i en sammanslagning, förvärv eller försäljning av tillgångar, kan dina uppgifter överföras. Vi kommer att meddela dig innan dina personuppgifter överförs och blir föremål för en annan integritetspolicy.</li>
-                <li><strong>Juridiska krav:</strong> Vi kan avslöja dina uppgifter om vi är skyldiga att göra det enligt lag eller för att skydda våra rättigheter, egendom eller säkerhet, våra användares eller andras rättigheter, egendom eller säkerhet.</li>
+                <li><strong>Service providers:</strong> We use third-party providers to help us operate our business (e.g., payment processors, hosting providers). These have access to your information only to perform these tasks and are obligated not to use or disclose it for other purposes.</li>
+                <li><strong>Business transfers:</strong> If we are involved in a merger, acquisition, or sale of assets, your information may be transferred. We will notify you before your personal data is transferred and becomes subject to a different privacy policy.</li>
+                <li><strong>Legal requirements:</strong> We may disclose your information if we are required to do so by law or to protect our rights, property, or safety, our users' or others' rights, property, or safety.</li>
               </ul>
 
-              <h2>4. Lagring av data</h2>
+              <h2>4. Data storage</h2>
               <p>
-                Vi lagrar dina personuppgifter så länge ditt konto är aktivt eller så länge det behövs för att tillhandahålla tjänsten. Vi kan behålla vissa uppgifter även efter att du har stängt ditt konto om det är nödvändigt för att uppfylla våra juridiska skyldigheter, lösa tvister eller verkställa våra avtal.
+                We store your personal data as long as your account is active or as long as needed to provide the service. We may retain certain information even after you have closed your account if necessary to fulfill our legal obligations, resolve disputes, or enforce our agreements.
               </p>
 
-              <h2>5. Dina rättigheter</h2>
+              <h2>5. Your rights</h2>
               <p>
-                Beroende på din hemvist har du vissa rättigheter avseende dina personuppgifter, som kan inkludera:
+                Depending on your residence, you have certain rights regarding your personal data, which may include:
               </p>
               <ul>
-                <li>Rätt att få tillgång till dina personuppgifter</li>
-                <li>Rätt att korrigera felaktiga uppgifter</li>
-                <li>Rätt att radera dina uppgifter</li>
-                <li>Rätt att begränsa behandlingen av dina uppgifter</li>
-                <li>Rätt till dataportabilitet</li>
-                <li>Rätt att göra invändningar mot behandling av dina uppgifter</li>
+                <li>Right to access your personal data</li>
+                <li>Right to correct inaccurate data</li>
+                <li>Right to delete your data</li>
+                <li>Right to restrict processing of your data</li>
+                <li>Right to data portability</li>
+                <li>Right to object to processing of your data</li>
               </ul>
               <p>
-                För att utöva dessa rättigheter, vänligen kontakta oss via privacy@bolt.se.
+                To exercise these rights, please contact us via privacy@brandsphereai.com.
               </p>
 
-              <h2>6. Cookies och spårningstekniker</h2>
+              <h2>6. Cookies and tracking technologies</h2>
               <p>
-                Vi använder cookies och liknande spårningstekniker för att spåra aktivitet på vår tjänst och lagra viss information. Du kan instruera din webbläsare att vägra alla cookies eller att indikera när en cookie skickas. Om du inte accepterar cookies kan du dock kanske inte använda vissa delar av vår tjänst.
+                We use cookies and similar tracking technologies to track activity on our service and store certain information. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent. However, if you do not accept cookies, you may not be able to use some parts of our service.
               </p>
 
-              <h2>7. Dataskydd</h2>
+              <h2>7. Data protection</h2>
               <p>
-                Vi använder lämpliga tekniska och organisatoriska åtgärder för att skydda dina personuppgifter mot förlust, missbruk och obehörig åtkomst. Tyvärr kan ingen metod för elektronisk överföring eller lagring vara 100% säker, så vi kan inte garantera absolut säkerhet.
+                We use appropriate technical and organizational measures to protect your personal data against loss, misuse, and unauthorized access. Unfortunately, no method of electronic transmission or storage is 100% secure, so we cannot guarantee absolute security.
               </p>
 
-              <h2>8. Ändringar i denna policy</h2>
+              <h2>8. Changes to this policy</h2>
               <p>
-                Vi kan uppdatera vår integritetspolicy från tid till annan. Vi kommer att meddela dig om eventuella ändringar genom att publicera den nya integritetspolicyn på denna sida och uppdatera datumet "Senast uppdaterad". Du uppmanas att regelbundet granska denna integritetspolicy för eventuella ändringar.
+                We may update our privacy policy from time to time. We will notify you of any changes by posting the new privacy policy on this page and updating the "Last updated" date. You are encouraged to review this privacy policy periodically for any changes.
               </p>
 
-              <h2>9. Kontakta oss</h2>
+              <h2>9. Contact us</h2>
               <p>
-                Om du har frågor om denna integritetspolicy, vänligen kontakta oss:
+                If you have questions about this privacy policy, please contact us:
               </p>
               <ul>
-                <li>Via e-post: privacy@bolt.se</li>
-                <li>Via post: Bolt AB, Storgatan 1, 123 45 Stockholm, Sverige</li>
-                <li>Via telefon: +46 70 123 45 67</li>
+                <li>Via email: privacy@brandsphereai.com</li>
+                <li>Via mail: BrandSphereAI Inc., 123 Main Street, New York, NY 10001, USA</li>
+                <li>Via phone: +1 (555) 123-4567</li>
               </ul>
             </div>
           </div>

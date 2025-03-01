@@ -27,12 +27,12 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
   }
 
   const navLinks = [
-    { href: "/", label: "Hem" },
-    { href: "/features", label: "Funktioner" },
-    { href: "/pricing", label: "Priser" },
-    { href: "/blog", label: "Blogg" },
-    { href: "/faq", label: "Vanliga frågor" },
-    { href: "/contact", label: "Kontakt" },
+    { href: "/", label: "Home" },
+    { href: "/features", label: "Features" },
+    { href: "/pricing", label: "Pricing" },
+    { href: "/blog", label: "Blog" },
+    { href: "/faq", label: "FAQ" },
+    { href: "/contact", label: "Contact" },
   ]
 
   return (
@@ -42,7 +42,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
         size="icon"
         className="relative z-50"
         onClick={toggleMenu}
-        aria-label={isOpen ? "Stäng meny" : "Öppna meny"}
+        aria-label={isOpen ? "Close menu" : "Open menu"}
       >
         {isOpen ? (
           <X className="h-5 w-5 animate-fade-in" />
@@ -72,7 +72,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
               variant="ghost"
               size="icon"
               onClick={closeMenu}
-              aria-label="Stäng meny"
+              aria-label="Close menu"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -98,8 +98,8 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
           <div className="mt-auto space-y-4 pt-8">
             {isAuthenticated ? (
               <>
-                <Button 
-                  variant="default" 
+                <Button
+                  variant="default"
                   className="w-full animate-fade-in"
                   style={{ animationDelay: '400ms' }}
                   onClick={() => {
@@ -109,19 +109,19 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
                 >
                   Dashboard
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full animate-fade-in"
                   style={{ animationDelay: '500ms' }}
                   onClick={handleSignOut}
                 >
-                  Logga ut
+                  Log out
                 </Button>
               </>
             ) : (
               <>
-                <Button 
-                  variant="default" 
+                <Button
+                  variant="default"
                   className="w-full animate-fade-in"
                   style={{ animationDelay: '400ms' }}
                   onClick={() => {
@@ -129,10 +129,10 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
                     closeMenu()
                   }}
                 >
-                  Logga in
+                  Log in
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full animate-fade-in"
                   style={{ animationDelay: '500ms' }}
                   onClick={() => {
@@ -140,7 +140,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
                     closeMenu()
                   }}
                 >
-                  Skapa konto
+                  Sign up
                 </Button>
               </>
             )}

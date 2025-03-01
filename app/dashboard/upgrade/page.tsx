@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { User } from "@supabase/supabase-js"
-import { 
-  ArrowLeft, 
-  Check, 
-  CreditCard, 
-  Shield, 
+import {
+  ArrowLeft,
+  Check,
+  CreditCard,
+  Shield,
   Zap,
   CheckCircle
 } from "lucide-react"
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/card"
 import { Footer } from "@/components/footer"
 import { Separator } from "@/components/ui/separator"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function UpgradePage() {
   const [user, setUser] = useState<User | null>(null)
@@ -32,113 +33,132 @@ export default function UpgradePage() {
   const [processingPayment, setProcessingPayment] = useState(false)
   const router = useRouter()
   const supabase = createClientComponentClient()
+  const { toast } = useToast()
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { session }, error } = await supabase.auth.getSession()
-      
+
       if (error || !session) {
         router.replace("/login")
         return
       }
-      
+
       setUser(session.user)
       setLoading(false)
     }
-    
+
     getUser()
   }, [router, supabase])
 
   const handleUpgrade = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to upgrade your account.",
+        variant: "destructive"
+      })
+      return
+    }
+
     setProcessingPayment(true)
-    
-    // Här skulle vi normalt sett integrera med ett betalningssystem som Stripe
-    // Men för demonstration simulerar vi en betalningsprocess
-    
+
     try {
-      // Simulera API-anrop för att ställa in prenumerationen
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Uppdatera användarprofilen med den nya prenumerationsstatusen
-      // I en riktig implementation skulle detta troligen hanteras av en webhook från betalningsleverantören
-      const { error } = await supabase
-        .from('profiles')
-        .update({ subscription_tier: 'pro' })
-        .eq('id', user?.id)
-      
-      if (error) throw error
-      
-      // Omdirigera till dashboard med ett framgångsmeddelande
-      router.push('/dashboard?upgraded=true')
+      // Create a Stripe checkout session
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId: 'price_1OxYzKLkswYnONGCpLrKFdnM', // Replace with your actual Stripe price ID
+          successUrl: `${window.location.origin}/dashboard?upgraded=true`,
+          cancelUrl: `${window.location.origin}/dashboard/upgrade?canceled=true`,
+          customerEmail: user.email
+        }),
+      })
+
+      const { url, error } = await response.json()
+
+      if (error) {
+        throw new Error(error)
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = url
     } catch (error) {
-      console.error('Uppgraderingsfel:', error)
+      console.error('Upgrade error:', error)
       setProcessingPayment(false)
-      // Här skulle vi visa ett felmeddelande
+      toast({
+        title: "Payment error",
+        description: "There was a problem processing your payment. Please try again.",
+        variant: "destructive"
+      })
     }
   }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-xl">Laddar...</div>
+        <div className="animate-pulse text-xl">Loading...</div>
       </div>
     )
   }
 
   const proFeatures = [
-    "Hantera upp till 10 sociala mediekonton",
-    "Avancerad statistik och insikter",
-    "AI-genererade innehållsförslag",
-    "Obegränsade inlägg",
-    "Schemaläggning av inlägg",
-    "Prioriterad support"
+    "Manage up to 10 social media accounts",
+    "Advanced analytics and insights",
+    "AI-generated content suggestions",
+    "Unlimited posts",
+    "Post scheduling",
+    "Priority support"
   ]
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center px-4 md:px-6">
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Tillbaka till dashboard
+            Back to dashboard
           </Link>
         </div>
       </header>
-      
+
       <main className="flex-1 py-12">
         <div className="container px-4 md:px-6">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12 animate-fade-in">
               <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4">
-                Uppgradera till Pro
+                Upgrade to Pro
               </h1>
               <p className="text-muted-foreground text-lg max-w-[600px] mx-auto">
-                Få tillgång till avancerade funktioner och obegränsade möjligheter för att maximera din närvaro på sociala medier.
+                Get access to advanced features and unlimited possibilities to maximize your social media presence.
               </p>
             </div>
-            
+
             <Card className="border-accent/50 animate-fade-in" style={{ animationDelay: '100ms' }}>
               <CardHeader className="text-center border-b pb-8">
                 <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
                   <Zap className="h-6 w-6 text-accent" />
                 </div>
-                <CardTitle className="text-2xl">Pro-plan</CardTitle>
+                <CardTitle className="text-2xl">Pro Plan</CardTitle>
                 <div className="mt-1 flex items-baseline justify-center">
-                  <span className="text-4xl font-bold">199 kr</span>
-                  <span className="ml-1 text-muted-foreground">/månad</span>
+                  <span className="text-4xl font-bold">$19.99</span>
+                  <span className="ml-1 text-muted-foreground">/month</span>
                 </div>
                 <CardDescription className="mt-3 flex items-center justify-center text-accent">
-                  <span className="font-medium">50% rabatt!</span>
-                  <span className="ml-2 text-muted-foreground line-through">Normalt: 398 kr/månad</span>
+                  <span className="font-medium">50% off!</span>
+                  <span className="ml-2 text-muted-foreground line-through">Normally: $39.99/month</span>
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="font-medium">Du får tillgång till:</div>
+                  <div className="font-medium">You'll get access to:</div>
                   <ul className="space-y-3">
                     {proFeatures.map((feature, index) => (
                       <li key={index} className="flex items-start">
@@ -148,51 +168,51 @@ export default function UpgradePage() {
                     ))}
                   </ul>
                 </div>
-                
+
                 <Separator className="my-6" />
-                
+
                 <div className="space-y-4">
-                  <div className="font-medium">Inkluderat i alla planer:</div>
+                  <div className="font-medium">Included in all plans:</div>
                   <div className="space-y-3">
                     <div className="flex items-center">
                       <Shield className="mr-2 h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm">14 dagars pengarna-tillbaka-garanti</span>
+                      <span className="text-sm">14-day money-back guarantee</span>
                     </div>
                     <div className="flex items-center">
                       <Check className="mr-2 h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm">Ingen bindningstid - avsluta när som helst</span>
+                      <span className="text-sm">No commitment - cancel anytime</span>
                     </div>
                     <div className="flex items-center">
                       <CreditCard className="mr-2 h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm">Säker betalning via kortbetalning eller faktura</span>
+                      <span className="text-sm">Secure payment via credit card or invoice</span>
                     </div>
                   </div>
                 </div>
               </CardContent>
-              
+
               <CardFooter className="border-t p-6 flex flex-col gap-4">
-                <Button 
+                <Button
                   className="w-full bg-accent hover:bg-accent/90 text-accent-foreground h-12 text-base"
                   onClick={handleUpgrade}
                   disabled={processingPayment}
                 >
-                  {processingPayment ? "Bearbetar betalning..." : "Uppgradera till Pro nu"}
+                  {processingPayment ? "Processing payment..." : "Upgrade to Pro now"}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  Genom att klicka på "Uppgradera" godkänner du våra <Link href="/terms" className="underline hover:text-foreground">användarvillkor</Link> och <Link href="/privacy" className="underline hover:text-foreground">integritetspolicy</Link>.
+                  By clicking "Upgrade" you agree to our <Link href="/terms" className="underline hover:text-foreground">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
                 </p>
               </CardFooter>
             </Card>
-            
+
             <div className="mt-8 text-center text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '200ms' }}>
               <p>
-                Har du frågor om våra planer? <Link href="/contact" className="text-primary hover:underline">Kontakta vårt team</Link>
+                Have questions about our plans? <Link href="/contact" className="text-primary hover:underline">Contact our team</Link>
               </p>
             </div>
           </div>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   )

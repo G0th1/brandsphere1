@@ -5,15 +5,15 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  
+
   if (code) {
     const cookieStore = cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    
-    // Utbyt koden mot session
+
+    // Exchange code for session
     await supabase.auth.exchangeCodeForSession(code);
   }
-  
-  // Omdirigera till dashboard efter inloggning
+
+  // Redirect to dashboard after login
   return NextResponse.redirect(new URL('/dashboard', request.url));
 } 
