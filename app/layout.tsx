@@ -4,6 +4,7 @@ import './globals.css'
 // Importera providers
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { AuthProvider } from '@/contexts/auth-context'
+import { LanguageProvider } from '@/contexts/language-context'
 
 // Konfigurera Inter font
 const inter = Inter({
@@ -49,7 +50,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

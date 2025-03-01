@@ -2,11 +2,45 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, X } from "lucide-react"
+import { Menu, X, Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/contexts/language-context"
+import { LanguageSwitcher } from "@/components/language-switcher"
+
+// Översättningar
+const translations = {
+  en: {
+    home: "Home",
+    features: "Features",
+    pricing: "Pricing",
+    blog: "Blog",
+    faq: "FAQ",
+    contact: "Contact",
+    dashboard: "Dashboard",
+    logout: "Log out",
+    login: "Log in",
+    signup: "Sign up",
+    closeMenu: "Close menu",
+    openMenu: "Open menu"
+  },
+  sv: {
+    home: "Hem",
+    features: "Funktioner",
+    pricing: "Priser",
+    blog: "Blogg",
+    faq: "Vanliga frågor",
+    contact: "Kontakt",
+    dashboard: "Instrumentpanel",
+    logout: "Logga ut",
+    login: "Logga in",
+    signup: "Registrera dig",
+    closeMenu: "Stäng meny",
+    openMenu: "Öppna meny"
+  }
+};
 
 interface MobileMenuProps {
   isAuthenticated?: boolean
@@ -16,6 +50,8 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
   const supabase = createClientComponentClient()
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const toggleMenu = () => setIsOpen(!isOpen)
   const closeMenu = () => setIsOpen(false)
@@ -27,12 +63,12 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
   }
 
   const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/features", label: "Features" },
-    { href: "/pricing", label: "Pricing" },
-    { href: "/blog", label: "Blog" },
-    { href: "/faq", label: "FAQ" },
-    { href: "/contact", label: "Contact" },
+    { href: "/", labelKey: "home" },
+    { href: "/features", labelKey: "features" },
+    { href: "/pricing", labelKey: "pricing" },
+    { href: "/blog", labelKey: "blog" },
+    { href: "/faq", labelKey: "faq" },
+    { href: "/contact", labelKey: "contact" },
   ]
 
   return (
@@ -42,7 +78,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
         size="icon"
         className="relative z-50"
         onClick={toggleMenu}
-        aria-label={isOpen ? "Close menu" : "Open menu"}
+        aria-label={isOpen ? t.closeMenu : t.openMenu}
       >
         {isOpen ? (
           <X className="h-5 w-5 animate-fade-in" />
@@ -67,12 +103,18 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
         )}
       >
         <div className="flex flex-col h-full p-6">
-          <div className="flex justify-end mb-8">
+          <div className="flex justify-between mb-8 items-center">
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher variant="ghost" />
+              <span className="text-sm font-medium">
+                {language === "en" ? "EN" : "SV"}
+              </span>
+            </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={closeMenu}
-              aria-label="Close menu"
+              aria-label={t.closeMenu}
             >
               <X className="h-5 w-5" />
             </Button>
@@ -88,7 +130,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <span className="relative z-10 animate-slide-in-from-right" style={{ animationDelay: `${index * 75}ms` }}>
-                  {link.label}
+                  {t[link.labelKey as keyof typeof t]}
                 </span>
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
               </Link>
@@ -107,7 +149,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
                     closeMenu()
                   }}
                 >
-                  Dashboard
+                  {t.dashboard}
                 </Button>
                 <Button
                   variant="outline"
@@ -115,7 +157,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
                   style={{ animationDelay: '500ms' }}
                   onClick={handleSignOut}
                 >
-                  Log out
+                  {t.logout}
                 </Button>
               </>
             ) : (
@@ -129,7 +171,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
                     closeMenu()
                   }}
                 >
-                  Log in
+                  {t.login}
                 </Button>
                 <Button
                   variant="outline"
@@ -140,7 +182,7 @@ export function MobileMenu({ isAuthenticated = false }: MobileMenuProps) {
                     closeMenu()
                   }}
                 >
-                  Sign up
+                  {t.signup}
                 </Button>
               </>
             )}

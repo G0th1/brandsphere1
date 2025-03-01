@@ -7,18 +7,47 @@ import { MobileMenu } from '@/components/mobile-menu'
 import { usePathname } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useEffect, useState } from 'react'
+import { useLanguage } from '@/contexts/language-context'
+import { LanguageSwitcher } from '@/components/language-switcher'
 
+// Översättningar
+const translations = {
+  en: {
+    features: "Features",
+    pricing: "Pricing",
+    blog: "Blog",
+    contact: "Contact",
+    dashboard: "Dashboard",
+    logout: "Log out",
+    login: "Log in",
+    signup: "Sign up"
+  },
+  sv: {
+    features: "Funktioner",
+    pricing: "Priser",
+    blog: "Blogg",
+    contact: "Kontakt",
+    dashboard: "Instrumentpanel",
+    logout: "Logga ut",
+    login: "Logga in",
+    signup: "Registrera dig"
+  }
+};
+
+// Navigeringslänkar
 const navLinks = [
-  { href: '/features', label: 'Features' },
-  { href: '/pricing', label: 'Pricing' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/contact', label: 'Contact' },
-]
+  { href: '/features', labelKey: 'features' },
+  { href: '/pricing', labelKey: 'pricing' },
+  { href: '/blog', labelKey: 'blog' },
+  { href: '/contact', labelKey: 'contact' },
+];
 
 export function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const supabase = createClientComponentClient()
   const pathname = usePathname()
+  const { language } = useLanguage();
+  const t = translations[language];
 
   useEffect(() => {
     const checkSession = async () => {
@@ -47,38 +76,42 @@ export function Navbar() {
               href={link.href}
               className="text-sm font-medium transition-colors hover:text-primary"
             >
-              {link.label}
+              {t[link.labelKey as keyof typeof t]}
             </Link>
           ))}
         </nav>
 
-        {isAuthenticated ? (
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/api/auth/signout">
-              <Button variant="outline" size="sm">
-                Log out
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm">
-                Sign up
-              </Button>
-            </Link>
-          </div>
-        )}
+        <div className="hidden md:flex items-center gap-4">
+          <LanguageSwitcher />
+
+          {isAuthenticated ? (
+            <>
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm">
+                  {t.dashboard}
+                </Button>
+              </Link>
+              <Link href="/api/auth/signout">
+                <Button variant="outline" size="sm">
+                  {t.logout}
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  {t.login}
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button size="sm">
+                  {t.signup}
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
 
         {/* Mobile Navigation */}
         <MobileMenu isAuthenticated={isAuthenticated} />
