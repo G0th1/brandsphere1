@@ -23,6 +23,8 @@ const supabaseAdmin = createClient(
   }
 );
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   const body = await request.text();
   const sig = headers().get('stripe-signature') || '';
@@ -45,17 +47,17 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        
+
         // Get customer and subscription details
         if (session.customer && session.subscription) {
           const customerId = session.customer.toString();
           const subscriptionId = session.subscription.toString();
-          
+
           // Get the full subscription object
           const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
             expand: ['items.data.price', 'customer'],
           });
-          
+
           // Update the user's subscription status in the database
           await updateUserSubscription(
             customerId,
@@ -64,32 +66,32 @@ export async function POST(request: Request) {
         }
         break;
       }
-      
+
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        
+
         // Retrieve the full subscription with expanded objects
         const fullSubscription = await stripe.subscriptions.retrieve(subscription.id, {
           expand: ['items.data.price', 'customer'],
         });
-        
+
         await updateUserSubscription(
           fullSubscription.customer.toString(),
           fullSubscription
         );
         break;
       }
-      
+
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        
+
         await deleteUserSubscription(
           subscription.customer.toString(),
           subscription.id
         );
         break;
       }
-      
+
       // Add more event handlers as needed
     }
 
@@ -115,16 +117,16 @@ async function updateUserSubscription(
       .select('id')
       .eq('stripe_customer_id', customerId)
       .limit(1);
-    
+
     if (userError || !users || users.length === 0) {
       console.error('Error finding user by customer ID:', userError);
       return;
     }
-    
+
     const userId = users[0].id;
     const priceId = subscription.items.data[0].price.id;
     const price = subscription.items.data[0].price;
-    
+
     // Update user subscription status
     await supabaseAdmin
       .from('users')
@@ -133,7 +135,7 @@ async function updateUserSubscription(
         subscription_status: subscription.status,
       })
       .eq('id', userId);
-    
+
     // Update or insert the detailed subscription information
     const { error: subError } = await supabaseAdmin
       .from('stripe_subscriptions')
@@ -157,7 +159,7 @@ async function updateUserSubscription(
           onConflict: 'stripe_subscription_id',
         }
       );
-    
+
     if (subError) {
       console.error('Error updating subscription details:', subError);
     }
@@ -179,7 +181,7 @@ async function deleteUserSubscription(
         subscription_status: 'canceled',
       })
       .eq('stripe_customer_id', customerId);
-    
+
     // Update the subscription record
     await supabaseAdmin
       .from('stripe_subscriptions')

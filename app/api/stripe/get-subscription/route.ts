@@ -7,12 +7,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16' as any, // Force type to solve linter error
 });
 
+// Förhindra statisk generering av denna route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     // Get customerId from the URL
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
-    
+
     if (!customerId) {
       return NextResponse.json(
         { error: 'Customer ID is required' },

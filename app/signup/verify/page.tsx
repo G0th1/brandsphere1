@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft, CheckCircle, Mail } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
@@ -23,12 +23,15 @@ export default function VerifyPage() {
   const { toast } = useToast()
 
   // Try to get the email from localStorage if it was saved during signup
-  useState(() => {
-    const storedEmail = localStorage.getItem("signupEmail")
-    if (storedEmail) {
-      setEmail(storedEmail)
+  useEffect(() => {
+    // Säkerställ att vi är i webbläsaren innan vi använder localStorage
+    if (typeof window !== "undefined") {
+      const storedEmail = localStorage.getItem("signupEmail")
+      if (storedEmail) {
+        setEmail(storedEmail)
+      }
     }
-  })
+  }, []) // Tom beroende-array för att köra endast vid montering
 
   const handleResendVerification = async () => {
     if (!email) {
