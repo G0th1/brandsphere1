@@ -1,231 +1,124 @@
 "use client";
 
-import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useToast } from '@/components/ui/use-toast';
-import SubscriptionService from '@/services/subscription-service';
+import React, { useEffect, useState } from "react"
+import { Navbar } from "@/components/navbar"
+import { Footer } from "@/components/footer"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { useLanguage } from "@/contexts/language-context"
+import { CheckCircle } from "lucide-react"
+import Link from "next/link"
 
-// Komponent för innehåll som använder useSearchParams
-function SuccessContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const supabase = createClientComponentClient();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [verificationSuccess, setVerificationSuccess] = useState(false);
-  
-  // Get the session_id from URL
-  const sessionId = searchParams.get('session_id');
-  
+const translations = {
+  en: {
+    title: "Payment Successful!",
+    subtitle: "Thank you for subscribing to BrandSphereAI",
+    welcomeMessage: "Welcome to the BrandSphereAI family!",
+    detailsHeader: "Your subscription details",
+    detailsInfo: "You will receive a confirmation email shortly with your subscription details.",
+    whatNow: "What happens now?",
+    nextSteps: [
+      "Your account has been upgraded with your new subscription.",
+      "You now have access to all the features in your plan.",
+      "Our team is ready to help you make the most of your subscription."
+    ],
+    dashboardButton: "Go to Dashboard",
+    supportMessage: "Need help? Our support team is ready to assist you.",
+    contactSupport: "Contact Support"
+  },
+  sv: {
+    title: "Betalningen lyckades!",
+    subtitle: "Tack för att du prenumererar på BrandSphereAI",
+    welcomeMessage: "Välkommen till BrandSphereAI-familjen!",
+    detailsHeader: "Din prenumerationsinformation",
+    detailsInfo: "Du kommer snart att få ett bekräftelsemail med dina prenumerationsuppgifter.",
+    whatNow: "Vad händer nu?",
+    nextSteps: [
+      "Ditt konto har uppgraderats med din nya prenumeration.",
+      "Du har nu tillgång till alla funktioner i din plan.",
+      "Vårt team är redo att hjälpa dig att få ut det mesta av din prenumeration."
+    ],
+    dashboardButton: "Gå till Dashboard",
+    supportMessage: "Behöver du hjälp? Vårt supportteam är redo att hjälpa dig.",
+    contactSupport: "Kontakta Support"
+  }
+};
+
+export default function SubscriptionSuccessPage() {
+  const { language } = useLanguage();
+  const t = translations[language as keyof typeof translations];
+  const [plan, setPlan] = useState<string | null>(null);
+
   useEffect(() => {
-    async function verifySubscription() {
-      try {
-        // First check if we have user logged in
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          setError('You need to be logged in to verify your subscription');
-          setLoading(false);
-          return;
-        }
-        
-        setUser(user);
-        
-        // Check if session ID exists
-        if (!sessionId) {
-          setError('No session ID provided');
-          setLoading(false);
-          return;
-        }
-        
-        // Here we would normally verify the checkout session with Stripe
-        // For this example, we'll just check if the session ID exists
-        if (sessionId) {
-          // In a real app, we'd make an API call to verify the session and activate subscription
-          // For this demo, we'll just wait 1 second to simulate the API call
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Update subscription status in user profile
-          try {
-            await SubscriptionService.getUserSubscription();
-            
-            toast({
-              title: "Subscription activated",
-              description: "Your Pro plan is now active",
-            });
-            
-            setVerificationSuccess(true);
-            setLoading(false);
-          } catch (error) {
-            console.error('Error updating subscription status:', error);
-            setError('An error occurred while updating your subscription');
-            setLoading(false);
-          }
-        } else {
-          setError('Invalid session');
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error verifying subscription:', error);
-        setError('An error occurred while verifying your subscription');
-        setLoading(false);
-      }
-    }
-    
-    verifySubscription();
-  }, [sessionId, supabase, toast]);
-  
-  // Handle case where there's no session ID
-  if (!sessionId && !loading) {
-    return (
-      <main className="flex-1 container mx-auto p-6">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Missing Information</CardTitle>
-            <CardDescription>
-              Session information is missing. Please try subscribing again.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button 
-              onClick={() => router.push('/dashboard/subscribe')}
-              className="w-full"
-            >
-              Back to Subscription Page
-            </Button>
-          </CardFooter>
-        </Card>
-      </main>
-    );
-  }
-  
-  // Show loading state
-  if (loading) {
-    return (
-      <main className="flex-1 container mx-auto p-6 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-lg">Verifying your subscription...</p>
-        </div>
-      </main>
-    );
-  }
-  
-  // Show error state
-  if (error) {
-    return (
-      <main className="flex-1 container mx-auto p-6">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Verification Error</CardTitle>
-            <CardDescription>
-              There was a problem verifying your subscription.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-destructive">{error}</p>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              onClick={() => router.push('/dashboard/subscribe')}
-              className="w-full"
-            >
-              Try Again
-            </Button>
-          </CardFooter>
-        </Card>
-      </main>
-    );
-  }
-  
-  // Show success state
+    // Här skulle vi kunna hämta information om prenumerationen från Stripe
+    // För demo-syften använder vi URL-parametrar
+    const url = new URL(window.location.href);
+    const plan = url.searchParams.get('plan') || 'Pro';
+    setPlan(plan);
+  }, []);
+
   return (
-    <main className="flex-1 container mx-auto p-6">
-      <Card className="max-w-lg mx-auto">
-        <CardHeader className="text-center pb-10">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <CardTitle className="text-2xl">Subscription Activated!</CardTitle>
-          <CardDescription className="text-base mt-2">
-            Thank you for subscribing to the Pro plan. Your account has been upgraded.
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="space-y-4">
-            <div className="rounded-lg bg-muted p-4">
-              <h3 className="font-medium mb-2">Next Steps</h3>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <span>Access premium features and generate unlimited content</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <span>Connect all your social media accounts</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <span>Schedule posts and manage your content calendar</span>
-                </li>
-              </ul>
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-1 py-12 px-4 md:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto text-center mb-8">
+          <div className="flex justify-center mb-6">
+            <CheckCircle className="h-16 w-16 text-green-500" />
+          </div>
+          <h1 className="text-4xl font-bold mb-2">{t.title}</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
+            {t.subtitle}
+          </p>
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 mb-8">
+            <p className="font-medium text-green-800 dark:text-green-300">
+              {t.welcomeMessage}
+            </p>
+          </div>
+        </div>
+
+        <Card className="p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">{t.detailsHeader}</h2>
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-1">
+              <p className="font-medium">Plan:</p>
+              <p>{plan}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="font-medium">Status:</p>
+              <p className="text-green-600 dark:text-green-400">Active</p>
             </div>
           </div>
-        </CardContent>
-        
-        <CardFooter className="flex flex-col sm:flex-row justify-between gap-4">
-          <Button 
-            className="w-full sm:w-auto"
-            onClick={() => router.push('/dashboard')}
-          >
-            Go to Dashboard
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            className="w-full sm:w-auto"
-            onClick={() => router.push('/dashboard/create')}
-          >
-            Create First Post
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      <div className="text-center mt-8 text-sm text-muted-foreground">
-        <p>Having trouble with your subscription? <Link href="/contact" className="text-primary underline">Contact our support team</Link></p>
-      </div>
-    </main>
-  );
-}
+          <p className="text-gray-600 dark:text-gray-400">{t.detailsInfo}</p>
+        </Card>
 
-// Loading fallback
-function SuccessLoading() {
-  return (
-    <main className="flex-1 container mx-auto p-6 flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-        <p className="mt-4 text-lg">Laddar prenumerationsinformation...</p>
-      </div>
-    </main>
-  );
-}
+        <Card className="p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">{t.whatNow}</h2>
+          <ul className="space-y-4">
+            {t.nextSteps.map((step, index) => (
+              <li key={index} className="flex items-start">
+                <span className="flex-shrink-0 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs mr-3 mt-0.5">
+                  {index + 1}
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
 
-// Huvudkomponenten med suspense wrapper
-export default function SubscriptionSuccessPage() {
-  return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <Suspense fallback={<SuccessLoading />}>
-        <SuccessContent />
-      </Suspense>
+        <div className="text-center">
+          <Button size="lg" asChild>
+            <Link href="/dashboard">{t.dashboardButton}</Link>
+          </Button>
+          <div className="mt-8">
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              {t.supportMessage}
+            </p>
+            <Button variant="outline" asChild>
+              <Link href="/contact">{t.contactSupport}</Link>
+            </Button>
+          </div>
+        </div>
+      </main>
       <Footer />
     </div>
   );
