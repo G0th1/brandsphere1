@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Language = 'en' | 'sv';
+export type Language = 'en' | 'sv';
 
 interface LanguageContextType {
     language: Language;
@@ -59,14 +59,14 @@ export function useLanguage() {
     return context;
 }
 
-// Funktion för att hämta översättningar baserat på språk
-export function getTranslation<T>(translations: Record<Language, T>): T {
-    // Client-side, använd kontexten
-    if (typeof window !== 'undefined') {
-        const { language } = useLanguage();
-        return translations[language];
-    }
+// Funktion för att hämta översättningar baserat på språk - client-side rendering
+export function useTranslation<T>(translations: Record<Language, T>): T {
+    const { language } = useLanguage();
+    return translations[language];
+}
 
-    // Server-side, använd standardspråket engelska
-    return translations.en;
+// Hjälpfunktion för server-komponenter eller utanför React-komponenter
+export function getTranslation<T>(translations: Record<Language, T>, defaultLanguage: Language = 'en'): T {
+    // För användning utanför React eller på serversidan
+    return translations[defaultLanguage];
 } 

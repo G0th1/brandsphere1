@@ -10,151 +10,199 @@ import { Card } from "@/components/ui/card"
 // Översättningar
 const translations = {
     en: {
-        title: "Join Our Team",
-        subtitle: "Build the future of social media marketing with us",
-        workWithUs: "Why Work With Us",
-        workWithUsSubtitle: "We're on a mission to transform how businesses utilize social media, and we need talented individuals to help us get there.",
-        benefits: "Benefits & Perks",
-        openPositions: "Open Positions",
+        title: "Collaboration Opportunities",
+        subtitle: "Join me in building the future of social media marketing",
+        workWithUs: "Why Collaborate With BrandSphereAI",
+        workWithUsSubtitle: "I'm on a mission to transform how businesses utilize social media, and I'm looking for passionate individuals to collaborate with.",
+        benefits: "Benefits of Collaboration",
+        openPositions: "Available Opportunities",
         apply: "Apply Now",
-        noPositions: "No open positions at the moment. Check back later or send us your resume!",
-        sendResume: "Send Your Resume",
+        noPositions: "No open positions at the moment. Check back later or send your resume!",
+        sendResume: "Contact Me",
         benefitsList: [
             {
                 title: "Flexible Work",
-                description: "Work from home, our office, or anywhere in between with our flexible work policy."
+                description: "Work from anywhere with a flexible schedule that fits your lifestyle."
             },
             {
-                title: "Competitive Salary",
-                description: "We offer competitive compensation packages including equity options."
+                title: "Competitive Compensation",
+                description: "Fair payment for your contributions based on your role and experience."
             },
             {
-                title: "Health Benefits",
-                description: "Comprehensive health, dental, and vision coverage for you and your dependents."
+                title: "Professional Growth",
+                description: "Gain valuable experience working with cutting-edge AI technology and social media marketing."
             },
             {
-                title: "Learning Budget",
-                description: "Annual budget for courses, books, and conferences to support your professional growth."
+                title: "Learning Opportunities",
+                description: "Access to resources and mentorship to support your professional development."
             },
             {
-                title: "Team Events",
-                description: "Regular team building activities, retreats, and social events."
+                title: "Be Part of Something New",
+                description: "Help shape an innovative product from its early stages and make a real impact."
             },
             {
                 title: "Work-Life Balance",
-                description: "We respect your time off and encourage a healthy work-life balance."
+                description: "I respect your time and encourage a healthy work-life balance."
             }
         ],
         positions: [
             {
-                title: "Senior Frontend Developer",
-                location: "Remote (EU Time Zone)",
-                type: "Full-time",
-                description: "We're looking for an experienced frontend developer to help build beautiful, responsive, and accessible user interfaces for our platform using React, Next.js, and TypeScript.",
+                title: "Brand Ambassador",
+                location: "Remote",
+                type: "Part-time / Flexible",
+                description: "Help spread the word about BrandSphereAI by representing the platform at events, on social media, and within your network. You'll be the face and voice of the brand to potential users.",
                 requirements: [
-                    "5+ years of experience with React and modern JavaScript",
-                    "Experience with Next.js, TypeScript, and TailwindCSS",
-                    "Strong understanding of web accessibility and performance optimization",
-                    "Excellent communication skills and ability to work in a remote team"
+                    "Strong presence on social media platforms",
+                    "Excellent communication and networking skills",
+                    "Passion for social media marketing and AI tools",
+                    "Ability to create engaging content about the platform"
                 ]
             },
             {
-                title: "AI/ML Engineer",
-                location: "Remote (EU Time Zone)",
-                type: "Full-time",
-                description: "Join our AI team to develop and improve the machine learning models that power our content generation, scheduling optimization, and engagement analysis features.",
+                title: "Content Creator",
+                location: "Remote",
+                type: "Project-based",
+                description: "Create high-quality blog posts, videos, tutorials, and social media content that showcases the features and benefits of BrandSphereAI to potential users.",
                 requirements: [
-                    "3+ years of experience in machine learning and natural language processing",
-                    "Proficiency in Python and ML frameworks (PyTorch, TensorFlow)",
-                    "Experience with large language models and content generation",
-                    "Knowledge of data processing and model deployment pipelines"
+                    "Experience creating marketing content for digital products",
+                    "Strong writing and/or video production skills",
+                    "Understanding of social media marketing concepts",
+                    "Ability to explain technical features in an accessible way"
                 ]
             },
             {
-                title: "Product Marketing Manager",
-                location: "Remote (EU Time Zone)",
-                type: "Full-time",
-                description: "Help us tell the world about our product! You'll work closely with the product and marketing teams to develop messaging, create content, and drive user adoption.",
+                title: "Beta Tester",
+                location: "Remote",
+                type: "Part-time / Flexible",
+                description: "Test new features before they're released to the public, provide feedback on user experience, and help identify and report bugs or usability issues.",
                 requirements: [
-                    "3+ years of experience in product marketing, preferably in SaaS or marketing tech",
-                    "Excellent writing and communication skills",
-                    "Experience with go-to-market strategies and product launches",
-                    "Understanding of social media marketing landscape"
+                    "Experience with social media management tools",
+                    "Attention to detail and analytical thinking",
+                    "Ability to provide clear, constructive feedback",
+                    "Interest in helping improve product usability"
+                ]
+            },
+            {
+                title: "Mentor/Advisor",
+                location: "Remote",
+                type: "Flexible",
+                description: "Share your expertise in areas such as AI, social media marketing, business development, or startup growth to help shape the strategic direction of BrandSphereAI.",
+                requirements: [
+                    "Significant experience in relevant industry (social media, AI, SaaS)",
+                    "Track record of success in your field",
+                    "Strategic thinking and problem-solving skills",
+                    "Willingness to provide honest guidance and feedback"
+                ]
+            },
+            {
+                title: "Student Intern",
+                location: "Remote",
+                type: "Part-time / Flexible",
+                description: "Gain real-world experience working on various aspects of a tech startup while contributing to the growth of BrandSphereAI through projects aligned with your skills and interests.",
+                requirements: [
+                    "Currently enrolled in a relevant degree program",
+                    "Basic understanding of digital marketing, development, or business",
+                    "Eagerness to learn and apply new skills",
+                    "Self-motivated with good time management skills"
                 ]
             }
         ]
     },
     sv: {
-        title: "Bli en del av vårt team",
-        subtitle: "Bygg framtidens sociala marknadsföring med oss",
-        workWithUs: "Varför arbeta med oss",
-        workWithUsSubtitle: "Vi har som uppdrag att förändra hur företag använder sociala medier, och vi behöver talangfulla individer för att hjälpa oss nå dit.",
-        benefits: "Förmåner",
-        openPositions: "Lediga tjänster",
+        title: "Samarbetsmöjligheter",
+        subtitle: "Hjälp mig bygga framtidens sociala marknadsföring",
+        workWithUs: "Varför samarbeta med BrandSphereAI",
+        workWithUsSubtitle: "Jag har som uppdrag att förändra hur företag använder sociala medier, och jag söker passionerade individer att samarbeta med.",
+        benefits: "Fördelar med samarbete",
+        openPositions: "Tillgängliga möjligheter",
         apply: "Ansök nu",
-        noPositions: "Inga lediga tjänster för tillfället. Kom tillbaka senare eller skicka in ditt CV!",
-        sendResume: "Skicka ditt CV",
+        noPositions: "Inga lediga möjligheter för tillfället. Kom tillbaka senare eller kontakta mig!",
+        sendResume: "Kontakta mig",
         benefitsList: [
             {
                 title: "Flexibelt arbete",
-                description: "Arbeta hemifrån, från vårt kontor eller var som helst däremellan med vår flexibla arbetspolicy."
+                description: "Arbeta varifrån du vill med ett flexibelt schema som passar din livsstil."
             },
             {
-                title: "Konkurrenskraftig lön",
-                description: "Vi erbjuder konkurrenskraftiga ersättningspaket inklusive optioner."
+                title: "Konkurrenskraftig ersättning",
+                description: "Rättvis betalning för dina bidrag baserat på din roll och erfarenhet."
             },
             {
-                title: "Hälsoförmåner",
-                description: "Omfattande sjukvårds-, tandvårds- och synundersökningsskydd för dig och dina anhöriga."
+                title: "Professionell utveckling",
+                description: "Få värdefull erfarenhet av att arbeta med toppmodern AI-teknik och marknadsföring i sociala medier."
             },
             {
-                title: "Utbildningsbudget",
-                description: "Årlig budget för kurser, böcker och konferenser för att stödja din professionella utveckling."
+                title: "Inlärningsmöjligheter",
+                description: "Tillgång till resurser och mentorskap för att stödja din professionella utveckling."
             },
             {
-                title: "Teamaktiviteter",
-                description: "Regelbundna teambuilding-aktiviteter, reträtter och sociala evenemang."
+                title: "Var del av något nytt",
+                description: "Hjälp till att forma en innovativ produkt från dess tidiga stadier och göra verklig skillnad."
             },
             {
                 title: "Balans mellan arbete och fritid",
-                description: "Vi respekterar din lediga tid och uppmuntrar en hälsosam balans mellan arbete och fritid."
+                description: "Jag respekterar din tid och uppmuntrar en hälsosam balans mellan arbete och fritid."
             }
         ],
         positions: [
             {
-                title: "Senior Frontend-utvecklare",
-                location: "Distans (EU-tidszon)",
-                type: "Heltid",
-                description: "Vi söker en erfaren frontend-utvecklare för att hjälpa till att bygga vackra, responsiva och tillgängliga användargränssnitt för vår plattform med React, Next.js och TypeScript.",
+                title: "Varumärkesambassadör",
+                location: "Distans",
+                type: "Deltid / Flexibel",
+                description: "Hjälp till att sprida ordet om BrandSphereAI genom att representera plattformen vid evenemang, på sociala medier och inom ditt nätverk. Du kommer att vara ansiktet och rösten för varumärket mot potentiella användare.",
                 requirements: [
-                    "5+ års erfarenhet med React och modern JavaScript",
-                    "Erfarenhet av Next.js, TypeScript och TailwindCSS",
-                    "God förståelse för webbtillgänglighet och prestandaoptimering",
-                    "Utmärkta kommunikationsförmågor och förmåga att arbeta i ett distansteam"
+                    "Stark närvaro på sociala medieplattformar",
+                    "Utmärkta kommunikations- och nätverksfärdigheter",
+                    "Passion för marknadsföring i sociala medier och AI-verktyg",
+                    "Förmåga att skapa engagerande innehåll om plattformen"
                 ]
             },
             {
-                title: "AI/ML-ingenjör",
-                location: "Distans (EU-tidszon)",
-                type: "Heltid",
-                description: "Gå med i vårt AI-team för att utveckla och förbättra de maskininlärningsmodeller som driver våra funktioner för innehållsgenerering, schemaläggningsoptimering och engagemangsanalys.",
+                title: "Innehållsskapare",
+                location: "Distans",
+                type: "Projektbaserad",
+                description: "Skapa högkvalitativa blogginlägg, videor, handledningar och innehåll för sociala medier som visar funktionerna och fördelarna med BrandSphereAI för potentiella användare.",
                 requirements: [
-                    "3+ års erfarenhet inom maskininlärning och naturlig språkbehandling",
-                    "Skicklighet i Python och ML-ramverk (PyTorch, TensorFlow)",
-                    "Erfarenhet av stora språkmodeller och innehållsgenerering",
-                    "Kunskap om databehandling och modellspridningspipelines"
+                    "Erfarenhet av att skapa marknadsföringsinnehåll för digitala produkter",
+                    "Starka skriv- och/eller videoproduktionsfärdigheter",
+                    "Förståelse för marknadsföringskoncept i sociala medier",
+                    "Förmåga att förklara tekniska funktioner på ett tillgängligt sätt"
                 ]
             },
             {
-                title: "Produktmarknadsföringschef",
-                location: "Distans (EU-tidszon)",
-                type: "Heltid",
-                description: "Hjälp oss berätta för världen om vår produkt! Du kommer att arbeta nära produkt- och marknadsföringsteamen för att utveckla budskap, skapa innehåll och driva användaracceptans.",
+                title: "Betatestare",
+                location: "Distans",
+                type: "Deltid / Flexibel",
+                description: "Testa nya funktioner innan de släpps till allmänheten, ge feedback om användarupplevelsen och hjälp till att identifiera och rapportera buggar eller användbarhetsproblem.",
                 requirements: [
-                    "3+ års erfarenhet inom produktmarknadsföring, helst inom SaaS eller marknadsföringsteknik",
-                    "Utmärkta skriv- och kommunikationsförmågor",
-                    "Erfarenhet av go-to-market-strategier och produktlanseringar",
-                    "Förståelse för sociala mediers marknadsföringslandskap"
+                    "Erfarenhet av hanteringsverktyg för sociala medier",
+                    "Uppmärksamhet på detaljer och analytiskt tänkande",
+                    "Förmåga att ge tydlig, konstruktiv feedback",
+                    "Intresse av att hjälpa till att förbättra produktens användbarhet"
+                ]
+            },
+            {
+                title: "Mentor/Rådgivare",
+                location: "Distans",
+                type: "Flexibel",
+                description: "Dela din expertis inom områden som AI, marknadsföring i sociala medier, affärsutveckling eller startup-tillväxt för att hjälpa till att forma den strategiska riktningen för BrandSphereAI.",
+                requirements: [
+                    "Betydande erfarenhet inom relevant bransch (sociala medier, AI, SaaS)",
+                    "Framgångshistorik inom ditt område",
+                    "Strategiskt tänkande och problemlösningsförmåga",
+                    "Vilja att ge ärlig vägledning och feedback"
+                ]
+            },
+            {
+                title: "Studentpraktikant",
+                location: "Distans",
+                type: "Deltid / Flexibel",
+                description: "Få verklig erfarenhet av att arbeta med olika aspekter av ett teknikstartup samtidigt som du bidrar till tillväxten av BrandSphereAI genom projekt som är anpassade efter dina färdigheter och intressen.",
+                requirements: [
+                    "För närvarande inskriven i ett relevant utbildningsprogram",
+                    "Grundläggande förståelse för digital marknadsföring, utveckling eller affärsverksamhet",
+                    "Iver att lära och tillämpa nya färdigheter",
+                    "Självmotiverad med god tidshantering"
                 ]
             }
         ]
@@ -193,41 +241,41 @@ export default function CareersPage() {
                                 </p>
                                 <p className="text-muted-foreground">
                                     {language === 'en'
-                                        ? "Our team is distributed across Europe, with a hybrid work culture that values autonomy, collaboration, and work-life balance. We're a diverse group of individuals passionate about technology, marketing, and creating tools that make our users' lives easier."
-                                        : "Vårt team är utspritt över Europa, med en hybridarbetskultur som värdesätter autonomi, samarbete och balans mellan arbete och fritid. Vi är en mångfaldig grupp individer som är passionerade inom teknik, marknadsföring och att skapa verktyg som gör våra användares liv enklare."}
+                                        ? "While BrandSphereAI is an individual venture, I believe in the power of collaboration to create something amazing. I'm looking for passionate individuals who share my vision and want to contribute their skills to help grow this platform into something that truly transforms how businesses approach social media."
+                                        : "Även om BrandSphereAI är ett individuellt projekt, tror jag på kraften i samarbete för att skapa något fantastiskt. Jag letar efter passionerade individer som delar min vision och vill bidra med sina färdigheter för att hjälpa till att utveckla denna plattform till något som verkligen förändrar hur företag närmar sig sociala medier."}
                                 </p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="aspect-square bg-muted/30 rounded-lg flex items-center justify-center p-6">
+                                <div className="aspect-square bg-muted/30 rounded-lg flex flex-col items-center justify-center p-6">
                                     <div className="text-5xl font-bold text-primary">
-                                        20+
+                                        1
                                     </div>
-                                    <div className="text-sm text-muted-foreground mt-2">
-                                        {language === 'en' ? "Team Members" : "Teammedlemmar"}
+                                    <div className="text-sm text-muted-foreground mt-2 text-center">
+                                        {language === 'en' ? "Dedicated Founder" : "Dedikerad grundare"}
                                     </div>
                                 </div>
-                                <div className="aspect-square bg-muted/30 rounded-lg flex items-center justify-center p-6">
+                                <div className="aspect-square bg-muted/30 rounded-lg flex flex-col items-center justify-center p-6">
                                     <div className="text-5xl font-bold text-primary">
-                                        8
+                                        5+
                                     </div>
-                                    <div className="text-sm text-muted-foreground mt-2">
-                                        {language === 'en' ? "Countries" : "Länder"}
+                                    <div className="text-sm text-muted-foreground mt-2 text-center">
+                                        {language === 'en' ? "Collaboration Roles" : "Samarbetsroller"}
                                     </div>
                                 </div>
-                                <div className="aspect-square bg-muted/30 rounded-lg flex items-center justify-center p-6">
-                                    <div className="text-5xl font-bold text-primary">
-                                        4
-                                    </div>
-                                    <div className="text-sm text-muted-foreground mt-2">
-                                        {language === 'en' ? "Years of Growth" : "År av tillväxt"}
-                                    </div>
-                                </div>
-                                <div className="aspect-square bg-muted/30 rounded-lg flex items-center justify-center p-6">
+                                <div className="aspect-square bg-muted/30 rounded-lg flex flex-col items-center justify-center p-6">
                                     <div className="text-5xl font-bold text-primary">
                                         100%
                                     </div>
-                                    <div className="text-sm text-muted-foreground mt-2">
+                                    <div className="text-sm text-muted-foreground mt-2 text-center">
                                         {language === 'en' ? "Remote Friendly" : "Distansvänligt"}
+                                    </div>
+                                </div>
+                                <div className="aspect-square bg-muted/30 rounded-lg flex flex-col items-center justify-center p-6">
+                                    <div className="text-5xl font-bold text-primary">
+                                        ∞
+                                    </div>
+                                    <div className="text-sm text-muted-foreground mt-2 text-center">
+                                        {language === 'en' ? "Growth Potential" : "Tillväxtpotential"}
                                     </div>
                                 </div>
                             </div>
@@ -270,8 +318,10 @@ export default function CareersPage() {
                                                     <span className="text-sm text-muted-foreground">{position.type}</span>
                                                 </div>
                                             </div>
-                                            <Button className="mt-4 md:mt-0">
-                                                {t.apply}
+                                            <Button className="mt-4 md:mt-0" asChild>
+                                                <Link href="/contact">
+                                                    {t.apply}
+                                                </Link>
                                             </Button>
                                         </div>
                                         <p className="text-muted-foreground mb-4">
@@ -307,16 +357,16 @@ export default function CareersPage() {
                     <div className="container px-4 md:px-6">
                         <div className="max-w-[800px] mx-auto text-center">
                             <h2 className="text-2xl font-bold tracking-tight mb-4">
-                                {language === 'en' ? "Don't see a position that fits?" : "Hittar du ingen position som passar?"}
+                                {language === 'en' ? "Have another way you'd like to collaborate?" : "Har du ett annat sätt du vill samarbeta på?"}
                             </h2>
                             <p className="text-muted-foreground mb-8">
                                 {language === 'en'
-                                    ? "We're always on the lookout for talented individuals. If you think you'd be a great addition to our team, we'd love to hear from you."
-                                    : "Vi letar alltid efter talangfulla individer. Om du tror att du skulle vara ett bra tillskott till vårt team vill vi gärna höra från dig."}
+                                    ? "I'm always open to creative collaboration ideas. If you have skills that could benefit BrandSphereAI in ways not listed above, I'd love to hear from you."
+                                    : "Jag är alltid öppen för kreativa samarbetsidéer. Om du har färdigheter som kan gynna BrandSphereAI på sätt som inte listas ovan, hör gärna av dig."}
                             </p>
                             <Button asChild>
                                 <Link href="/contact">
-                                    {language === 'en' ? "Get in Touch" : "Kontakta oss"}
+                                    {language === 'en' ? "Get in Touch" : "Kontakta mig"}
                                 </Link>
                             </Button>
                         </div>

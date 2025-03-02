@@ -11,8 +11,8 @@ const getBlogPosts = () => {
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://brandsphereai.se'
-  
+  const baseUrl = 'https://brandsphereai.com'
+
   // Statiska sidor med prioritet och uppdateringsfrekvens
   const staticPages = [
     {
@@ -29,6 +29,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/pricing`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/careers`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
       priority: 0.8,
@@ -52,25 +70,61 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/blog`,
+      url: `${baseUrl}/dashboard`,
       lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/roadmap`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/integrations`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/press`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/api-documentation`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/help-center`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/faq`,
       lastModified: new Date(),
-      changeFrequency: 'monthly' as const, 
+      changeFrequency: 'monthly' as const,
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/privacy`,
+      url: `${baseUrl}/gdpr`,
       lastModified: new Date(),
       changeFrequency: 'yearly' as const,
       priority: 0.2,
     },
+    {
+      url: `${baseUrl}/app-promote`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
   ]
-  
+
   // Dynamiska bloggsidor
   const blogPosts = getBlogPosts().map((post) => {
     return {
@@ -80,6 +134,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     }
   })
-  
-  return [...staticPages, ...blogPosts]
+
+  // Feature detail pages
+  const featureRoutes = [
+    `${baseUrl}/features/content-generation`,
+    `${baseUrl}/features/scheduling`,
+    `${baseUrl}/features/analytics`,
+    `${baseUrl}/features/collaboration`,
+    `${baseUrl}/features/ai-suggestions`,
+  ].map(route => ({
+    url: route,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticPages, ...blogPosts, ...featureRoutes]
 } 
