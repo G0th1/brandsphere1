@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import { Mail, MessageSquare } from "lucide-react"
+import { Mail, MessageSquare, Check, AlertCircle, ArrowRight, Loader2 } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Översättningar
 const translations = {
@@ -26,10 +27,18 @@ const translations = {
     subject: "Subject",
     message: "Message",
     sendMessage: "Send Message",
+    sending: "Sending...",
     privacy: "By submitting this form, you agree to our",
     privacyPolicy: "privacy policy",
     faqTitle: "Frequently Asked Questions",
     faqSubtitle: "Below you'll find answers to some common questions, but don't hesitate to contact us if you have further inquiries.",
+    requiredField: "This field is required",
+    invalidEmail: "Please enter a valid email address",
+    messageSent: "Message sent!",
+    messageSentDesc: "Thank you for contacting us. We'll get back to you as soon as possible.",
+    messageError: "Error sending message",
+    messageErrorDesc: "There was an error submitting your message. Please try again.",
+    viewAllFaqs: "View all FAQs",
     faqs: [
       {
         question: "How long does it take before you respond?",
@@ -62,10 +71,18 @@ const translations = {
     subject: "Ämne",
     message: "Meddelande",
     sendMessage: "Skicka meddelande",
+    sending: "Skickar...",
     privacy: "Genom att skicka detta formulär godkänner du vår",
     privacyPolicy: "integritetspolicy",
     faqTitle: "Vanliga frågor",
     faqSubtitle: "Nedan hittar du svar på några vanligt förekommande frågor, men tveka inte att kontakta oss om du har ytterligare funderingar.",
+    requiredField: "Detta fält är obligatoriskt",
+    invalidEmail: "Ange en giltig e-postadress",
+    messageSent: "Meddelande skickat!",
+    messageSentDesc: "Tack för att du kontaktar oss. Vi återkommer till dig så snart som möjligt.",
+    messageError: "Fel vid sändning av meddelandet",
+    messageErrorDesc: "Det uppstod ett fel när meddelandet skulle skickas. Vänligen försök igen.",
+    viewAllFaqs: "Se alla vanliga frågor",
     faqs: [
       {
         question: "Hur lång tid tar det innan ni svarar?",
@@ -87,9 +104,88 @@ const translations = {
   }
 };
 
+// Validera e-post
+const isValidEmail = (email: string) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 export default function ContactPage() {
   const { language } = useLanguage();
   const t = translations[language];
+
+  // Formulärtillstånd
+  const [formState, setFormState] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+
+  // Fel och statusar
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+
+  // Uppdatera formulärvärden
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormState(prev => ({ ...prev, [id]: value }));
+
+    // Rensa fel när användaren börjar skriva igen
+    if (errors[id]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[id];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validera formulär
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    // Kontrollera obligatoriska fält
+    if (!formState.firstName.trim()) newErrors.firstName = t.requiredField;
+    if (!formState.email.trim()) newErrors.email = t.requiredField;
+    else if (!isValidEmail(formState.email)) newErrors.email = t.invalidEmail;
+    if (!formState.message.trim()) newErrors.message = t.requiredField;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Hantera formulärinsändning
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validera först
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+
+    // Simulera API-anrop med setTimeout
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setSubmitStatus('success');
+
+      // Återställ formuläret vid framgång
+      if (Math.random() > 0.1) { // 90% chans för framgång
+        setFormState({
+          firstName: '',
+          lastName: '',
+          email: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        setSubmitStatus('error');
+      }
+    }, 1500);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -134,38 +230,104 @@ export default function ContactPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Status alerts */}
+                {submitStatus === 'success' && (
+                  <Alert className="bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-300">
+                    <Check className="h-4 w-4 stroke-green-600 dark:stroke-green-400" />
+                    <AlertTitle>{t.messageSent}</AlertTitle>
+                    <AlertDescription>{t.messageSentDesc}</AlertDescription>
+                  </Alert>
+                )}
+
+                {submitStatus === 'error' && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>{t.messageError}</AlertTitle>
+                    <AlertDescription>{t.messageErrorDesc}</AlertDescription>
+                  </Alert>
+                )}
               </div>
 
               <Card className="p-6 animate-fade-in" style={{ animationDelay: '200ms' }}>
-                <form className="space-y-6">
+                <form className="space-y-6" onSubmit={handleSubmit}>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="first-name">{t.firstName}</Label>
-                      <Input id="first-name" placeholder={t.firstName} />
+                      <Label htmlFor="firstName" className="flex items-center gap-1">
+                        {t.firstName} <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="firstName"
+                        value={formState.firstName}
+                        onChange={handleChange}
+                        placeholder={t.firstName}
+                        className={errors.firstName ? "border-red-500" : ""}
+                      />
+                      {errors.firstName && (
+                        <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="last-name">{t.lastName}</Label>
-                      <Input id="last-name" placeholder={t.lastName} />
+                      <Label htmlFor="lastName">{t.lastName}</Label>
+                      <Input
+                        id="lastName"
+                        value={formState.lastName}
+                        onChange={handleChange}
+                        placeholder={t.lastName}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">{t.emailAddress}</Label>
-                    <Input id="email" type="email" placeholder={language === 'en' ? "your@email.com" : "din@email.se"} />
+                    <Label htmlFor="email" className="flex items-center gap-1">
+                      {t.emailAddress} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formState.email}
+                      onChange={handleChange}
+                      placeholder={language === 'en' ? "your@email.com" : "din@email.se"}
+                      className={errors.email ? "border-red-500" : ""}
+                    />
+                    {errors.email && (
+                      <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="subject">{t.subject}</Label>
-                    <Input id="subject" placeholder={language === 'en' ? "What is your message about?" : "Vad gäller ditt meddelande?"} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="message">{t.message}</Label>
-                    <Textarea
-                      id="message"
-                      placeholder={language === 'en' ? "Write your message here..." : "Skriv ditt meddelande här..."}
-                      className="min-h-[150px]"
+                    <Input
+                      id="subject"
+                      value={formState.subject}
+                      onChange={handleChange}
+                      placeholder={language === 'en' ? "What is your message about?" : "Vad gäller ditt meddelande?"}
                     />
                   </div>
-                  <Button type="submit" className="w-full">
-                    {t.sendMessage}
+                  <div className="space-y-2">
+                    <Label htmlFor="message" className="flex items-center gap-1">
+                      {t.message} <span className="text-red-500">*</span>
+                    </Label>
+                    <Textarea
+                      id="message"
+                      value={formState.message}
+                      onChange={handleChange}
+                      placeholder={language === 'en' ? "Write your message here..." : "Skriv ditt meddelande här..."}
+                      className={`min-h-[150px] ${errors.message ? "border-red-500" : ""}`}
+                    />
+                    {errors.message && (
+                      <p className="text-red-500 text-xs mt-1">{errors.message}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t.sending}
+                      </>
+                    ) : t.sendMessage}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center mt-4">
                     {t.privacy}{" "}
@@ -189,11 +351,17 @@ export default function ContactPage() {
               </p>
               <div className="grid gap-6 md:grid-cols-2 text-left">
                 {t.faqs.map((faq, index) => (
-                  <div key={index} className="p-4 rounded-lg bg-card border">
+                  <div key={index} className="p-5 rounded-lg bg-card border hover:shadow-md transition-shadow duration-200">
                     <h3 className="font-medium mb-2">{faq.question}</h3>
                     <p className="text-sm text-muted-foreground">{faq.answer}</p>
                   </div>
                 ))}
+              </div>
+              <div className="mt-8">
+                <Button variant="outline" className="gap-2">
+                  {t.viewAllFaqs}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -202,5 +370,5 @@ export default function ContactPage() {
 
       <Footer />
     </div>
-  );
+  )
 } 
