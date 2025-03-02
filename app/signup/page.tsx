@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Eye, EyeOff, ArrowRight, Github } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -70,27 +69,6 @@ export default function Signup() {
     }
   };
 
-  const handleOAuthSignUp = async (provider: 'github') => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
-      });
-
-      if (error) setError(error.message);
-    } catch (error) {
-      console.error("OAuth-fel:", error);
-      setError("Ett fel uppstod vid registrering. Försök igen.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-4 py-8">
       <Link
@@ -111,28 +89,6 @@ export default function Signup() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            variant="outline"
-            className="w-full"
-            type="button"
-            disabled={loading}
-            onClick={() => handleOAuthSignUp('github')}
-          >
-            <Github className="mr-2 h-4 w-4" />
-            Register with Github
-          </Button>
-
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <Separator />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                Or with email
-              </span>
-            </div>
-          </div>
-
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-post</Label>
