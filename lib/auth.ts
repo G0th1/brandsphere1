@@ -2,13 +2,12 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import EmailProvider from "next-auth/providers/email";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { compare } from "bcrypt";
-
-const prisma = new PrismaClient();
+import { sendVerificationRequest } from "./email";
 
 export const authOptions: NextAuthOptions = {
-    adapter: PrismaAdapter(prisma) as any,
+    adapter: PrismaAdapter(db) as any,
     session: {
         strategy: "jwt",
     },
@@ -29,7 +28,8 @@ export const authOptions: NextAuthOptions = {
                     pass: process.env.EMAIL_SERVER_PASSWORD,
                 },
             },
-            from: process.env.EMAIL_FROM,
+            from: process.env.EMAIL_FROM || "noreply@brandsphereai.com",
+            sendVerificationRequest,
         }),
         CredentialsProvider({
             name: "credentials",
@@ -42,7 +42,7 @@ export const authOptions: NextAuthOptions = {
                     return null;
                 }
 
-                const user = await prisma.user.findUnique({
+                const user = await db.user.findUnique({
                     where: {
                         email: credentials.email,
                     },
@@ -70,8 +70,8 @@ export const authOptions: NextAuthOptions = {
         async session({ session, token }) {
             if (token) {
                 session.user.id = token.id as string;
-                session.user.name = token.name;
-                session.user.email = token.email;
+                session.user.name = token.name as string | null;
+                session.user.email = token.email as string;
             }
 
             return session;

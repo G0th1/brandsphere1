@@ -1,107 +1,189 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { headers } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Stripe with the secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16' as any, // Force type to solve linter error
-});
-
-// Webhook secret from Stripe dashboard
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
-
-// Initialize Supabase Admin client for direct database access
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+import { stripe } from "@/lib/stripe";
+import { db } from "@/lib/db";
+import Stripe from "stripe";
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: Request) {
-  const body = await request.text();
-  const sig = headers().get('stripe-signature') || '';
+export async function POST(req: Request) {
+  const body = await req.text();
+  const signature = headers().get("stripe-signature");
 
-  let event: Stripe.Event;
-
-  try {
-    // Verify the webhook signature
-    event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
-  } catch (error) {
-    console.error('Webhook signature verification failed:', error);
-    return NextResponse.json(
-      { error: 'Webhook signature verification failed' },
-      { status: 400 }
-    );
+  if (!signature) {
+    return new NextResponse("Saknad Stripe-signatur", { status: 400 });
   }
 
-  // Handle the event
+  let event: Stripe.Event;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  try {
+    if (!webhookSecret) {
+      throw new Error("Stripe webhook-nyckel saknas");
+    }
+
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (error: any) {
+    console.error(`Webhook-fel: ${error.message}`);
+    return new NextResponse(`Webhook-fel: ${error.message}`, { status: 400 });
+  }
+
   try {
     switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+      // Ny prenumeration skapad
+      case "checkout.session.completed": {
+        const checkoutSession = event.data.object as Stripe.Checkout.Session;
+        if (checkoutSession.mode === "subscription") {
+          const subscriptionId = checkoutSession.subscription as string;
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const customerId = checkoutSession.customer as string;
+          const userId = checkoutSession.metadata?.userId;
+          const plan = checkoutSession.metadata?.plan;
+          const billingCycle = checkoutSession.metadata?.billingCycle || "monthly";
 
-        // Get customer and subscription details
-        if (session.customer && session.subscription) {
-          const customerId = session.customer.toString();
-          const subscriptionId = session.subscription.toString();
-
-          // Get the full subscription object
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-            expand: ['items.data.price', 'customer'],
-          });
-
-          // Update the user's subscription status in the database
-          await updateUserSubscription(
-            customerId,
-            subscription
-          );
+          if (userId && plan) {
+            await db.subscription.upsert({
+              where: { userId },
+              update: {
+                stripeSubscriptionId: subscriptionId,
+                stripeCustomerId: customerId,
+                stripePriceId: subscription.items.data[0]?.price.id,
+                stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                plan,
+                status: "active",
+                billingCycle: billingCycle as "monthly" | "annually",
+              },
+              create: {
+                userId,
+                stripeSubscriptionId: subscriptionId,
+                stripeCustomerId: customerId,
+                stripePriceId: subscription.items.data[0]?.price.id,
+                stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                plan,
+                status: "active",
+                billingCycle: billingCycle as "monthly" | "annually",
+              },
+            });
+          }
         }
         break;
       }
 
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
+      // Prenumerationen uppdaterad (t.ex. uppgradering/nedgradering)
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subscriptionId = invoice.subscription as string;
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const customerId = invoice.customer as string;
 
-        // Retrieve the full subscription with expanded objects
-        const fullSubscription = await stripe.subscriptions.retrieve(subscription.id, {
-          expand: ['items.data.price', 'customer'],
-        });
+        // Hitta användaren från Stripe-kundens metadata
+        const stripeCustomer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        const userId = stripeCustomer.metadata?.userId;
 
-        await updateUserSubscription(
-          fullSubscription.customer.toString(),
-          fullSubscription
-        );
+        if (userId && subscription.status === "active") {
+          // Hitta prisinformation
+          const priceId = subscription.items.data[0]?.price.id;
+          let plan = "Pro"; // Default
+
+          // Identifiera planen baserad på metadata eller prissättning
+          if (subscription.metadata?.plan) {
+            plan = subscription.metadata.plan;
+          }
+
+          // Identifiera faktureringsperioden
+          const interval = subscription.items.data[0]?.price.recurring?.interval;
+          const billingCycle = interval === "year" ? "annually" : "monthly";
+
+          await db.subscription.update({
+            where: { userId },
+            data: {
+              stripePriceId: priceId,
+              stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              plan,
+              status: "active",
+              billingCycle,
+            },
+          });
+        }
         break;
       }
 
-      case 'customer.subscription.deleted': {
+      // Prenumerationen avslutad
+      case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
 
-        await deleteUserSubscription(
-          subscription.customer.toString(),
-          subscription.id
-        );
+        // Hitta användaren från Stripe-kunden
+        const stripeCustomer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        const userId = stripeCustomer.metadata?.userId;
+
+        if (userId) {
+          await db.subscription.update({
+            where: { userId },
+            data: {
+              status: "canceled",
+              stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            },
+          });
+        }
         break;
       }
 
-      // Add more event handlers as needed
+      // Prenumerationen uppdaterad
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+
+        // Hitta användaren från Stripe-kunden
+        const stripeCustomer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        const userId = stripeCustomer.metadata?.userId;
+
+        if (userId) {
+          if (subscription.status === "active") {
+            await db.subscription.update({
+              where: { userId },
+              data: {
+                stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                status: "active",
+              },
+            });
+          } else if (subscription.status === "canceled") {
+            // Prenumerationen avbryts vid slutet av perioden
+            await db.subscription.update({
+              where: { userId },
+              data: {
+                status: "canceled",
+                stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              },
+            });
+          } else if (
+            ["unpaid", "past_due", "incomplete", "incomplete_expired"].includes(subscription.status)
+          ) {
+            // Prenumerationen har betalningsproblem
+            await db.subscription.update({
+              where: { userId },
+              data: {
+                status: subscription.status === "unpaid"
+                  ? "unpaid"
+                  : subscription.status === "past_due"
+                    ? "past_due"
+                    : "inactive",
+                stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              },
+            });
+          }
+        }
+        break;
+      }
+
+      default:
+        console.log(`Ohanterad event-typ: ${event.type}`);
     }
 
-    return NextResponse.json({ received: true });
+    return new NextResponse(null, { status: 200 });
   } catch (error) {
-    console.error('Error handling webhook event:', error);
-    return NextResponse.json(
-      { error: 'Error handling webhook event' },
-      { status: 500 }
-    );
+    console.error("Webhook-fel:", error);
+    return new NextResponse("Internt serverfel", { status: 500 });
   }
 }
 
