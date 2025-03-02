@@ -71,9 +71,14 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="bg-zinc-900 p-3">
-                  <div className="border border-zinc-700 rounded bg-zinc-800 h-[400px] flex items-center justify-center">
-                    <p className="text-white text-lg">Dashboard-skärmbild</p>
-                  </div>
+                  <Image
+                    src="/images/dashboard-demo.gif"
+                    alt={t.hero.dashboardAlt || "BrandSphereAI Dashboard Demo"}
+                    width={1200}
+                    height={675}
+                    className="rounded border border-zinc-700 w-full h-auto"
+                    priority
+                  />
                 </div>
               </div>
 

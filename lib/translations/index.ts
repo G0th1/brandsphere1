@@ -118,6 +118,7 @@ export const homeTranslations: Translations<{
         freeTrial: string;
         noCardRequired: string;
         cancelAnytime: string;
+        dashboardAlt: string;
     };
     features: {
         title: string;
@@ -150,6 +151,7 @@ export const homeTranslations: Translations<{
             freeTrial: 'Free Trial',
             noCardRequired: 'No Credit Card Required',
             cancelAnytime: 'Cancel Anytime',
+            dashboardAlt: 'BrandSphereAI Dashboard Demo',
         },
         features: {
             title: 'Everything you need to succeed on social media',
@@ -200,9 +202,10 @@ export const homeTranslations: Translations<{
             subtitle: 'Spara tid och skapa bättre innehåll med vår intelligenta plattform för sociala medier.',
             getStarted: 'Kom igång gratis',
             viewPricing: 'Visa priser',
-            freeTrial: 'Gratis testperiod',
+            freeTrial: 'Gratis provperiod',
             noCardRequired: 'Ingen kreditkort krävs',
             cancelAnytime: 'Avsluta när som helst',
+            dashboardAlt: 'BrandSphereAI Kontrollpanel Demo',
         },
         features: {
             title: 'Allt du behöver för att lyckas på sociala medier',
