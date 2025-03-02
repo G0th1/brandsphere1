@@ -19,6 +19,7 @@ export const metadata = {
   keywords: 'AI, sociala medier, innehållsplanering, schemaläggning, innehållsanalys',
   authors: [{ name: 'BrandSphereAI Team' }],
   creator: 'BrandSphereAI',
+  metadataBase: new URL('https://brandsphereai.com'),
   openGraph: {
     type: 'website',
     locale: 'sv_SE',

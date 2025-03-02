@@ -7,17 +7,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ChevronDown } from "lucide-react"
-import { Metadata } from "next"
 import { useLanguage } from "@/contexts/language-context"
-
-export const metadata: Metadata = {
-  title: 'Vanliga frågor | BrandSphereAI',
-  description: 'Hitta svar på de vanligaste frågorna om BrandSphereAI, våra tjänster, priser och hur du kommer igång.',
-  openGraph: {
-    title: 'Vanliga frågor | BrandSphereAI',
-    description: 'Hitta svar på de vanligaste frågorna om BrandSphereAI, våra tjänster och hur du kommer igång.'
-  }
-};
 
 // Översättningar och FAQ-data
 const translations = {

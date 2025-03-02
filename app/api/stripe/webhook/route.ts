@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 import Stripe from "stripe";
 
 export const dynamic = 'force-dynamic';

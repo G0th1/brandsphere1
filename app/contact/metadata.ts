@@ -4,6 +4,7 @@ export const metadata: Metadata = {
   title: 'Kontakta oss | BrandSphereAI',
   description: 'Har du frågor eller funderingar? Kontakta oss på BrandSphereAI för support, försäljning eller för att boka en demo av vår AI-drivna plattform för sociala medier.',
   keywords: ['kontakta BrandSphereAI', 'sociala medier support', 'AI-plattform för innehållsskapande', 'kontaktformulär'],
+  metadataBase: new URL('https://brandsphereai.com'),
   openGraph: {
     title: 'Kontakta oss | BrandSphereAI',
     description: 'Har du frågor eller funderingar? Kontakta oss på BrandSphereAI för support, försäljning eller för att boka en demo av vår AI-drivna plattform för sociala medier.',

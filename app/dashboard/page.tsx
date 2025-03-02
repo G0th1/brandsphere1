@@ -8,7 +8,7 @@ import Link from "next/link"
 import {
   Calendar,
   BarChart3,
-  FilePenLine,
+  FileEdit,
   PlusCircle,
   Instagram,
   Twitter,
@@ -206,7 +206,7 @@ export default function DashboardPage() {
     {
       title: t.totalPosts,
       value: subscription === 'pro' ? "87" : "12",
-      icon: FilePenLine,
+      icon: FileEdit,
       description: t.last30Days,
     },
     {
