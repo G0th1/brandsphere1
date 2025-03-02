@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { CalendarIcon, Clock, ImagePlus, Link as LinkIcon, Send, Save, Calendar } from 'lucide-react'
+import { CalendarIcon, Clock, ImagePlus, Link as LinkIcon, Send, Save, Calendar, Facebook, Youtube } from 'lucide-react'
 import { useTranslation } from '@/contexts/language-context'
 import type { Language } from '@/contexts/language-context'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -39,7 +39,7 @@ const createPostTranslations = {
         timezone: 'Timezone: ',
         saveDraft: 'Save Draft',
         publish: 'Publish',
-        schedule: 'Schedule',
+        scheduleButton: 'Schedule',
         preview: 'Preview',
         settings: 'Settings',
     },
@@ -64,7 +64,7 @@ const createPostTranslations = {
         timezone: 'Tidszon: ',
         saveDraft: 'Spara utkast',
         publish: 'Publicera',
-        schedule: 'Schemalägg',
+        scheduleButton: 'Schemalägg',
         preview: 'Förhandsgranska',
         settings: 'Inställningar',
     },
@@ -236,7 +236,7 @@ export default function CreatePostPage() {
                                 ) : (
                                     <Button>
                                         <Calendar className="mr-2 h-4 w-4" />
-                                        {t.schedule}
+                                        {t.scheduleButton}
                                     </Button>
                                 )}
                             </div>
