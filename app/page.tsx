@@ -72,7 +72,7 @@ export default function HomePage() {
                 </div>
                 <div className="bg-zinc-900 p-3">
                   <Image
-                    src="/images/dashboard-demo.gif"
+                    src="/images/Brandsphere AI – Gjord med Clipchamp.gif"
                     alt={t.hero.dashboardAlt || "BrandSphereAI Dashboard Demo"}
                     width={1200}
                     height={675}

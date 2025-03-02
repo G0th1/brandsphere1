@@ -56,7 +56,7 @@ export function Navbar() {
         <div className="flex items-center gap-6 md:gap-8 lg:gap-10">
           <Link href="/" className="flex items-center space-x-2">
             <Image
-              src="/logo.png"
+              src="/images/image_2025-03-02_212020748 (1).png"
               alt="BrandSphereAI Logo"
               width={32}
               height={32}
