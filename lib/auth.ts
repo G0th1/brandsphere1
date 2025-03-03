@@ -139,10 +139,7 @@ export const authOptions: NextAuthOptions = {
         },
         async signOut(message) {
             console.log('Sign out event:', message);
-        },
-        async error(message) {
-            console.error('Auth error:', message);
-        },
+        }
     },
     cookies: {
         sessionToken: {
