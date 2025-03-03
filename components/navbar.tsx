@@ -95,7 +95,7 @@ export function Navbar() {
             </div>
           ) : (
             <div className="hidden md:flex gap-2">
-              <Link href="/login">
+              <Link href="/auth/login">
                 <Button variant="ghost" size="sm">
                   {t.navigation.login}
                 </Button>

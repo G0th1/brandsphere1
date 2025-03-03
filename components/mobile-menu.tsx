@@ -103,7 +103,7 @@ export function MobileMenu({ isAuthenticated = false, onLogout }: MobileMenuProp
                   </>
                 ) : (
                   <>
-                    <Link href="/login" onClick={closeMenu}>
+                    <Link href="/auth/login" onClick={closeMenu}>
                       <Button className="w-full" variant="outline" size="lg">
                         {t.navigation.login}
                       </Button>
