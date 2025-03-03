@@ -112,20 +112,36 @@ export const authOptions: NextAuthOptions = {
             return token;
         },
         async signIn({ user, account, profile }) {
-            if (account?.provider === 'google') {
-                try {
+            try {
+                if (account?.provider === 'google') {
                     const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
                         headers: {
                             Authorization: `Bearer ${account.access_token}`,
                         },
                     });
-                    return response.ok;
-                } catch (error) {
-                    console.error('YouTube API error:', error);
-                    return false;
+
+                    if (!response.ok) {
+                        console.error('YouTube API error:', await response.text());
+                        return false;
+                    }
+                    return true;
                 }
+                return true;
+            } catch (error) {
+                console.error('Sign in error:', error);
+                return false;
             }
-            return true;
+        },
+    },
+    events: {
+        async signIn(message) {
+            console.log('Sign in event:', message);
+        },
+        async signOut(message) {
+            console.log('Sign out event:', message);
+        },
+        async error(message) {
+            console.error('Auth error:', message);
         },
     },
     cookies: {

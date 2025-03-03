@@ -25,12 +25,19 @@ const translations = {
         createAccount: "Create an account",
         forgotPassword: "Forgot password?",
         errors: {
+            title: "Authentication Error",
             default: "Something went wrong. Please try again.",
             credentialsSignin: "Invalid login credentials.",
             emailSignin: "Could not send verification email. Please try again.",
             facebookSignin: "Could not sign in with Facebook. Please try again.",
             googleSignin: "Could not sign in with Google. Please make sure you have access to YouTube.",
-            youtubeAccess: "YouTube access is required. Please make sure you have a YouTube account connected to your Google account."
+            youtubeAccess: "YouTube access is required. Please make sure you have a YouTube account connected to your Google account.",
+            emailCreateAccount: "Could not create account. Please try again.",
+            callback: "Could not complete authentication. Please try again.",
+            oauthAccountNotLinked: "This account is not linked to any existing account. Please sign in with the correct provider.",
+            sessionRequired: "Please sign in to access this page.",
+            oauthCallback: "Could not complete authentication. Please try again.",
+            oauthCreateAccount: "Could not create account. Please try again."
         },
         loading: "Please wait...",
         success: "Check your email for the login link!",
@@ -41,7 +48,7 @@ const translations = {
     },
     sv: {
         title: "Logga in på ditt konto",
-        description: "Ange din e-post nedan för att logga in på ditt konto",
+        description: "Ange din e-postadress nedan för att logga in på ditt konto",
         emailLabel: "E-postadress",
         passwordLabel: "Lösenord",
         magicLinkTab: "Magisk länk",
@@ -51,15 +58,22 @@ const translations = {
         createAccount: "Skapa ett konto",
         forgotPassword: "Glömt lösenord?",
         errors: {
-            default: "Något gick fel. Försök igen.",
+            title: "Autentiseringsfel",
+            default: "Något gick fel. Vänligen försök igen.",
             credentialsSignin: "Ogiltiga inloggningsuppgifter.",
-            emailSignin: "Kunde inte skicka verifieringsmejl. Försök igen.",
-            facebookSignin: "Kunde inte logga in med Facebook. Försök igen.",
+            emailSignin: "Kunde inte skicka verifieringsmail. Vänligen försök igen.",
+            facebookSignin: "Kunde inte logga in med Facebook. Vänligen försök igen.",
             googleSignin: "Kunde inte logga in med Google. Kontrollera att du har tillgång till YouTube.",
-            youtubeAccess: "YouTube-åtkomst krävs. Kontrollera att du har ett YouTube-konto kopplat till ditt Google-konto."
+            youtubeAccess: "YouTube-åtkomst krävs. Kontrollera att du har ett YouTube-konto kopplat till ditt Google-konto.",
+            emailCreateAccount: "Kunde inte skapa konto. Vänligen försök igen.",
+            callback: "Kunde inte slutföra autentiseringen. Vänligen försök igen.",
+            oauthAccountNotLinked: "Detta konto är inte kopplat till något befintligt konto. Vänligen logga in med rätt leverantör.",
+            sessionRequired: "Vänligen logga in för att komma åt denna sida.",
+            oauthCallback: "Kunde inte slutföra autentiseringen. Vänligen försök igen.",
+            oauthCreateAccount: "Kunde inte skapa konto. Vänligen försök igen."
         },
-        loading: "Vänta...",
-        success: "Kolla din e-post efter inloggningslänken!",
+        loading: "Vänligen vänta...",
+        success: "Kontrollera din e-post för inloggningslänken!",
         socialLogin: "Eller fortsätt med",
         facebookLogin: "Fortsätt med Facebook",
         googleLogin: "Fortsätt med Google",
@@ -139,24 +153,50 @@ export default function LoginPage() {
 
             if (result?.error) {
                 let errorMessage = t.errors.default;
-                if (result.error === "AccessDenied") {
-                    errorMessage = t.errors.youtubeAccess;
-                } else if (result.error === "OAuthSignin") {
-                    errorMessage = provider === "facebook"
-                        ? t.errors.facebookSignin
-                        : t.errors.googleSignin;
+                switch (result.error) {
+                    case 'OAuthSignin':
+                        errorMessage = t.errors[`${provider}Signin` as keyof typeof t.errors];
+                        break;
+                    case 'OAuthCallback':
+                        errorMessage = t.errors[`${provider}Callback` as keyof typeof t.errors];
+                        break;
+                    case 'OAuthCreateAccount':
+                        errorMessage = t.errors[`${provider}CreateAccount` as keyof typeof t.errors];
+                        break;
+                    case 'EmailCreateAccount':
+                        errorMessage = t.errors.emailCreateAccount;
+                        break;
+                    case 'Callback':
+                        errorMessage = t.errors.callback;
+                        break;
+                    case 'OAuthAccountNotLinked':
+                        errorMessage = t.errors.oauthAccountNotLinked;
+                        break;
+                    case 'EmailSignin':
+                        errorMessage = t.errors.emailSignin;
+                        break;
+                    case 'CredentialsSignin':
+                        errorMessage = t.errors.credentialsSignin;
+                        break;
+                    case 'SessionRequired':
+                        errorMessage = t.errors.sessionRequired;
+                        break;
+                    default:
+                        errorMessage = t.errors.default;
                 }
-                throw new Error(errorMessage);
-            }
-
-            if (result?.url) {
+                toast({
+                    title: t.errors.title,
+                    description: errorMessage,
+                    variant: "destructive",
+                });
+            } else if (result?.url) {
                 router.push(result.url);
             }
         } catch (error) {
-            console.error("Social sign in error:", error);
+            console.error('Social sign in error:', error);
             toast({
-                title: "Inloggningsfel",
-                description: error instanceof Error ? error.message : t.errors.default,
+                title: t.errors.title,
+                description: t.errors.default,
                 variant: "destructive",
             });
         } finally {

@@ -21,7 +21,7 @@ const nextConfig = {
               script-src 'self' 'unsafe-inline' 'unsafe-eval' plausible.io;
               style-src 'self' 'unsafe-inline';
               img-src 'self' blob: data: https:;
-              connect-src 'self' https://plausible.io https://*.supabase.co https://*.upstash.io;
+              connect-src 'self' https://plausible.io https://*.supabase.co https://*.upstash.io https://*.googleapis.com https://*.facebook.com https://*.facebook.net;
               frame-ancestors 'none';
             `.replace(/\s+/g, ' ').trim()
           },
