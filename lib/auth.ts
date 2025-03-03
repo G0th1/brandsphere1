@@ -6,6 +6,30 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
 import { sendVerificationRequest } from "./email";
 
+// Definiera utökade typer för session och token
+declare module "next-auth" {
+    interface Session {
+        user: {
+            id: string;
+            name: string | null;
+            email: string;
+            image?: string | null;
+            youtubeAccess?: boolean;
+        }
+    }
+}
+
+declare module "next-auth/jwt" {
+    interface JWT {
+        sub: string;
+        name?: string | null;
+        email?: string;
+        picture?: string | null;
+        provider?: string;
+        youtubeAccess?: boolean;
+    }
+}
+
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(db) as any,
     session: {
@@ -66,13 +90,12 @@ export const authOptions: NextAuthOptions = {
         async session({ session, token }) {
             if (session.user) {
                 session.user.id = token.sub;
-                session.user.name = token.name;
-                session.user.email = token.email;
+                session.user.name = token.name || null;
+                session.user.email = token.email || '';
                 session.user.image = token.picture;
 
-                // Lägg till provider-specifik information
                 if (token.provider === 'google') {
-                    session.user.youtubeAccess = true;
+                    session.user.youtubeAccess = token.youtubeAccess;
                 }
             }
             return session;
@@ -82,7 +105,6 @@ export const authOptions: NextAuthOptions = {
                 token.accessToken = account.access_token;
                 token.provider = account.provider;
 
-                // Spara provider-specifik information
                 if (account.provider === 'google') {
                     token.youtubeAccess = true;
                 }
@@ -91,7 +113,6 @@ export const authOptions: NextAuthOptions = {
         },
         async signIn({ user, account, profile }) {
             if (account?.provider === 'google') {
-                // Kontrollera om användaren har tillgång till YouTube
                 try {
                     const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
                         headers: {
