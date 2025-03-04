@@ -33,10 +33,10 @@ export class TokenService {
         body: new URLSearchParams({
           client_id: platform === 'youtube'
             ? process.env.GOOGLE_CLIENT_ID!
-            : process.env.FACEBOOK_APP_ID!,
+            : process.env.FACEBOOK_CLIENT_ID!,
           client_secret: platform === 'youtube'
             ? process.env.GOOGLE_CLIENT_SECRET!
-            : process.env.FACEBOOK_APP_SECRET!,
+            : process.env.FACEBOOK_CLIENT_SECRET!,
           refresh_token: connection.refresh_token,
           grant_type: 'refresh_token',
         }),
@@ -47,7 +47,7 @@ export class TokenService {
       }
 
       const data = await refreshResponse.json()
-      
+
       // Spara nya tokens
       await platformService.saveConnection({
         platform,

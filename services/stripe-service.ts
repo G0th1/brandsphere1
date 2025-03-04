@@ -26,7 +26,7 @@ export interface StripeSubscription {
 // Product and price plans that correspond to production data in Stripe
 export const STRIPE_PRICES = {
   // Free plan isn't needed in Stripe but we include it for complete data
-  FREE: { 
+  FREE: {
     id: 'free',
     name: 'Free',
     price: 0,
@@ -40,8 +40,8 @@ export const STRIPE_PRICES = {
       'Email support',
     ]
   },
-  PRO_MONTHLY: { 
-    id: 'price_1QxXyyBlLmUFFk8vQVg2xtZl', // Updated with your real price ID
+  PRO_MONTHLY: {
+    id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_MONTHLY || 'price_1QxXyyBlLmUFFk8vQVg2xtZl',
     name: 'Pro',
     price: 1900, // Cents: $19.00
     currency: 'usd',
@@ -56,7 +56,7 @@ export const STRIPE_PRICES = {
     ]
   },
   PRO_YEARLY: {
-    id: 'price_yearly', // You should create this in your Stripe dashboard
+    id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_YEARLY || 'price_1QxrmABlLmUFFk8vNiTRH1c5',
     name: 'Pro (Yearly)',
     price: 19000, // Cents: $190.00
     currency: 'usd',
@@ -91,18 +91,18 @@ export class StripeService {
       });
 
       const session = await response.json();
-      
+
       if (!session || !session.url) {
         throw new Error('Failed to create checkout session');
       }
-      
+
       return { url: session.url };
     } catch (error) {
       console.error('Error creating Stripe checkout session:', error);
       throw error;
     }
   }
-  
+
   // Get a customer's active subscriptions
   static async getActiveSubscription(customerId: string): Promise<StripeSubscription | null> {
     try {
@@ -114,18 +114,18 @@ export class StripeService {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch subscription');
       }
-      
+
       return data.subscription;
     } catch (error) {
       console.error('Error fetching subscription:', error);
       return null;
     }
   }
-  
+
   // Cancel a subscription
   static async cancelSubscription(subscriptionId: string, cancelAtPeriodEnd = true): Promise<{ success: boolean }> {
     try {
@@ -141,18 +141,18 @@ export class StripeService {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to cancel subscription');
       }
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error canceling subscription:', error);
       throw error;
     }
   }
-  
+
   // Create a portal link to manage subscriptions
   static async createCustomerPortalLink(customerId: string, returnUrl: string): Promise<{ url: string }> {
     try {
@@ -168,11 +168,11 @@ export class StripeService {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to create portal link');
       }
-      
+
       return { url: data.url };
     } catch (error) {
       console.error('Error creating customer portal link:', error);

@@ -46,7 +46,7 @@ export const commonTranslations: Translations<{
             pricing: 'Pricing',
             blog: 'Blog',
             contact: 'Contact',
-            appPromote: 'Promote Your App',
+            appPromote: 'Promote us',
             login: 'Log in',
             signup: 'Sign up',
             dashboard: 'Dashboard',
@@ -69,7 +69,7 @@ export const commonTranslations: Translations<{
             products: 'Products',
             resources: 'Resources',
             legal: 'Legal',
-            copyright: '© 2024 BrandSphereAI. All rights reserved.',
+            copyright: '© 2025 BrandSphereAI. All rights reserved.',
         },
     },
     sv: {
