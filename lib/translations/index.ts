@@ -80,7 +80,7 @@ export const commonTranslations: Translations<{
             pricing: 'Priser',
             blog: 'Blogg',
             contact: 'Kontakt',
-            appPromote: 'Marknadsför Din App',
+            appPromote: 'Marknadsför oss',
             login: 'Logga in',
             signup: 'Registrera',
             dashboard: 'Kontrollpanel',
@@ -115,6 +115,7 @@ export const homeTranslations: Translations<{
         subtitle: string;
         getStarted: string;
         viewPricing: string;
+        tryDemo: string;
         freeTrial: string;
         noCardRequired: string;
         cancelAnytime: string;
@@ -148,6 +149,7 @@ export const homeTranslations: Translations<{
             subtitle: 'Save time and create better content with our intelligent social media platform.',
             getStarted: 'Get Started Free',
             viewPricing: 'View Pricing',
+            tryDemo: 'Try Demo',
             freeTrial: 'Free Trial',
             noCardRequired: 'No Credit Card Required',
             cancelAnytime: 'Cancel Anytime',
@@ -202,6 +204,7 @@ export const homeTranslations: Translations<{
             subtitle: 'Spara tid och skapa bättre innehåll med vår intelligenta plattform för sociala medier.',
             getStarted: 'Kom igång gratis',
             viewPricing: 'Visa priser',
+            tryDemo: 'Testa demo',
             freeTrial: 'Gratis provperiod',
             noCardRequired: 'Ingen kreditkort krävs',
             cancelAnytime: 'Avsluta när som helst',

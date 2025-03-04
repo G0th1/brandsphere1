@@ -42,6 +42,11 @@ export default function HomePage() {
                     {t.hero.viewPricing}
                   </Button>
                 </Link>
+                <Link href="/demo">
+                  <Button variant="secondary" size="lg">
+                    {t.hero.tryDemo || "Testa demo"}
+                  </Button>
+                </Link>
               </div>
 
               <div className="pt-4 flex items-center gap-4 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '400ms' }}>
