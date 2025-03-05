@@ -227,17 +227,17 @@ const demoData = {
         { id: 4, action: "Analytics updated", platform: "all", time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() }
     ],
     contentIdeas: [
-        "10 sätt att öka engagemanget på Instagram med AI-verktyg",
-        "Hur förbereder sig framgångsrika företag för högsäsong?",
-        "Trendande hashtags inom din bransch denna vecka",
-        "Bakom kulisserna - visa upp teamet på ett personligt sätt",
-        "Kundnöjdhetsundersökning - fråga följarna vad de vill se mer av"
+        "10 ways to boost engagement on Instagram with AI tools",
+        "How successful businesses prepare for peak season",
+        "Trending hashtags in your industry this week",
+        "Behind the scenes - showcase your team in a personal way",
+        "Customer satisfaction survey - ask followers what they want to see more of"
     ]
 };
 
 export default function DemoDashboardPage() {
     const { language } = useLanguage();
-    const t = translations[language];
+    const t = translations['en'];
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<DemoUser | null>(null);
@@ -584,13 +584,16 @@ export default function DemoDashboardPage() {
                                     <CardContent>
                                         <div className="space-y-2">
                                             {demoData.contentIdeas.map((idea, index) => (
-                                                <div key={index} className="p-3 border rounded-md flex items-start justify-between">
+                                                <div key={index} className="p-3 border rounded-md flex items-start justify-between hover:bg-accent/50 cursor-pointer" onClick={() => router.push(`/demo/content?idea=${encodeURIComponent(idea)}`)}>
                                                     <div className="flex gap-3">
                                                         <Palette className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                                                         <span>{idea}</span>
                                                     </div>
-                                                    <Button size="sm" variant="ghost">
-                                                        <Layers className="h-4 w-4" />
+                                                    <Button size="sm" variant="ghost" onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push(`/demo/content?idea=${encodeURIComponent(idea)}`);
+                                                    }}>
+                                                        <ArrowRight className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             ))}
