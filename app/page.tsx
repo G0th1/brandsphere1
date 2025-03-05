@@ -42,9 +42,9 @@ export default function HomePage() {
                     {t.hero.viewPricing}
                   </Button>
                 </Link>
-                <Link href="/demo">
+                <Link href="/demo/login">
                   <Button variant="secondary" size="lg">
-                    {t.hero.tryDemo || "Testa demo"}
+                    {t.hero.tryDemo || "Testa som premium"}
                   </Button>
                 </Link>
               </div>
