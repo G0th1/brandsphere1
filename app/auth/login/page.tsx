@@ -124,7 +124,16 @@ export default function LoginPage() {
                 });
 
                 if (result?.error) {
-                    throw new Error(result.error);
+                    console.error("Login error:", result.error);
+                    toast({
+                        title: t.errors.title,
+                        description: result.error === "CredentialsSignin"
+                            ? t.errors.credentialsSignin
+                            : t.errors.default,
+                        variant: "destructive",
+                    });
+                    setIsLoading(false);
+                    return;
                 }
 
                 if (result?.url) {
@@ -134,7 +143,7 @@ export default function LoginPage() {
         } catch (error) {
             console.error("Sign in error:", error);
             toast({
-                title: "Inloggningsfel",
+                title: t.errors.title,
                 description: t.errors.default,
                 variant: "destructive",
             });

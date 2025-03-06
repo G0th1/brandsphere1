@@ -2,9 +2,11 @@ import { NextAuthOptions } from "next-auth";
 import EmailProvider from "next-auth/providers/email";
 import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
 import { sendVerificationRequest } from "./email";
+import { compare } from "bcrypt";
 
 // Definiera utökade typer för session och token
 declare module "next-auth" {
@@ -15,6 +17,8 @@ declare module "next-auth" {
             email: string;
             image?: string | null;
             youtubeAccess?: boolean;
+            facebookAccess?: boolean;
+            hasSocialAccounts?: boolean;
         }
     }
 }
@@ -27,6 +31,8 @@ declare module "next-auth/jwt" {
         picture?: string | null;
         provider?: string;
         youtubeAccess?: boolean;
+        facebookAccess?: boolean;
+        hasSocialAccounts?: boolean;
     }
 }
 
@@ -44,6 +50,44 @@ export const authOptions: NextAuthOptions = {
         newUser: "/dashboard",
     },
     providers: [
+        CredentialsProvider({
+            name: "Email & Password",
+            credentials: {
+                email: { label: "Email", type: "email" },
+                password: { label: "Password", type: "password" }
+            },
+            async authorize(credentials) {
+                if (!credentials?.email || !credentials?.password) {
+                    return null;
+                }
+
+                try {
+                    const user = await db.user.findUnique({
+                        where: { email: credentials.email }
+                    });
+
+                    if (!user || !user.password) {
+                        return null;
+                    }
+
+                    const passwordValid = await compare(credentials.password, user.password);
+
+                    if (!passwordValid) {
+                        return null;
+                    }
+
+                    return {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        image: user.image
+                    };
+                } catch (error) {
+                    console.error("Error during credentials auth:", error);
+                    return null;
+                }
+            }
+        }),
         EmailProvider({
             server: {
                 host: process.env.EMAIL_SERVER_HOST,
@@ -97,6 +141,16 @@ export const authOptions: NextAuthOptions = {
                 if (token.provider === 'google') {
                     session.user.youtubeAccess = token.youtubeAccess;
                 }
+
+                if (token.provider === 'facebook') {
+                    session.user.facebookAccess = token.facebookAccess;
+                }
+
+                // Kontrollera om användaren har kopplat sociala mediekonton
+                session.user.hasSocialAccounts = token.hasSocialAccounts ||
+                    token.youtubeAccess ||
+                    token.facebookAccess ||
+                    false;
             }
             return session;
         },
@@ -107,6 +161,12 @@ export const authOptions: NextAuthOptions = {
 
                 if (account.provider === 'google') {
                     token.youtubeAccess = true;
+                    token.hasSocialAccounts = true;
+                }
+
+                if (account.provider === 'facebook') {
+                    token.facebookAccess = true;
+                    token.hasSocialAccounts = true;
                 }
             }
             return token;
