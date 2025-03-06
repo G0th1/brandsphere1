@@ -9,7 +9,6 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/language-context";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 const translations = {
@@ -93,52 +92,35 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [authType, setAuthType] = useState("magic-link"); // "magic-link" or "password"
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
         try {
-            if (authType === "magic-link") {
-                // Skicka magisk länk
-                const result = await signIn("email", {
-                    email,
-                    redirect: false,
-                    callbackUrl,
+            // Lösenordsbaserad inloggning
+            const result = await signIn("credentials", {
+                email,
+                password,
+                redirect: false,
+                callbackUrl,
+            });
+
+            if (result?.error) {
+                console.error("Login error:", result.error);
+                toast({
+                    title: t.errors.title,
+                    description: result.error === "CredentialsSignin"
+                        ? t.errors.credentialsSignin
+                        : t.errors.default,
+                    variant: "destructive",
                 });
+                setIsLoading(false);
+                return;
+            }
 
-                if (result?.error) {
-                    throw new Error(result.error);
-                }
-
-                // Redirect till verify-request sidan
-                router.push("/auth/verify-request");
-            } else {
-                // Lösenordsbaserad inloggning
-                const result = await signIn("credentials", {
-                    email,
-                    password,
-                    redirect: false,
-                    callbackUrl,
-                });
-
-                if (result?.error) {
-                    console.error("Login error:", result.error);
-                    toast({
-                        title: t.errors.title,
-                        description: result.error === "CredentialsSignin"
-                            ? t.errors.credentialsSignin
-                            : t.errors.default,
-                        variant: "destructive",
-                    });
-                    setIsLoading(false);
-                    return;
-                }
-
-                if (result?.url) {
-                    router.push(result.url);
-                }
+            if (result?.url) {
+                router.push(result.url);
             }
         } catch (error) {
             console.error("Sign in error:", error);
@@ -280,59 +262,50 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        <Tabs defaultValue="magic-link" onValueChange={(value) => setAuthType(value)}>
-                            <TabsList className="grid w-full grid-cols-2 mb-6">
-                                <TabsTrigger value="magic-link">{t.magicLinkTab}</TabsTrigger>
-                                <TabsTrigger value="password">{t.passwordTab}</TabsTrigger>
-                            </TabsList>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">{t.emailLabel}</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="namn@exempel.se"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    disabled={isLoading}
+                                />
+                            </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">{t.emailLabel}</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="namn@exempel.se"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                        disabled={isLoading}
-                                    />
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password">{t.passwordLabel}</Label>
+                                    <Button variant="link" className="p-0 h-auto font-normal text-xs" asChild>
+                                        <a href="/auth/forgot-password">{t.forgotPassword}</a>
+                                    </Button>
                                 </div>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    disabled={isLoading}
+                                />
+                            </div>
 
-                                <TabsContent value="password" className="space-y-4 mt-4">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label htmlFor="password">{t.passwordLabel}</Label>
-                                            <Button variant="link" className="p-0 h-auto font-normal text-xs" asChild>
-                                                <a href="/auth/forgot-password">{t.forgotPassword}</a>
-                                            </Button>
-                                        </div>
-                                        <Input
-                                            id="password"
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            required={authType === "password"}
-                                            disabled={isLoading}
-                                        />
-                                    </div>
-                                </TabsContent>
-
-                                <Button
-                                    type="submit"
-                                    className="w-full"
-                                    disabled={isLoading || !email || (authType === "password" && !password)}
-                                >
-                                    {isLoading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            {t.loading}
-                                        </>
-                                    ) : authType === "magic-link" ? t.sendLink : t.signIn}
-                                </Button>
-                            </form>
-                        </Tabs>
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={isLoading || !email || !password}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        {t.loading}
+                                    </>
+                                ) : t.signIn}
+                            </Button>
+                        </form>
                     </CardContent>
                     <CardFooter className="flex justify-center">
                         <Button variant="link" asChild>
