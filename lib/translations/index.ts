@@ -103,7 +103,7 @@ export const commonTranslations: Translations<{
             products: 'Produkter',
             resources: 'Resurser',
             legal: 'Juridiskt',
-            copyright: '© 2024 BrandSphereAI. Alla rättigheter förbehållna.',
+            copyright: '© 2025 BrandSphereAI. Alla rättigheter förbehållna.',
         },
     },
 };
@@ -206,7 +206,7 @@ export const homeTranslations: Translations<{
             viewPricing: 'Visa priser',
             tryDemo: 'Testa som premium',
             freeTrial: 'Gratis provperiod',
-            noCardRequired: 'Ingen kreditkort krävs',
+            noCardRequired: 'Inget kreditkort krävs',
             cancelAnytime: 'Avsluta när som helst',
             dashboardAlt: 'BrandSphereAI Kontrollpanel Demo',
         },
