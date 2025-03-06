@@ -338,12 +338,22 @@ export default function DashboardPage() {
 
           {/* Anslut sociala mediekonton om inga är anslutna */}
           {!connectedAccounts.facebook && !connectedAccounts.youtube && (
-            <Card className="animate-fade-in" style={{ animationDelay: "250ms" }}>
+            <Card className="animate-fade-in border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800" style={{ animationDelay: "250ms" }}>
               <CardHeader>
                 <CardTitle>{t.connectAccounts}</CardTitle>
                 <CardDescription>{t.connectAccountsDesc}</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <p className="text-sm font-medium mb-2">För att låsa upp följande funktioner behöver du koppla minst ett socialt mediekonto:</p>
+                  <ul className="list-disc pl-5 text-sm space-y-1 mb-4">
+                    <li>Avancerad analys</li>
+                    <li>Schemaläggning av inlägg</li>
+                    <li>AI-genererade innehållsförslag</li>
+                    <li>Hantera flera konton</li>
+                    <li>Obegränsade inlägg</li>
+                  </ul>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Button
                     variant="outline"

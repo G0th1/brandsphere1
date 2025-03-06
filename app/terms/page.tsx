@@ -138,9 +138,7 @@ export default function TermsOfServicePage() {
                                 If you have any questions about these Terms, please contact us:
                             </p>
                             <ul>
-                                <li>Via email: legal@brandsphereai.com</li>
-                                <li>Via mail: BrandSphereAI AB, Storgatan 1, 111 23 Stockholm, Sweden</li>
-                                <li>Via phone: +46 8 123 45 67</li>
+                                <li>Via email: brandSphereai@gmail.com</li>
                             </ul>
 
                         </div>

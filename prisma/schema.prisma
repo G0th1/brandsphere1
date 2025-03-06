@@ -19,6 +19,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   subscription  Subscription?
+  resetToken    PasswordResetToken?
 }
 
 model Account {
@@ -79,4 +80,13 @@ model UsageStatistics {
   storageUsed   Float    @default(0.0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expires   DateTime
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 } 

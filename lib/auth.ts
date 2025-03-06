@@ -1,6 +1,5 @@
 import { NextAuthOptions } from "next-auth";
 import EmailProvider from "next-auth/providers/email";
-import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -17,7 +16,6 @@ declare module "next-auth" {
             email: string;
             image?: string | null;
             youtubeAccess?: boolean;
-            facebookAccess?: boolean;
             hasSocialAccounts?: boolean;
         }
     }
@@ -31,7 +29,6 @@ declare module "next-auth/jwt" {
         picture?: string | null;
         provider?: string;
         youtubeAccess?: boolean;
-        facebookAccess?: boolean;
         hasSocialAccounts?: boolean;
     }
 }
@@ -100,18 +97,6 @@ export const authOptions: NextAuthOptions = {
             from: process.env.EMAIL_FROM || "noreply@brandsphereai.com",
             sendVerificationRequest,
         }),
-        FacebookProvider({
-            clientId: process.env.FACEBOOK_CLIENT_ID!,
-            clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
-            profile(profile) {
-                return {
-                    id: profile.id,
-                    name: profile.name,
-                    email: profile.email,
-                    image: profile.picture?.data?.url,
-                };
-            },
-        }),
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -142,14 +127,9 @@ export const authOptions: NextAuthOptions = {
                     session.user.youtubeAccess = token.youtubeAccess;
                 }
 
-                if (token.provider === 'facebook') {
-                    session.user.facebookAccess = token.facebookAccess;
-                }
-
                 // Kontrollera om användaren har kopplat sociala mediekonton
                 session.user.hasSocialAccounts = token.hasSocialAccounts ||
                     token.youtubeAccess ||
-                    token.facebookAccess ||
                     false;
             }
             return session;
@@ -161,11 +141,6 @@ export const authOptions: NextAuthOptions = {
 
                 if (account.provider === 'google') {
                     token.youtubeAccess = true;
-                    token.hasSocialAccounts = true;
-                }
-
-                if (account.provider === 'facebook') {
-                    token.facebookAccess = true;
                     token.hasSocialAccounts = true;
                 }
             }

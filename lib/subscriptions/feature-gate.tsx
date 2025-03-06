@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/language-context';
 
@@ -45,20 +45,35 @@ export const PLAN_FEATURES = {
     ]
 };
 
+// Definiera funktioner som kräver sociala mediekonton
+export const SOCIAL_REQUIRED_FEATURES = [
+    'advanced_analytics',
+    'scheduled_posts',
+    'ai_suggestions',
+    'multiple_accounts',
+    'unlimited_posts'
+];
+
 const translations = {
     en: {
         upgradeRequired: "Upgrade required",
         featureNotAvailable: "This feature is not available in your current plan.",
         upgradeToPro: "Upgrade to Pro",
         upgradeToBusiness: "Upgrade to Business",
-        viewPlans: "View Plans"
+        viewPlans: "View Plans",
+        socialRequired: "Social media account required",
+        socialRequiredDesc: "This feature requires you to connect at least one social media account.",
+        connectAccounts: "Connect Accounts"
     },
     sv: {
         upgradeRequired: "Uppgradering krävs",
         featureNotAvailable: "Denna funktion är inte tillgänglig i din nuvarande plan.",
         upgradeToPro: "Uppgradera till Pro",
         upgradeToBusiness: "Uppgradera till Business",
-        viewPlans: "Visa planer"
+        viewPlans: "Visa planer",
+        socialRequired: "Socialt mediekonto krävs",
+        socialRequiredDesc: "Denna funktion kräver att du kopplar minst ett socialt mediekonto.",
+        connectAccounts: "Koppla konton"
     }
 };
 
@@ -67,6 +82,64 @@ interface FeatureGateProps {
     userPlan?: 'free' | 'pro' | 'business';
     children: React.ReactNode;
     fallback?: React.ReactNode;
+}
+
+interface SocialGateProps {
+    feature: string;
+    hasSocialAccounts: boolean;
+    children: React.ReactNode;
+    fallback?: React.ReactNode;
+}
+
+/**
+ * SocialGate-komponenten kontrollerar om en användare har kopplat sociala mediekonton
+ * för att få åtkomst till vissa funktioner.
+ * 
+ * Exempel:
+ * <SocialGate feature="advanced_analytics" hasSocialAccounts={user.hasSocialAccounts}>
+ *   <AdvancedAnalyticsComponent />
+ * </SocialGate>
+ */
+export function SocialGate({
+    feature,
+    hasSocialAccounts,
+    children,
+    fallback
+}: SocialGateProps) {
+    const { language } = useLanguage();
+    const t = translations[language as keyof typeof translations];
+    const router = useRouter();
+
+    // Kontrollera om funktionen kräver sociala mediekonton
+    const requiresSocialAccount = SOCIAL_REQUIRED_FEATURES.includes(feature);
+
+    // Om funktionen inte kräver sociala mediekonton eller om användaren har kopplat konton, visa originalinnehållet
+    if (!requiresSocialAccount || hasSocialAccounts) {
+        return <>{children}</>;
+    }
+
+    // Om anpassat fallback-innehåll tillhandahålls, visa det
+    if (fallback) {
+        return <>{fallback}</>;
+    }
+
+    // Standardfallback är en uppmaning att koppla sociala mediekonton
+    return (
+        <div className="border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 rounded-lg p-4 text-center my-4">
+            <LinkIcon className="h-10 w-10 text-blue-500 mx-auto mb-2" />
+            <h3 className="font-bold text-lg mb-1">{t.socialRequired}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                {t.socialRequiredDesc}
+            </p>
+            <Button
+                onClick={() => router.push('/dashboard/connect')}
+                variant="default"
+                size="sm"
+            >
+                {t.connectAccounts}
+            </Button>
+        </div>
+    );
 }
 
 /**

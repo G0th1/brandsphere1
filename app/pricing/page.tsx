@@ -141,10 +141,6 @@ const translations: Translations = {
       {
         question: "Can I cancel my subscription?",
         answer: "Yes, you can cancel your subscription at any time from your account settings. Your access will continue until the end of your current billing period."
-      },
-      {
-        question: "Is there a free trial?",
-        answer: "We offer a 14-day free trial of our Pro plan. No credit card required to start your trial."
       }
     ]
   },
@@ -192,10 +188,6 @@ const translations: Translations = {
       {
         question: "Kan jag avbryta min prenumeration?",
         answer: "Ja, du kan avbryta din prenumeration när som helst från dina kontoinställningar. Din tillgång fortsätter till slutet av din nuvarande faktureringsperiod."
-      },
-      {
-        question: "Finns det en gratis provperiod?",
-        answer: "Vi erbjuder en 14-dagars gratis provperiod av vår Pro-plan. Inget kreditkort krävs för att starta din provperiod."
       }
     ]
   }
@@ -380,7 +372,7 @@ export default function PricingPage() {
         {plans.map((plan) => (
           <Card key={plan.name} className={cn("flex flex-col justify-between", plan.popular ? "border-primary shadow-md" : "")}>
             {plan.popular && (
-              <div className="absolute top-0 right-0 transform translate-x-1/3 -translate-y-1/3">
+              <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
                 <Badge className="px-3 py-1 text-sm font-medium" variant="default">
                   {language === 'en' ? 'Popular' : 'Populär'}
                 </Badge>

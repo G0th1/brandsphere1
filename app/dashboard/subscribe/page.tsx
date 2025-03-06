@@ -14,25 +14,25 @@ export default function SubscribePage() {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClientComponentClient();
-  
+
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [user, setUser] = useState<any>(null);
-  
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           router.push('/login');
           return;
         }
-        
+
         setUser(user);
-        
+
         // Check if the user already has a subscription
         try {
           const userSubscription = await SubscriptionService.getUserSubscription();
@@ -47,10 +47,10 @@ export default function SubscribePage() {
         router.push('/login');
       }
     };
-    
+
     checkAuth();
   }, [router, supabase]);
-  
+
   const handleSubscribe = async (priceId: string) => {
     if (!user) {
       toast({
@@ -60,13 +60,13 @@ export default function SubscribePage() {
       });
       return;
     }
-    
+
     setLoading(true);
     setSelectedPlan(priceId);
-    
+
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      
+
       const response = await StripeService.createCheckoutSession({
         priceId,
         successUrl: `${origin}/dashboard/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -74,7 +74,7 @@ export default function SubscribePage() {
         customerId: user.id,
         customerEmail: user.email,
       });
-      
+
       // Redirect to Stripe Checkout
       if (response && response.url) {
         router.push(response.url);
@@ -90,19 +90,19 @@ export default function SubscribePage() {
       setLoading(false);
     }
   };
-  
+
   const handleManageSubscription = async () => {
     if (!user) return;
-    
+
     setLoading(true);
-    
+
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const response = await StripeService.createCustomerPortalLink(
         user.id,
         `${origin}/dashboard`
       );
-      
+
       if (response && response.url) {
         router.push(response.url);
       }
@@ -117,7 +117,7 @@ export default function SubscribePage() {
       setLoading(false);
     }
   };
-  
+
   // Show loading status if we're still fetching user info
   if (loadingSubscription || !user) {
     return (
@@ -126,7 +126,7 @@ export default function SubscribePage() {
       </div>
     );
   }
-  
+
   // If the user already has an active subscription
   if (subscription && subscription.isActive && subscription.plan !== 'free') {
     return (
@@ -137,12 +137,12 @@ export default function SubscribePage() {
             You already have an active subscription. Manage or upgrade your plan here.
           </p>
         </div>
-        
+
         <Card className="w-full mb-10">
           <CardHeader>
             <CardTitle>Your Current Plan</CardTitle>
             <CardDescription>
-              {subscription.renewalDate 
+              {subscription.renewalDate
                 ? `Your subscription is active until ${subscription.renewalDate.toLocaleDateString()}`
                 : 'Your subscription is currently active'}
             </CardDescription>
@@ -165,8 +165,8 @@ export default function SubscribePage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button 
-              onClick={handleManageSubscription} 
+            <Button
+              onClick={handleManageSubscription}
               disabled={loading}
               className="w-full"
             >
@@ -184,7 +184,7 @@ export default function SubscribePage() {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto max-w-5xl py-10">
       <div className="mb-10 text-center">
@@ -193,7 +193,7 @@ export default function SubscribePage() {
           Upgrade to unlock all features in BrandSphereAI
         </p>
       </div>
-      
+
       <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
         {/* Free plan */}
         <Card className="flex flex-col border-muted">
@@ -225,13 +225,15 @@ export default function SubscribePage() {
             </Button>
           </CardFooter>
         </Card>
-        
+
         {/* Pro Monthly plan */}
-        <Card className="flex flex-col border-primary">
-          <CardHeader>
-            <div className="rounded-full bg-primary/10 text-primary px-3 py-1 text-sm w-fit">
+        <Card className="flex flex-col border-primary relative">
+          <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
+            <div className="px-3 py-1 text-sm font-medium text-white bg-primary rounded-md">
               Popular
             </div>
+          </div>
+          <CardHeader>
             <CardTitle className="mt-4">{STRIPE_PRICES.PRO_MONTHLY.name}</CardTitle>
             <div className="mt-4">
               <span className="text-3xl font-bold">${(STRIPE_PRICES.PRO_MONTHLY.price / 100).toFixed(0)}</span>
@@ -266,7 +268,7 @@ export default function SubscribePage() {
             </Button>
           </CardFooter>
         </Card>
-        
+
         {/* Pro Yearly plan */}
         <Card className="flex flex-col">
           <CardHeader>
@@ -311,7 +313,7 @@ export default function SubscribePage() {
           </CardFooter>
         </Card>
       </div>
-      
+
       <div className="mt-10 text-center text-sm text-muted-foreground">
         <p>
           All payments are securely processed via Stripe. You can cancel your subscription at any time.

@@ -42,18 +42,9 @@ export default function HomePage() {
                     {t.hero.viewPricing}
                   </Button>
                 </Link>
-                <Link href="/demo/login">
-                  <Button variant="secondary" size="lg">
-                    {t.hero.tryDemo || "Testa som premium"}
-                  </Button>
-                </Link>
               </div>
 
               <div className="pt-4 flex items-center gap-4 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '400ms' }}>
-                <div className="flex items-center">
-                  <Check className="mr-1 h-4 w-4 text-primary" />
-                  <span>{t.hero.freeTrial}</span>
-                </div>
                 <div className="flex items-center">
                   <Check className="mr-1 h-4 w-4 text-primary" />
                   <span>{t.hero.noCardRequired}</span>

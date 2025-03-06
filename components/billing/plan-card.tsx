@@ -106,15 +106,17 @@ export function PlanCard({
                 currentPlan && "border-green-500 bg-green-50 dark:bg-green-950/20"
             )}
         >
+            {popular && !currentPlan && (
+                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
+                    <div className="px-3 py-1 text-sm font-medium text-white bg-primary rounded-md">
+                        {language === 'en' ? 'Popular' : 'Populär'}
+                    </div>
+                </div>
+            )}
             <CardHeader>
                 {currentPlan && (
                     <div className="mb-2 text-sm font-medium text-green-600 dark:text-green-400">
                         {t.currentPlan}
-                    </div>
-                )}
-                {popular && !currentPlan && (
-                    <div className="mb-2 text-sm font-medium text-primary">
-                        Popular
                     </div>
                 )}
                 <CardTitle>{getTitle()}</CardTitle>

@@ -65,9 +65,20 @@ export default function ForgotPasswordPage() {
         setIsLoading(true);
 
         try {
-            // Här kan du anropa en API-slutpunkt om du har en sådan
-            // För nu simulerar vi bara ett API-anrop med en timeout
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Anropa vår API-slutpunkt för att skicka återställningslänk
+            const response = await fetch("/api/auth/forgot-password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || t.errors.default);
+            }
 
             setIsSubmitted(true);
 

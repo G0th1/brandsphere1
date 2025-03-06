@@ -105,9 +105,20 @@ export default function ResetPasswordPage() {
         setIsLoading(true);
 
         try {
-            // Här kan du anropa en API-slutpunkt för att återställa lösenordet
-            // För nu simulerar vi bara ett API-anrop med en timeout
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Anropa API-slutpunkten för att återställa lösenordet
+            const response = await fetch("/api/auth/reset-password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ token, password }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || t.errors.default);
+            }
 
             setIsSuccess(true);
 
