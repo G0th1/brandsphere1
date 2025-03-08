@@ -461,14 +461,28 @@ export default function DemoDashboardPage() {
                                     <CardContent>
                                         <div className="space-y-2">
                                             {demoData.contentIdeas.map((idea, index) => (
-                                                <div key={index} className="p-3 border rounded-md flex items-start justify-between hover:bg-accent/50 cursor-pointer" onClick={() => router.push(`/demo/content?idea=${encodeURIComponent(idea)}`)}>
+                                                <div key={index} className="p-3 border rounded-md flex items-start justify-between hover:bg-accent/50 cursor-pointer" onClick={() => {
+                                                    const url = `/demo/content?idea=${encodeURIComponent(idea)}`;
+                                                    try {
+                                                        router.push(url);
+                                                    } catch (e) {
+                                                        console.error('Router navigation failed, using window.location instead:', e);
+                                                        window.location.href = url;
+                                                    }
+                                                }}>
                                                     <div className="flex gap-3">
                                                         <Palette className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                                                         <span>{idea}</span>
                                                     </div>
                                                     <Button size="sm" variant="ghost" onClick={(e) => {
                                                         e.stopPropagation();
-                                                        router.push(`/demo/content?idea=${encodeURIComponent(idea)}`);
+                                                        const url = `/demo/content?idea=${encodeURIComponent(idea)}`;
+                                                        try {
+                                                            router.push(url);
+                                                        } catch (e) {
+                                                            console.error('Router navigation failed, using window.location instead:', e);
+                                                            window.location.href = url;
+                                                        }
                                                     }}>
                                                         <ArrowRight className="h-4 w-4" />
                                                     </Button>
