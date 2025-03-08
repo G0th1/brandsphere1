@@ -36,9 +36,9 @@ const translations = {
     en: {
         pageTitle: "Analytics & Insights",
         overview: "Overview",
-        followers: "Followers Growth",
+        followers: "Follower Growth",
         performance: "Post Performance",
-        reach: "Reach & Impressions",
+        reach: "Reach & Views",
         demographics: "Audience Demographics",
         platformInsights: "Platform Insights",
         loading: "Loading...",
@@ -53,14 +53,14 @@ const translations = {
             title: "Performance Summary",
             followers: "Total Followers",
             engagement: "Engagement Rate",
-            impressions: "Total Impressions",
+            impressions: "Total Views",
             clicks: "Link Clicks",
             period: "Last 30 days"
         },
         growth: {
             title: "Audience Growth",
             newFollowers: "New Followers",
-            percentChange: "Change compared to previous period",
+            percentChange: "Change from previous period",
             thisMonth: "This Month",
             lastMonth: "Last Month",
             period: "Last 30 days"
@@ -83,7 +83,7 @@ const translations = {
             date: "Date",
             viewAll: "View all posts"
         },
-        demographics: {
+        demographicsData: {
             title: "Audience Demographics",
             age: "Age Distribution",
             gender: "Gender Distribution",
@@ -141,7 +141,7 @@ const translations = {
             date: "Datum",
             viewAll: "Visa alla inlägg"
         },
-        demographics: {
+        demographicsData: {
             title: "Målgruppsdemografi",
             age: "Åldersfördelning",
             gender: "Könsfördelning",
@@ -237,7 +237,7 @@ export default function DemoInsightsPage() {
                             <TabsTrigger value="followers">{t.followers}</TabsTrigger>
                             <TabsTrigger value="performance">{t.performance}</TabsTrigger>
                             <TabsTrigger value="reach">{t.reach}</TabsTrigger>
-                            <TabsTrigger value="demographics">{t.demographics}</TabsTrigger>
+                            <TabsTrigger value="demographics">{t.demographicsData.title}</TabsTrigger>
                         </TabsList>
                     </Tabs>
 
@@ -372,6 +372,37 @@ export default function DemoInsightsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                    </TabsContent>
+
+                    {/* Demographics Section */}
+                    <TabsContent value="demographics" className="space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold">{t.demographicsData.title}</h3>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>{t.demographicsData.age}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {/* Age distribution chart would go here */}
+                                        <div className="h-48 bg-muted/20 rounded-md flex items-center justify-center">
+                                            <BarChart className="h-8 w-8 text-muted" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>{t.demographicsData.gender}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {/* Gender distribution chart would go here */}
+                                        <div className="h-48 bg-muted/20 rounded-md flex items-center justify-center">
+                                            <PieChart className="h-8 w-8 text-muted" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
                     </TabsContent>
                 </main>
             </div>
