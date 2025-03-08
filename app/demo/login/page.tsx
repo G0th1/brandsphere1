@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useLanguage } from "@/contexts/language-context";
-import { Loader2, Zap, Calendar, BarChart3, FileEdit, MessageSquare, Settings2, Check } from "lucide-react";
+import { useDemo } from "@/contexts/demo-context";
+import { Loader2, Zap, Calendar, BarChart3, FileEdit, MessageSquare, Settings2 } from "lucide-react";
 
 // Översättningar
 const translations = {
@@ -52,31 +52,8 @@ const translations = {
 
 export default function DemoLoginPage() {
     const { language } = useLanguage();
+    const { startDemo, isLoading } = useDemo();
     const t = translations[language === 'sv' ? 'sv' : 'en'];
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
-
-    // Simulera inloggning med Google
-    const handleStartDemo = () => {
-        setIsLoading(true);
-
-        // Lagra demo-användarinformation i localStorage
-        localStorage.setItem('demoUser', JSON.stringify({
-            id: 'demo-user-123',
-            email: 'demo@example.com',
-            name: 'Demo User',
-            subscription_tier: 'premium',
-            avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo123',
-            demo_mode: true,
-            language: language // Lagra användarens språkpreferens
-        }));
-
-        // Simulera inladdningstid för att göra det mer realistiskt
-        setTimeout(() => {
-            // Omdirigera till demo-dashboard
-            router.push("/demo/dashboard");
-        }, 1500);
-    };
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -100,7 +77,7 @@ export default function DemoLoginPage() {
                             <div className="pt-4">
                                 <Button
                                     size="lg"
-                                    onClick={handleStartDemo}
+                                    onClick={startDemo}
                                     disabled={isLoading}
                                     className="w-full md:w-auto"
                                 >
@@ -190,7 +167,7 @@ export default function DemoLoginPage() {
                                 </ul>
                             </CardContent>
                             <CardFooter className="border-t pt-4">
-                                <Button variant="outline" className="w-full" onClick={handleStartDemo} disabled={isLoading}>
+                                <Button variant="outline" className="w-full" onClick={startDemo} disabled={isLoading}>
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -3,6 +3,7 @@
 import { Bell, Settings, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
+import { useDemo } from "@/contexts/demo-context";
 
 // Avatar components
 const Avatar = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => (
@@ -36,7 +37,10 @@ const translations = {
 
 export function DemoHeader() {
     const { language } = useLanguage();
+    const { user } = useDemo();
     const t = translations[language === 'sv' ? 'sv' : 'en'];
+
+    if (!user) return null;
 
     return (
         <header className="border-b bg-card">
@@ -78,8 +82,8 @@ export function DemoHeader() {
 
                     <div className="md:hidden">
                         <Avatar>
-                            <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=demo123" alt="Demo User" />
-                            <AvatarFallback>DU</AvatarFallback>
+                            <AvatarImage src={user.avatar_url} alt={user.name} />
+                            <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                     </div>
                 </div>

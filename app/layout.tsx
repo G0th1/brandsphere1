@@ -5,6 +5,8 @@ import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { AuthProvider } from '@/contexts/auth-context'
 import { LanguageProvider } from '@/contexts/language-context'
+import { DemoProvider } from '@/contexts/demo-context'
+import { Toaster } from '@/components/ui/toaster'
 
 // Konfigurera Inter font
 const inter = Inter({
@@ -52,7 +54,10 @@ export default function RootLayout({
         >
           <AuthProvider>
             <LanguageProvider>
-              {children}
+              <DemoProvider>
+                {children}
+                <Toaster />
+              </DemoProvider>
             </LanguageProvider>
           </AuthProvider>
         </ThemeProvider>

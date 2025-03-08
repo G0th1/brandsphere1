@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
+import { useDemo } from "@/contexts/demo-context";
 
 // Avatar components
 const Avatar = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => (
@@ -58,14 +58,10 @@ interface DemoSidebarProps {
 
 export function DemoSidebar({ activeItem }: DemoSidebarProps) {
     const { language } = useLanguage();
+    const { user, exitDemo } = useDemo();
     const t = translations[language === 'sv' ? 'sv' : 'en'];
-    const router = useRouter();
 
-    // Exit demo function
-    const exitDemo = () => {
-        localStorage.removeItem('demoUser');
-        router.push('/');
-    };
+    if (!user) return null;
 
     return (
         <div className="hidden md:flex flex-col w-64 border-r bg-card">
@@ -127,12 +123,12 @@ export function DemoSidebar({ activeItem }: DemoSidebarProps) {
             <div className="mt-auto p-4 border-t">
                 <div className="flex items-center gap-2 mb-4">
                     <Avatar>
-                        <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=demo123" alt="Demo User" />
-                        <AvatarFallback>DU</AvatarFallback>
+                        <AvatarImage src={user.avatar_url} alt={user.name} />
+                        <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
-                        <div className="font-medium">Demo User</div>
-                        <div className="text-xs text-muted-foreground">demo@example.com</div>
+                        <div className="font-medium">{user.name}</div>
+                        <div className="text-xs text-muted-foreground">{user.email}</div>
                     </div>
                 </div>
                 <Button variant="outline" className="w-full" onClick={exitDemo}>

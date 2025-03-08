@@ -46,6 +46,7 @@ import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/components/ui/use-toast";
 import { DemoSidebar } from "@/components/demo/sidebar";
 import { DemoHeader } from "@/components/demo/header";
+import { useDemo } from "@/contexts/demo-context";
 
 // Komponent för Avatar
 const Avatar = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => (
@@ -240,41 +241,20 @@ const demoData = {
 
 export default function DemoDashboardPage() {
     const { language } = useLanguage();
+    const { user } = useDemo();
     const t = translations[language === 'sv' ? 'sv' : 'en'];
-    const router = useRouter();
     const { toast } = useToast();
-    const [user, setUser] = useState<DemoUser | null>(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // Sätt mounted till true när komponenten har monterats
         setMounted(true);
-
-        // Kontrollera om användaren är i demo-läge
-        const demoUserStr = localStorage.getItem('demoUser');
-        if (!demoUserStr) {
-            // Om ingen demo-användare, omdirigera till demo-inloggning
-            router.push('/demo/login');
-            return;
-        }
-
-        try {
-            const demoUser = JSON.parse(demoUserStr) as DemoUser;
-            // Spara även vilket språk användaren hade valt
-            demoUser.language = language;
-            localStorage.setItem('demoUser', JSON.stringify(demoUser));
-            setUser(demoUser);
-        } catch (error) {
-            console.error('Error parsing demo user:', error);
-            router.push('/demo/login');
-        }
-    }, [router, language]);
+    }, []);
 
     // Om komponenten inte är monterad än, visa inget
     if (!mounted) return null;
 
-    // Om användaren inte är inloggad, visa inget (vi omdirigerar ändå)
+    // Om användaren inte är inloggad, visa inget
     if (!user) return null;
 
     // Funktion för att formatera datum
@@ -325,122 +305,12 @@ export default function DemoDashboardPage() {
         }
     };
 
-    // Funktion för att logga ut från demo
-    const exitDemo = () => {
-        localStorage.removeItem('demoUser');
-        router.push('/');
-        toast({
-            title: "Demo avslutad",
-            description: "Du har loggat ut från demo-versionen"
-        });
-    };
-
     return (
         <div className="min-h-screen flex">
-            {/* Sidopanel */}
-            <div className="hidden md:flex flex-col w-64 border-r bg-card">
-                <div className="p-4 flex justify-center">
-                    <div className="text-xl font-bold">BrandSphereAI</div>
-                </div>
+            <DemoSidebar activeItem="dashboard" />
 
-                <div className="mt-2 px-3">
-                    <div className="flex items-center justify-between rounded-md bg-accent/50 px-2 py-1.5">
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-yellow-500" />
-                            <span className="text-sm font-medium">{t.premium}</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">Demo</span>
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-auto py-2">
-                    <nav className="grid gap-1 px-2">
-                        <Link href="/demo/dashboard">
-                            <Button variant="ghost" className="w-full justify-start gap-2">
-                                <LayoutDashboard className="h-4 w-4" />
-                                {t.dashboard}
-                            </Button>
-                        </Link>
-                        <Link href="#content">
-                            <Button variant="ghost" className="w-full justify-start gap-2">
-                                <FileEdit className="h-4 w-4" />
-                                {t.content}
-                            </Button>
-                        </Link>
-                        <Link href="#calendar">
-                            <Button variant="ghost" className="w-full justify-start gap-2">
-                                <CalendarClock className="h-4 w-4" />
-                                {t.calendar}
-                            </Button>
-                        </Link>
-                        <Link href="#insights">
-                            <Button variant="ghost" className="w-full justify-start gap-2">
-                                <PieChart className="h-4 w-4" />
-                                {t.insights}
-                            </Button>
-                        </Link>
-                        <Link href="#profile">
-                            <Button variant="ghost" className="w-full justify-start gap-2">
-                                <User className="h-4 w-4" />
-                                {t.userProfile}
-                            </Button>
-                        </Link>
-                    </nav>
-                </div>
-
-                <div className="mt-auto p-4 border-t">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Avatar>
-                            <AvatarImage src={demoData.user.avatar} alt={demoData.user.name} />
-                            <AvatarFallback>DU</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <div className="font-medium">{demoData.user.name}</div>
-                            <div className="text-xs text-muted-foreground">{demoData.user.email}</div>
-                        </div>
-                    </div>
-                    <Button variant="outline" className="w-full" onClick={exitDemo}>
-                        {t.exitDemo}
-                    </Button>
-                </div>
-            </div>
-
-            {/* Huvudinnehåll */}
             <div className="flex-1 flex flex-col">
-                {/* Toppnavigering */}
-                <header className="border-b bg-card">
-                    <div className="flex h-16 items-center px-4 justify-between">
-                        <div className="md:hidden flex items-center gap-2">
-                            <div className="text-xl font-bold">BrandSphereAI</div>
-                        </div>
-
-                        <div className="ml-auto flex items-center gap-4">
-                            <Button variant="ghost" size="icon" className="relative">
-                                <Bell className="h-5 w-5" />
-                                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">3</span>
-                            </Button>
-
-                            <Button variant="ghost" size="icon">
-                                <Settings className="h-5 w-5" />
-                            </Button>
-
-                            <div className="md:hidden">
-                                <Avatar>
-                                    <AvatarImage src={demoData.user.avatar} alt={demoData.user.name} />
-                                    <AvatarFallback>DU</AvatarFallback>
-                                </Avatar>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                {/* Demo-notis */}
-                <div className="bg-primary text-primary-foreground py-2 px-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                        <Info className="h-4 w-4" />
-                        <span>{t.demoMode}</span>
-                    </div>
-                </div>
+                <DemoHeader />
 
                 {/* Innehåll */}
                 <main className="flex-1 overflow-auto p-4 md:p-6">
