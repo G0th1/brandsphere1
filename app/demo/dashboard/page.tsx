@@ -242,6 +242,7 @@ const demoData = {
 export default function DemoDashboardPage() {
     const { language } = useLanguage();
     const { user } = useDemo();
+    const router = useRouter();
     const t = translations[language === 'sv' ? 'sv' : 'en'];
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('overview');
