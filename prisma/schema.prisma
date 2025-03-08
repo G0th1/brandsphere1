@@ -89,4 +89,17 @@ model PasswordResetToken {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+
+model PlatformConnection {
+  id              String   @id @default(cuid())
+  user_id         String
+  platform        String   // youtube, facebook, etc.
+  platform_user_id String
+  access_token    String   @db.Text
+  refresh_token   String   @db.Text
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@unique([user_id, platform])
 } 
