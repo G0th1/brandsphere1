@@ -9,6 +9,8 @@ import { Footer } from "@/components/footer";
 import { useLanguage } from "@/contexts/language-context";
 import { useDemo } from "@/contexts/demo-context";
 import { Loader2, Zap, Calendar, BarChart3, FileEdit, MessageSquare, Settings2 } from "lucide-react";
+import { useSafeRouter, safeNavigate } from "@/lib/utils/navigation";
+import { useRouter } from "next/navigation";
 
 // Översättningar
 const translations = {
@@ -53,7 +55,22 @@ const translations = {
 export default function DemoLoginPage() {
     const { language } = useLanguage();
     const { startDemo, isLoading } = useDemo();
+    const router = useRouter();
+    const safeRouter = useSafeRouter();
     const t = translations[language === 'sv' ? 'sv' : 'en'];
+
+    const handleStartDemo = () => {
+        // Anropa både startDemo-funktionen och använd direkt navigering som extra åtgärd
+        startDemo();
+
+        // Vänta lite och navigera sedan direkt till dashboard även om startDemo skulle misslyckas
+        setTimeout(() => {
+            if (document.location.pathname.includes('/demo/login')) {
+                // Om vi fortfarande är på login-sidan, tvinga navigering till dashboard
+                safeNavigate('/demo/dashboard', router);
+            }
+        }, 1500);
+    };
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -77,7 +94,7 @@ export default function DemoLoginPage() {
                             <div className="pt-4">
                                 <Button
                                     size="lg"
-                                    onClick={startDemo}
+                                    onClick={handleStartDemo}
                                     disabled={isLoading}
                                     className="w-full md:w-auto"
                                 >
@@ -167,7 +184,7 @@ export default function DemoLoginPage() {
                                 </ul>
                             </CardContent>
                             <CardFooter className="border-t pt-4">
-                                <Button variant="outline" className="w-full" onClick={startDemo} disabled={isLoading}>
+                                <Button variant="outline" className="w-full" onClick={handleStartDemo} disabled={isLoading}>
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

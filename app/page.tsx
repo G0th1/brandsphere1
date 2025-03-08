@@ -8,10 +8,20 @@ import { Button } from '@/components/ui/button'
 import { ChevronRight, Check, Star, Zap } from 'lucide-react'
 import { useTranslation, useLanguage } from '@/contexts/language-context'
 import { homeTranslations } from '@/lib/translations'
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { safeNavigate, useSafeRouter } from "@/lib/utils/navigation";
 
 export default function HomePage() {
   const { language } = useLanguage();
   const t = useTranslation(homeTranslations);
+  const router = useRouter();
+  const safeRouter = useSafeRouter();
+
+  const handleTryDemo = (e: React.MouseEvent) => {
+    e.preventDefault();
+    safeNavigate('/demo/login', router);
+  };
 
   // Funktion för att skapa den understryckta versionen av titeln
   const renderTitleWithUnderline = () => {
@@ -78,7 +88,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
                 <Link href="/demo/login">
-                  <Button variant="secondary" size="lg" className="flex items-center gap-2">
+                  <Button variant="secondary" size="lg" className="flex items-center gap-2" onClick={handleTryDemo}>
                     <Zap className="h-4 w-4 text-yellow-500" />
                     {t.hero.tryDemo}
                   </Button>
@@ -221,7 +231,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
                 <Link href="/demo/login">
-                  <Button variant="secondary" size="lg" className="flex items-center gap-2">
+                  <Button variant="secondary" size="lg" className="flex items-center gap-2" onClick={handleTryDemo}>
                     <Zap className="h-4 w-4 text-yellow-500" />
                     {t.hero.tryDemo}
                   </Button>
