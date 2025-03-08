@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage, Language } from './language-context';
+import { safeNavigate } from '@/lib/utils/navigation';
 
 // Typ för demo-användare
 export interface DemoUser {
@@ -99,13 +100,8 @@ export function DemoProvider({ children }: DemoProviderProps) {
 
             // Omdirigera till dashboard efter kort väntetid
             setTimeout(() => {
-                // Försök med window.location som fallback om router inte fungerar
-                try {
-                    router.push('/demo/dashboard');
-                } catch (e) {
-                    console.error('Router navigation failed, using window.location instead:', e);
-                    window.location.href = '/demo/dashboard';
-                }
+                // Använd den säkra navigeringsfunktionen
+                safeNavigate('/demo/dashboard', router);
                 setIsLoading(false);
             }, 1000);
         } catch (error) {
@@ -118,12 +114,8 @@ export function DemoProvider({ children }: DemoProviderProps) {
     const exitDemo = () => {
         localStorage.removeItem('demoUser');
         setUser(null);
-        try {
-            router.push('/');
-        } catch (e) {
-            console.error('Router navigation failed, using window.location instead:', e);
-            window.location.href = '/';
-        }
+        // Använd den säkra navigeringsfunktionen
+        safeNavigate('/', router);
     };
 
     // Uppdatera användarinformation

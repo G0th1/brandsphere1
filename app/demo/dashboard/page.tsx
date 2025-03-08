@@ -47,6 +47,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { DemoSidebar } from "@/components/demo/sidebar";
 import { DemoHeader } from "@/components/demo/header";
 import { useDemo } from "@/contexts/demo-context";
+import { safeNavigate, useSafeRouter } from "@/lib/utils/navigation";
 
 // Komponent för Avatar
 const Avatar = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => (
@@ -243,6 +244,7 @@ export default function DemoDashboardPage() {
     const { language } = useLanguage();
     const { user } = useDemo();
     const router = useRouter();
+    const safeRouter = useSafeRouter();
     const t = translations[language === 'sv' ? 'sv' : 'en'];
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('overview');
@@ -461,28 +463,14 @@ export default function DemoDashboardPage() {
                                     <CardContent>
                                         <div className="space-y-2">
                                             {demoData.contentIdeas.map((idea, index) => (
-                                                <div key={index} className="p-3 border rounded-md flex items-start justify-between hover:bg-accent/50 cursor-pointer" onClick={() => {
-                                                    const url = `/demo/content?idea=${encodeURIComponent(idea)}`;
-                                                    try {
-                                                        router.push(url);
-                                                    } catch (e) {
-                                                        console.error('Router navigation failed, using window.location instead:', e);
-                                                        window.location.href = url;
-                                                    }
-                                                }}>
+                                                <div key={index} className="p-3 border rounded-md flex items-start justify-between hover:bg-accent/50 cursor-pointer" onClick={() => safeRouter.safeNavigate(`/demo/content?idea=${encodeURIComponent(idea)}`)}>
                                                     <div className="flex gap-3">
                                                         <Palette className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                                                         <span>{idea}</span>
                                                     </div>
                                                     <Button size="sm" variant="ghost" onClick={(e) => {
                                                         e.stopPropagation();
-                                                        const url = `/demo/content?idea=${encodeURIComponent(idea)}`;
-                                                        try {
-                                                            router.push(url);
-                                                        } catch (e) {
-                                                            console.error('Router navigation failed, using window.location instead:', e);
-                                                            window.location.href = url;
-                                                        }
+                                                        safeRouter.safeNavigate(`/demo/content?idea=${encodeURIComponent(idea)}`);
                                                     }}>
                                                         <ArrowRight className="h-4 w-4" />
                                                     </Button>

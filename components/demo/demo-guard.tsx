@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDemo } from "@/contexts/demo-context";
+import { safeNavigate } from "@/lib/utils/navigation";
 
 interface DemoGuardProps {
     children: React.ReactNode;
@@ -14,7 +15,7 @@ export function DemoGuard({ children }: DemoGuardProps) {
 
     useEffect(() => {
         if (isInitialized && !user) {
-            router.push("/demo/login");
+            safeNavigate("/demo/login", router);
         }
     }, [isInitialized, user, router]);
 
