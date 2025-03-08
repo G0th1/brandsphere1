@@ -5,11 +5,11 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { MobileMenu } from '@/components/mobile-menu'
 import { usePathname } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useEffect, useState } from 'react'
 import { useLanguage, useTranslation } from '@/contexts/language-context'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { commonTranslations } from '@/lib/translations'
+import { useSession, signOut } from 'next-auth/react'
 
 // Navigeringslänkar
 const navLinks = [
@@ -21,33 +21,13 @@ const navLinks = [
 ];
 
 export function Navbar() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const supabase = createClientComponentClient()
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === 'authenticated'
   const pathname = usePathname()
   const t = useTranslation(commonTranslations);
 
-  const checkSession = async () => {
-    try {
-      const { data, error } = await supabase.auth.getSession()
-      if (data.session) {
-        setIsAuthenticated(true)
-      } else {
-        setIsAuthenticated(false)
-      }
-    } catch (error) {
-      console.error('Error checking session:', error)
-      setIsAuthenticated(false)
-    }
-  }
-
-  useEffect(() => {
-    checkSession()
-  }, [pathname])
-
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setIsAuthenticated(false)
-    window.location.href = '/'
+    await signOut({ redirect: true, callbackUrl: '/' })
   }
 
   return (
@@ -100,7 +80,7 @@ export function Navbar() {
                   {t.navigation.login}
                 </Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/auth/register">
                 <Button size="sm">
                   {t.navigation.signup}
                 </Button>

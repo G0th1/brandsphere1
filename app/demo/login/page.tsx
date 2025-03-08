@@ -8,36 +8,56 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useLanguage } from "@/contexts/language-context";
-import { Loader2 } from "lucide-react";
+import { Loader2, Zap, Calendar, BarChart3, FileEdit, MessageSquare, Settings2, Check } from "lucide-react";
 
 // Översättningar
 const translations = {
     en: {
-        title: "Demo Premium Login",
-        description: "Try the premium version of BrandSphereAI with a demo account",
-        googleLogin: "Continue with Google (Demo)",
+        title: "Premium Demo Experience",
+        description: "Try all premium features without signing up or providing payment information",
+        googleLogin: "Start Premium Demo",
         backToHome: "Back to home",
-        loading: "Signing in...",
-        welcome: "Welcome to BrandSphereAI Premium"
+        loading: "Starting demo...",
+        welcome: "Welcome to BrandSphereAI Premium",
+        featuresTitle: "Experience these premium features",
+        features: [
+            "AI-powered content generation",
+            "Advanced analytics dashboard",
+            "Unlimited social media scheduling",
+            "Custom content calendar",
+            "Multi-platform publishing",
+            "Team collaboration tools"
+        ],
+        note: "This is a demo environment. No real actions will be taken on your social media accounts."
     },
     sv: {
-        title: "Demo Premium-inloggning",
-        description: "Testa premiumversionen av BrandSphereAI med ett demokonto",
-        googleLogin: "Fortsätt med Google (Demo)",
+        title: "Premium Demo-upplevelse",
+        description: "Testa alla premiumfunktioner utan att registrera dig eller ange betalningsinformation",
+        googleLogin: "Starta Premium Demo",
         backToHome: "Tillbaka till startsidan",
-        loading: "Loggar in...",
-        welcome: "Välkommen till BrandSphereAI Premium"
+        loading: "Startar demo...",
+        welcome: "Välkommen till BrandSphereAI Premium",
+        featuresTitle: "Upplev dessa premiumfunktioner",
+        features: [
+            "AI-driven innehållsgenerering",
+            "Avancerad analysdashboard",
+            "Obegränsad schemaläggning för sociala medier",
+            "Anpassad innehållskalender",
+            "Publicering på flera plattformar",
+            "Verktyg för teamsamarbete"
+        ],
+        note: "Detta är en demomiljö. Inga verkliga åtgärder kommer att utföras på dina sociala mediekonton."
     }
 };
 
 export default function DemoLoginPage() {
     const { language } = useLanguage();
-    const t = translations[language];
+    const t = translations[language === 'sv' ? 'sv' : 'en'];
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
     // Simulera inloggning med Google
-    const handleGoogleSignIn = () => {
+    const handleStartDemo = () => {
         setIsLoading(true);
 
         // Lagra demo-användarinformation i localStorage
@@ -61,58 +81,128 @@ export default function DemoLoginPage() {
         <div className="min-h-screen flex flex-col">
             <Navbar />
 
-            <main className="flex-1 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md">
-                    <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl font-bold tracking-tight">{t.title}</CardTitle>
-                        <CardDescription>{t.description}</CardDescription>
-                    </CardHeader>
+            <main className="flex-1 py-10">
+                <div className="container px-4 md:px-6">
+                    <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-center max-w-5xl mx-auto">
+                        <div className="space-y-4">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">
+                                <Zap className="h-4 w-4" />
+                                <span>Premium Demo</span>
+                            </div>
+                            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                                {t.title}
+                            </h1>
+                            <p className="text-muted-foreground md:text-xl">
+                                {t.description}
+                            </p>
 
-                    <CardContent className="space-y-4">
-                        <Button
-                            className="w-full flex items-center justify-center gap-2 h-10"
-                            onClick={handleGoogleSignIn}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span>{t.loading}</span>
-                                </>
-                            ) : (
-                                <>
-                                    <svg width="20" height="20" viewBox="0 0 24 24">
-                                        <path
-                                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                            fill="#4285F4"
-                                        />
-                                        <path
-                                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                            fill="#34A853"
-                                        />
-                                        <path
-                                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                            fill="#FBBC05"
-                                        />
-                                        <path
-                                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                            fill="#EA4335"
-                                        />
-                                    </svg>
-                                    <span>{t.googleLogin}</span>
-                                </>
-                            )}
-                        </Button>
-                    </CardContent>
+                            <div className="pt-4">
+                                <Button
+                                    size="lg"
+                                    onClick={handleStartDemo}
+                                    disabled={isLoading}
+                                    className="w-full md:w-auto"
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                            {t.loading}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Zap className="mr-2 h-5 w-5 text-yellow-500" />
+                                            {t.googleLogin}
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
 
-                    <CardFooter>
-                        <Link href="/" className="w-full">
-                            <Button variant="outline" className="w-full">
-                                {t.backToHome}
-                            </Button>
-                        </Link>
-                    </CardFooter>
-                </Card>
+                            <p className="text-sm text-muted-foreground pt-2">
+                                {t.note}
+                            </p>
+                        </div>
+
+                        <Card className="border-2 border-muted">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Zap className="h-5 w-5 text-yellow-500" />
+                                    {t.featuresTitle}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="space-y-3">
+                                    <li className="flex items-start gap-2">
+                                        <MessageSquare className="h-5 w-5 text-primary mt-0.5" />
+                                        <div>
+                                            <span className="font-medium">{t.features[0]}</span>
+                                            <p className="text-sm text-muted-foreground">
+                                                {language === 'sv' ?
+                                                    'Skapa engagerande innehåll automatiskt med vår AI' :
+                                                    'Automatically create engaging content with our AI'}
+                                            </p>
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <BarChart3 className="h-5 w-5 text-primary mt-0.5" />
+                                        <div>
+                                            <span className="font-medium">{t.features[1]}</span>
+                                            <p className="text-sm text-muted-foreground">
+                                                {language === 'sv' ?
+                                                    'Få detaljerade insikter om din prestanda' :
+                                                    'Get detailed insights about your performance'}
+                                            </p>
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <FileEdit className="h-5 w-5 text-primary mt-0.5" />
+                                        <div>
+                                            <span className="font-medium">{t.features[2]}</span>
+                                            <p className="text-sm text-muted-foreground">
+                                                {language === 'sv' ?
+                                                    'Schemalägg inlägg utan begränsningar' :
+                                                    'Schedule posts without limitations'}
+                                            </p>
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Calendar className="h-5 w-5 text-primary mt-0.5" />
+                                        <div>
+                                            <span className="font-medium">{t.features[3]}</span>
+                                            <p className="text-sm text-muted-foreground">
+                                                {language === 'sv' ?
+                                                    'Visualisera din innehållsstrategi med vår kalender' :
+                                                    'Visualize your content strategy with our calendar'}
+                                            </p>
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Settings2 className="h-5 w-5 text-primary mt-0.5" />
+                                        <div>
+                                            <span className="font-medium">{t.features[5]}</span>
+                                            <p className="text-sm text-muted-foreground">
+                                                {language === 'sv' ?
+                                                    'Samarbeta med ditt team i realtid' :
+                                                    'Collaborate with your team in real-time'}
+                                            </p>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </CardContent>
+                            <CardFooter className="border-t pt-4">
+                                <Button variant="outline" className="w-full" onClick={handleStartDemo} disabled={isLoading}>
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            {t.loading}
+                                        </>
+                                    ) : (
+                                        t.googleLogin
+                                    )}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </div>
+                </div>
             </main>
 
             <Footer />

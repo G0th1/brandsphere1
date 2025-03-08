@@ -39,7 +39,9 @@ import {
     Filter,
     Upload,
     Save,
-    Hash
+    Hash,
+    Copy,
+    Trash2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +58,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/contexts/language-context";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 // Avatar components
 const Avatar = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => (
@@ -338,44 +343,61 @@ const ContentEditor = ({
     onClose: () => void
 }) => {
     const { toast } = useToast();
-    const [editableContent, setEditableContent] = useState<ContentItem | null>(content);
-    const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(content?.platforms || []);
-    const [contentText, setContentText] = useState(content?.content || '');
-    const [tags, setTags] = useState<string[]>(content?.tags || []);
+    const [editedContent, setEditedContent] = useState<ContentItem>(content || {
+        id: "",
+        title: "",
+        type: "post",
+        status: "draft",
+        platforms: [],
+        createdAt: new Date().toISOString(),
+        content: "",
+        tags: []
+    });
     const [newTag, setNewTag] = useState('');
+    const [showAIOptions, setShowAIOptions] = useState(false);
 
-    // Handle platform selection
+    // Hantera plattformstogglar
     const togglePlatform = (platform: string) => {
-        if (selectedPlatforms.includes(platform)) {
-            setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform));
+        const platforms = editedContent.platforms || [];
+
+        if (platforms.includes(platform)) {
+            setEditedContent({
+                ...editedContent,
+                platforms: platforms.filter(p => p !== platform)
+            });
         } else {
-            setSelectedPlatforms([...selectedPlatforms, platform]);
+            setEditedContent({
+                ...editedContent,
+                platforms: [...platforms, platform]
+            });
         }
     };
 
-    // Handle tag addition
+    // Lägg till tagg
     const addTag = () => {
-        if (newTag.trim() && !tags.includes(newTag.trim())) {
-            setTags([...tags, newTag.trim()]);
-            setNewTag('');
+        if (newTag.trim() === '') return;
+
+        if (!editedContent.tags.includes(newTag.trim())) {
+            setEditedContent({
+                ...editedContent,
+                tags: [...editedContent.tags, newTag.trim()]
+            });
         }
+
+        setNewTag('');
     };
 
-    // Handle tag removal
+    // Ta bort tagg
     const removeTag = (tagToRemove: string) => {
-        setTags(tags.filter(tag => tag !== tagToRemove));
+        setEditedContent({
+            ...editedContent,
+            tags: editedContent.tags.filter(tag => tag !== tagToRemove)
+        });
     };
 
-    // Handle save
+    // Spara ändringar
     const handleSave = () => {
-        const updatedContent = {
-            ...editableContent!,
-            platforms: selectedPlatforms,
-            content: contentText,
-            tags: tags
-        };
-
-        setContent(updatedContent);
+        setContent(editedContent);
         toast({
             title: "Content updated",
             description: "Your content has been saved successfully."
@@ -383,209 +405,205 @@ const ContentEditor = ({
         onClose();
     };
 
-    if (!editableContent) return null;
-
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold">Edit Content</h2>
-                <Button variant="ghost" size="sm" onClick={onClose}>
+        <div className="bg-card rounded-lg shadow-lg border max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-xl font-semibold">
+                    {content?.id?.startsWith('new') ? 'Skapa nytt innehåll' : 'Redigera innehåll'}
+                </h2>
+                <Button variant="ghost" size="icon" onClick={onClose}>
                     <X className="h-4 w-4" />
                 </Button>
             </div>
 
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium mb-1">Title</label>
-                    <Input
-                        value={editableContent.title}
-                        onChange={(e) => setEditableContent({ ...editableContent, title: e.target.value })}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1">Content Type</label>
-                    <div className="flex space-x-2">
-                        <Button
-                            variant={editableContent.type === 'post' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setEditableContent({ ...editableContent, type: 'post' })}
-                        >
-                            <FileEdit className="h-4 w-4 mr-1" /> Post
-                        </Button>
-                        <Button
-                            variant={editableContent.type === 'video' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setEditableContent({ ...editableContent, type: 'video' })}
-                        >
-                            <VideoIcon className="h-4 w-4 mr-1" /> Video
-                        </Button>
-                        <Button
-                            variant={editableContent.type === 'story' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setEditableContent({ ...editableContent, type: 'story' })}
-                        >
-                            <Image className="h-4 w-4 mr-1" /> Story
-                        </Button>
-                        <Button
-                            variant={editableContent.type === 'reel' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setEditableContent({ ...editableContent, type: 'reel' })}
-                        >
-                            <VideoIcon className="h-4 w-4 mr-1" /> Reel
-                        </Button>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1">Status</label>
-                    <div className="flex space-x-2">
-                        <Button
-                            variant={editableContent.status === 'draft' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setEditableContent({ ...editableContent, status: 'draft' })}
-                        >
-                            Draft
-                        </Button>
-                        <Button
-                            variant={editableContent.status === 'scheduled' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setEditableContent({ ...editableContent, status: 'scheduled' })}
-                        >
-                            Scheduled
-                        </Button>
-                        <Button
-                            variant={editableContent.status === 'published' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setEditableContent({ ...editableContent, status: 'published' })}
-                        >
-                            Published
-                        </Button>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1">Platforms</label>
-                    <div className="flex space-x-2">
-                        <Button
-                            variant={selectedPlatforms.includes('facebook') ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => togglePlatform('facebook')}
-                        >
-                            <Facebook className="h-4 w-4 mr-1 text-blue-600" /> Facebook
-                        </Button>
-                        <Button
-                            variant={selectedPlatforms.includes('instagram') ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => togglePlatform('instagram')}
-                        >
-                            <Instagram className="h-4 w-4 mr-1 text-pink-600" /> Instagram
-                        </Button>
-                        <Button
-                            variant={selectedPlatforms.includes('twitter') ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => togglePlatform('twitter')}
-                        >
-                            <Twitter className="h-4 w-4 mr-1 text-blue-400" /> Twitter
-                        </Button>
-                        <Button
-                            variant={selectedPlatforms.includes('youtube') ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => togglePlatform('youtube')}
-                        >
-                            <Youtube className="h-4 w-4 mr-1 text-red-600" /> YouTube
-                        </Button>
-                    </div>
-                </div>
-
-                {editableContent.status === 'scheduled' && (
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Schedule Date</label>
+            <div className="p-4 flex-1 overflow-y-auto">
+                <div className="space-y-4">
+                    {/* Titel */}
+                    <div className="space-y-2">
+                        <Label htmlFor="title">Titel</Label>
                         <Input
-                            type="datetime-local"
-                            value={new Date(editableContent.scheduledFor || Date.now()).toISOString().slice(0, 16)}
-                            onChange={(e) => setEditableContent({ ...editableContent, scheduledFor: new Date(e.target.value).toISOString() })}
+                            id="title"
+                            value={editedContent.title}
+                            onChange={(e) => setEditedContent({ ...editedContent, title: e.target.value })}
+                            placeholder="Ange en titel för ditt inlägg"
                         />
                     </div>
-                )}
 
-                <div>
-                    <label className="block text-sm font-medium mb-1">Content</label>
-                    <textarea
-                        className="w-full min-h-[200px] border rounded-md p-2"
-                        value={contentText}
-                        onChange={(e) => setContentText(e.target.value)}
-                        placeholder="Write your content here..."
-                    />
-                </div>
+                    {/* Typ */}
+                    <div className="space-y-2">
+                        <Label>Innehållstyp</Label>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                variant={editedContent.type === 'post' ? 'default' : 'outline'}
+                                onClick={() => setEditedContent({ ...editedContent, type: 'post' })}
+                                className="flex items-center gap-1"
+                                size="sm"
+                            >
+                                <FileEdit className="h-4 w-4" />
+                                Inlägg
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={editedContent.type === 'video' ? 'default' : 'outline'}
+                                onClick={() => setEditedContent({ ...editedContent, type: 'video' })}
+                                className="flex items-center gap-1"
+                                size="sm"
+                            >
+                                <VideoIcon className="h-4 w-4" />
+                                Video
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={editedContent.type === 'story' ? 'default' : 'outline'}
+                                onClick={() => setEditedContent({ ...editedContent, type: 'story' })}
+                                className="flex items-center gap-1"
+                                size="sm"
+                            >
+                                <Image className="h-4 w-4" />
+                                Story
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={editedContent.type === 'reel' ? 'default' : 'outline'}
+                                onClick={() => setEditedContent({ ...editedContent, type: 'reel' })}
+                                className="flex items-center gap-1"
+                                size="sm"
+                            >
+                                <VideoIcon className="h-4 w-4" />
+                                Reel
+                            </Button>
+                        </div>
+                    </div>
 
-                <div>
-                    <label className="block text-sm font-medium mb-1">Image</label>
-                    {editableContent.image ? (
-                        <div className="relative">
-                            <img
-                                src={editableContent.image}
-                                alt={editableContent.title}
-                                className="w-full h-40 object-cover rounded-md"
+                    {/* Plattformar */}
+                    <div className="space-y-2">
+                        <Label>Plattformar</Label>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                variant={editedContent.platforms?.includes('instagram') ? 'default' : 'outline'}
+                                onClick={() => togglePlatform('instagram')}
+                                className="flex items-center gap-1"
+                                size="sm"
+                            >
+                                <Instagram className="h-4 w-4" />
+                                Instagram
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={editedContent.platforms?.includes('facebook') ? 'default' : 'outline'}
+                                onClick={() => togglePlatform('facebook')}
+                                className="flex items-center gap-1"
+                                size="sm"
+                            >
+                                <Facebook className="h-4 w-4" />
+                                Facebook
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={editedContent.platforms?.includes('twitter') ? 'default' : 'outline'}
+                                onClick={() => togglePlatform('twitter')}
+                                className="flex items-center gap-1"
+                                size="sm"
+                            >
+                                <Twitter className="h-4 w-4" />
+                                Twitter
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={editedContent.platforms?.includes('youtube') ? 'default' : 'outline'}
+                                onClick={() => togglePlatform('youtube')}
+                                className="flex items-center gap-1"
+                                size="sm"
+                            >
+                                <Youtube className="h-4 w-4" />
+                                YouTube
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Innehåll */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <Label htmlFor="content">Innehåll</Label>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="flex items-center gap-1 text-yellow-500"
+                                onClick={() => setShowAIOptions(!showAIOptions)}
+                            >
+                                <Zap className="h-4 w-4" />
+                                AI-assistent
+                            </Button>
+                        </div>
+                        <Textarea
+                            id="content"
+                            value={editedContent.content}
+                            onChange={(e) => setEditedContent({ ...editedContent, content: e.target.value })}
+                            placeholder="Skriv ditt inlägg här..."
+                            rows={6}
+                        />
+                    </div>
+
+                    {/* Taggar */}
+                    <div className="space-y-2">
+                        <Label htmlFor="tags">Taggar</Label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                id="tags"
+                                value={newTag}
+                                onChange={(e) => setNewTag(e.target.value)}
+                                placeholder="Lägg till tagg..."
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        addTag();
+                                    }
+                                }}
                             />
                             <Button
-                                variant="destructive"
-                                size="sm"
-                                className="absolute top-2 right-2"
-                                onClick={() => setEditableContent({ ...editableContent, image: undefined })}
+                                type="button"
+                                variant="outline"
+                                onClick={addTag}
+                                size="icon"
                             >
-                                <X className="h-4 w-4" />
+                                <Hash className="h-4 w-4" />
                             </Button>
                         </div>
-                    ) : (
-                        <div className="border border-dashed rounded-md p-8 flex flex-col items-center justify-center">
-                            <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">Drag and drop an image or click to upload</p>
-                            <Button variant="outline" size="sm" className="mt-2">
-                                Choose File
-                            </Button>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                            {editedContent.tags.map(tag => (
+                                <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                                    #{tag}
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => removeTag(tag)}
+                                        size="icon"
+                                        className="h-4 w-4 p-0 ml-1"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </Badge>
+                            ))}
                         </div>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1">Tags</label>
-                    <div className="flex items-center mb-2">
-                        <Input
-                            value={newTag}
-                            onChange={(e) => setNewTag(e.target.value)}
-                            placeholder="Add a tag"
-                            className="mr-2"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    addTag();
-                                }
-                            }}
-                        />
-                        <Button variant="outline" size="sm" onClick={addTag}>
-                            <PlusCircle className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {tags.map(tag => (
-                            <div key={tag} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full text-xs">
-                                <Hash className="h-3 w-3" />
-                                {tag}
-                                <button onClick={() => removeTag(tag)} className="text-muted-foreground hover:text-foreground">
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4 border-t">
-                <Button variant="outline" onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSave}>
-                    <Save className="h-4 w-4 mr-1" /> Save Changes
-                </Button>
+            <div className="p-4 border-t flex justify-between">
+                <Button variant="outline" onClick={onClose}>Avbryt</Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowAIOptions(true)}
+                        className="flex items-center gap-1"
+                    >
+                        <Zap className="h-4 w-4 text-yellow-500" />
+                        AI-generera innehåll
+                    </Button>
+                    <Button onClick={handleSave}>Spara</Button>
+                </div>
             </div>
         </div>
     );
@@ -593,262 +611,500 @@ const ContentEditor = ({
 
 export default function DemoContentPage() {
     const router = useRouter();
-    const [user, setUser] = useState<DemoUser | null>(null);
-    const [mounted, setMounted] = useState(false);
     const [contentItems, setContentItems] = useState<ContentItem[]>(sampleContentItems);
     const [activeTab, setActiveTab] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
-    const [showContentEditor, setShowContentEditor] = useState(false);
-    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
-    const [ideaFromUrl, setIdeaFromUrl] = useState<string | null>(null);
+    const [showEditor, setShowEditor] = useState(false);
+    const [currentContent, setCurrentContent] = useState<ContentItem | null>(null);
+    const [user, setUser] = useState<DemoUser | null>(null);
+    const [mounted, setMounted] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showAIAssistant, setShowAIAssistant] = useState(false);
+    const [aiGenerating, setAiGenerating] = useState(false);
+    const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+    const [selectedSuggestion, setSelectedSuggestion] = useState('');
+    const { toast } = useToast();
 
     useEffect(() => {
-        // Set mounted to true when component has mounted
         setMounted(true);
 
-        // Get idea from URL if available
-        const idea = searchParams.get('idea');
-        if (idea) {
-            setIdeaFromUrl(idea);
-
-            // Create a new content item from the idea
-            const newContent: ContentItem = {
-                id: Date.now().toString(),
-                title: idea,
-                type: "post",
-                status: "draft",
-                platforms: ["instagram", "facebook", "twitter"],
-                createdAt: new Date().toISOString(),
-                content: `Here's a draft based on your idea: "${idea}".\n\nExpand on this with your specific content.`,
-                tags: idea.toLowerCase().split(' ').filter(word => word.length > 3).slice(0, 3)
-            };
-
-            setSelectedContent(newContent);
-            setShowContentEditor(true);
+        // Hämta demo-användardata från localStorage
+        const storedUser = localStorage.getItem('demoUser');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        } else {
+            // Om ingen demo-användare finns, omdirigera till startsidan
+            router.push('/');
         }
+    }, []);
 
-        // Check if user is in demo mode
-        const demoUserStr = localStorage.getItem('demoUser');
-        if (!demoUserStr) {
-            // If no demo user, redirect to demo login
-            router.push('/demo/login');
-            return;
-        }
-
-        try {
-            const demoUser = JSON.parse(demoUserStr) as DemoUser;
-            setUser(demoUser);
-        } catch (error) {
-            console.error('Error parsing demo user:', error);
-            router.push('/demo/login');
-        }
-    }, [router, searchParams]);
-
-    // If component not mounted yet, show nothing
-    if (!mounted) return null;
-
-    // If user not logged in, show nothing (we're redirecting anyway)
-    if (!user) return null;
-
-    // Filter content based on active tab and search query
+    // Filtrera innehåll baserat på aktiv flik och sökning
     const filteredContent = contentItems.filter(item => {
         const matchesTab = activeTab === 'all' || item.status === activeTab;
-        const matchesSearch = searchQuery === '' ||
-            item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesSearch = searchTerm === '' ||
+            item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
         return matchesTab && matchesSearch;
     });
 
-    // Handle new content creation
+    // Hantera skapande av nytt innehåll
     const handleCreateContent = () => {
         const newContent: ContentItem = {
-            id: Date.now().toString(),
-            title: "New Content",
+            id: `new-${Date.now()}`,
+            title: "Nytt inlägg",
             type: "post",
             status: "draft",
-            platforms: [],
+            platforms: ["instagram"],
             createdAt: new Date().toISOString(),
             content: "",
-            tags: []
+            tags: [],
         };
 
-        setSelectedContent(newContent);
-        setShowContentEditor(true);
+        setCurrentContent(newContent);
+        setShowEditor(true);
     };
 
-    // Handle content editing
+    // Hantera redigering av befintligt innehåll
     const handleEditContent = (content: ContentItem) => {
-        setSelectedContent(content);
-        setShowContentEditor(true);
+        setCurrentContent(content);
+        setShowEditor(true);
     };
 
-    // Handle content saving
+    // Spara innehåll (nytt eller redigerat)
     const handleSaveContent = (content: ContentItem) => {
-        const existingIndex = contentItems.findIndex(item => item.id === content.id);
-
-        if (existingIndex >= 0) {
-            // Update existing content
-            const updatedItems = [...contentItems];
-            updatedItems[existingIndex] = content;
-            setContentItems(updatedItems);
+        // Kontrollera om det är nytt innehåll eller uppdatering
+        if (contentItems.find(item => item.id === content.id)) {
+            // Uppdatera befintligt innehåll
+            setContentItems(contentItems.map(item =>
+                item.id === content.id ? content : item
+            ));
+            toast({
+                title: "Innehåll uppdaterat",
+                description: "Ditt inlägg har uppdaterats.",
+            });
         } else {
-            // Add new content
+            // Lägg till nytt innehåll
             setContentItems([content, ...contentItems]);
+            toast({
+                title: "Innehåll skapat",
+                description: "Ditt nya inlägg har skapats.",
+            });
         }
 
-        setSelectedContent(null);
-        setShowContentEditor(false);
+        setShowEditor(false);
+        setCurrentContent(null);
     };
+
+    // Hantera radering av innehåll
+    const handleDeleteContent = (id: string) => {
+        setContentItems(contentItems.filter(item => item.id !== id));
+        toast({
+            title: "Innehåll raderat",
+            description: "Inlägget har tagits bort.",
+        });
+    };
+
+    // Hantera statusändring (schemalägg/publicera)
+    const handleStatusChange = (id: string, newStatus: 'draft' | 'scheduled' | 'published') => {
+        setContentItems(contentItems.map(item => {
+            if (item.id === id) {
+                const updatedItem = { ...item, status: newStatus };
+
+                // Om statusen ändras till scheduled och vi inte har ett schemalagt datum
+                if (newStatus === 'scheduled' && !item.scheduledFor) {
+                    // Schemalägg för 24 timmar framåt
+                    updatedItem.scheduledFor = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+                }
+
+                return updatedItem;
+            }
+            return item;
+        }));
+
+        toast({
+            title: newStatus === 'published' ? "Innehåll publicerat" :
+                newStatus === 'scheduled' ? "Innehåll schemalagt" : "Sparat som utkast",
+            description: newStatus === 'published' ? "Inlägget har publicerats (demo)." :
+                newStatus === 'scheduled' ? "Inlägget har schemalagts för publicering." :
+                    "Inlägget har sparats som utkast.",
+        });
+    };
+
+    // Generera AI-förslag
+    const generateAISuggestions = () => {
+        setAiGenerating(true);
+        setShowAIAssistant(true);
+
+        // Simulera laddningstid för AI-generering
+        setTimeout(() => {
+            const suggestions = [
+                "10 sätt att öka engagemanget på Instagram med hjälp av BrandSphereAI",
+                "Hur framgångsrika företag förbereder sig för högsäsong",
+                "De bästa hashtags inom din bransch den här veckan",
+                "Bakom kulisserna - presentera ditt team på ett personligt sätt",
+                "Kundnöjdhetsundersökning - fråga följare vad de vill se mer av"
+            ];
+            setAiSuggestions(suggestions);
+            setAiGenerating(false);
+        }, 2000);
+    };
+
+    // Använd AI-förslag
+    const useAISuggestion = (suggestion: string) => {
+        if (!currentContent) return;
+
+        setSelectedSuggestion(suggestion);
+
+        // Simulera AI som skapar innehåll baserat på förslaget
+        setTimeout(() => {
+            const generatedContent = `${suggestion}\n\nHär är lite AI-genererat innehåll baserat på din valda rubrik. Detta skulle vara en mycket längre och mer detaljerad text i den riktiga produkten, med specifika förslag och idéer för ditt sociala medieinlägg.`;
+
+            const updatedContent = {
+                ...currentContent,
+                title: suggestion,
+                content: generatedContent,
+                tags: ['AI-genererat', 'BrandSphereAI', 'Sociala Medier'],
+            };
+
+            setCurrentContent(updatedContent);
+            setShowAIAssistant(false);
+            setSelectedSuggestion('');
+
+            toast({
+                title: "AI-genererat innehåll tillagt",
+                description: "Innehållet har genererats av vår AI (demo).",
+            });
+        }, 1500);
+    };
+
+    // Schemalägg flera inlägg
+    const bulkSchedule = () => {
+        const draftItems = contentItems.filter(item => item.status === 'draft');
+
+        if (draftItems.length === 0) {
+            toast({
+                title: "Inga utkast att schemalägga",
+                description: "Du har inga utkaststinlägg att schemalägga.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        // Schemalägg varje utkast med ett jämnt fördelat tidsintervall över nästa vecka
+        const updatedItems = contentItems.map(item => {
+            if (item.status === 'draft') {
+                // Beräkna ett slumpmässigt datum inom nästa vecka
+                const daysToAdd = Math.floor(Math.random() * 7) + 1;
+                const hoursToAdd = Math.floor(Math.random() * 12) + 9; // 9 AM - 9 PM
+
+                const newDate = new Date();
+                newDate.setDate(newDate.getDate() + daysToAdd);
+                newDate.setHours(hoursToAdd, 0, 0, 0);
+
+                return {
+                    ...item,
+                    status: 'scheduled' as const,
+                    scheduledFor: newDate.toISOString()
+                };
+            }
+            return item;
+        });
+
+        setContentItems(updatedItems);
+
+        toast({
+            title: "Inlägg schemalagda",
+            description: `${draftItems.length} inlägg har schemalagts för publicering.`,
+        });
+    };
+
+    // Duplicera innehåll
+    const duplicateContent = (content: ContentItem) => {
+        const newContent: ContentItem = {
+            ...content,
+            id: `duplicate-${Date.now()}`,
+            title: `Kopia av: ${content.title}`,
+            status: 'draft',
+            createdAt: new Date().toISOString(),
+            scheduledFor: undefined
+        };
+
+        setContentItems([newContent, ...contentItems]);
+
+        toast({
+            title: "Innehåll duplicerat",
+            description: "En kopia av inlägget har skapats.",
+        });
+    };
+
+    if (!mounted) {
+        return null;
+    }
 
     return (
         <div className="min-h-screen flex">
-            {/* Sidebar */}
             <DemoSidebar activeItem="content" />
 
-            {/* Main content */}
             <div className="flex-1 flex flex-col">
-                {/* Top navigation */}
                 <DemoHeader />
 
-                {/* Demo notice */}
-                <div className="bg-primary text-primary-foreground py-2 px-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                        <Info className="h-4 w-4" />
-                        <span>Premium Demo Mode</span>
+                <main className="flex-1 p-4 md:p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h1 className="text-2xl font-bold">Innehållshantering</h1>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={bulkSchedule}
+                                className="hidden md:flex items-center gap-2"
+                            >
+                                <Calendar className="h-4 w-4" />
+                                Schemalägg alla utkast
+                            </Button>
+                            <Button onClick={handleCreateContent} className="flex items-center gap-2">
+                                <PlusCircle className="h-4 w-4" />
+                                Skapa innehåll
+                            </Button>
+                        </div>
                     </div>
-                </div>
 
-                {/* Content */}
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                    {showContentEditor ? (
-                        <Card>
-                            <CardContent className="pt-6">
-                                <ContentEditor
-                                    content={selectedContent}
-                                    setContent={handleSaveContent}
-                                    onClose={() => {
-                                        setSelectedContent(null);
-                                        setShowContentEditor(false);
-                                    }}
+                    <div className="mb-6 flex flex-col md:flex-row gap-4 justify-between">
+                        <div className="flex">
+                            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                                <TabsList>
+                                    <TabsTrigger value="all">Alla</TabsTrigger>
+                                    <TabsTrigger value="draft">Utkast</TabsTrigger>
+                                    <TabsTrigger value="scheduled">Schemalagda</TabsTrigger>
+                                    <TabsTrigger value="published">Publicerade</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <div className="relative w-full md:w-64">
+                                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder="Sök innehåll..."
+                                    className="pl-8"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
                                 />
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="space-y-6">
-                            {/* Page heading */}
-                            <div className="flex flex-col md:flex-row justify-between md:items-center">
-                                <div>
-                                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Content Management</h1>
-                                    <p className="text-muted-foreground">Create, schedule, and manage your social media content</p>
-                                </div>
-                                <div className="mt-4 md:mt-0">
-                                    <Button className="gap-2" onClick={handleCreateContent}>
-                                        <PlusCircle className="h-4 w-4" />
-                                        Create New Content
-                                    </Button>
-                                </div>
                             </div>
+                            <Button variant="outline" size="icon">
+                                <Filter className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
 
-                            {/* Filters and search */}
-                            <div className="flex flex-col md:flex-row gap-4">
-                                <div className="flex-1">
-                                    <Input
-                                        placeholder="Search content..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="max-w-md"
-                                    />
-                                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                        <Search className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                </div>
-                                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
-                                    <TabsList>
-                                        <TabsTrigger value="all">All</TabsTrigger>
-                                        <TabsTrigger value="draft">Drafts</TabsTrigger>
-                                        <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-                                        <TabsTrigger value="published">Published</TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </div>
-
-                            {/* Content list */}
-                            <div className="space-y-4">
-                                {filteredContent.length === 0 ? (
-                                    <div className="border rounded-lg p-8 text-center">
-                                        <FileEdit className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                        <h3 className="text-lg font-medium mb-2">No content found</h3>
-                                        <p className="text-muted-foreground mb-4">
-                                            {searchQuery
-                                                ? "No content matches your search criteria. Try adjusting your filters."
-                                                : "You don't have any content yet. Create your first content to get started."}
-                                        </p>
-                                        <Button onClick={handleCreateContent}>Create Content</Button>
-                                    </div>
-                                ) : (
-                                    filteredContent.map(item => (
-                                        <Card key={item.id} className="overflow-hidden">
-                                            <div className="flex flex-col md:flex-row">
-                                                {item.image && (
-                                                    <div className="w-full md:w-48 h-48 md:h-auto flex-shrink-0">
-                                                        <img
-                                                            src={item.image}
-                                                            alt={item.title}
-                                                            className="w-full h-full object-cover"
-                                                        />
+                    {filteredContent.length > 0 ? (
+                        <div className="grid gap-4">
+                            {filteredContent.map(content => (
+                                <Card key={content.id} className="overflow-hidden">
+                                    <div className="flex flex-col md:flex-row">
+                                        {content.image && (
+                                            <div className="w-full md:w-48 h-48 overflow-hidden bg-muted">
+                                                <img
+                                                    src={content.image}
+                                                    alt={content.title}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        )}
+                                        <div className="flex-1 p-4">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <ContentTypeBadge type={content.type} />
+                                                        <StatusBadge status={content.status} />
                                                     </div>
-                                                )}
-                                                <div className="flex-1 p-4">
-                                                    <div className="flex flex-col md:flex-row justify-between">
-                                                        <div>
-                                                            <h3 className="text-lg font-bold">{item.title}</h3>
-                                                            <div className="flex flex-wrap gap-2 mt-1 mb-2">
-                                                                <ContentTypeBadge type={item.type} />
-                                                                <StatusBadge status={item.status} />
-                                                                <div className="px-2 py-1 rounded-full bg-gray-100 text-gray-800 text-xs font-medium flex items-center">
-                                                                    {renderPlatformIcons(item.platforms)}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 mt-2 md:mt-0">
-                                                            <Button variant="outline" size="sm" onClick={() => handleEditContent(item)}>
-                                                                <Pencil className="h-4 w-4 mr-1" /> Edit
-                                                            </Button>
-                                                            <Button variant="ghost" size="sm">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-
-                                                    <p className="text-muted-foreground mt-2 line-clamp-2">{item.content}</p>
-
-                                                    <div className="flex flex-wrap gap-2 mt-3">
-                                                        {item.tags.map(tag => (
-                                                            <div key={tag} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full text-xs">
-                                                                <Hash className="h-3 w-3" />
-                                                                {tag}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
-                                                        <div>Created: {formatDate(item.createdAt)}</div>
-                                                        {item.scheduledFor && (
-                                                            <div>Scheduled for: {formatDate(item.scheduledFor)}</div>
-                                                        )}
-                                                    </div>
+                                                    <h3 className="text-lg font-semibold">{content.title}</h3>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleEditContent(content)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => duplicateContent(content)}
+                                                    >
+                                                        <Copy className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDeleteContent(content.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             </div>
-                                        </Card>
-                                    ))
-                                )}
-                            </div>
+
+                                            <div className="mt-2">
+                                                <p className="text-muted-foreground line-clamp-2">{content.content}</p>
+                                            </div>
+
+                                            <div className="mt-4 flex flex-wrap gap-1">
+                                                {content.tags.map(tag => (
+                                                    <Badge key={tag} variant="secondary" className="text-xs">
+                                                        #{tag}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+
+                                            <div className="mt-4 flex flex-wrap justify-between items-center">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-sm text-muted-foreground">
+                                                        Skapad: {formatDate(content.createdAt)}
+                                                    </div>
+                                                    {content.scheduledFor && (
+                                                        <div className="text-sm text-muted-foreground">
+                                                            Schemalagd: {formatDate(content.scheduledFor)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-2 mt-2 md:mt-0">
+                                                    {renderPlatformIcons(content.platforms)}
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 flex items-center gap-2">
+                                                {content.status === 'draft' && (
+                                                    <>
+                                                        <Button
+                                                            variant="default"
+                                                            size="sm"
+                                                            onClick={() => handleStatusChange(content.id, 'scheduled')}
+                                                        >
+                                                            Schemalägg
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleStatusChange(content.id, 'published')}
+                                                        >
+                                                            Publicera nu
+                                                        </Button>
+                                                    </>
+                                                )}
+                                                {content.status === 'scheduled' && (
+                                                    <>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleStatusChange(content.id, 'draft')}
+                                                        >
+                                                            Avbryt schemaläggning
+                                                        </Button>
+                                                        <Button
+                                                            variant="default"
+                                                            size="sm"
+                                                            onClick={() => handleStatusChange(content.id, 'published')}
+                                                        >
+                                                            Publicera nu
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <FileEdit className="h-12 w-12 text-muted-foreground mb-4" />
+                            <h3 className="text-lg font-medium mb-2">Inga inlägg hittades</h3>
+                            <p className="text-muted-foreground mb-4">
+                                {searchTerm ? 'Ingen träff på din sökning. Prova med något annat.' : 'Börja med att skapa ditt första inlägg.'}
+                            </p>
+                            <Button onClick={handleCreateContent}>Skapa innehåll</Button>
                         </div>
                     )}
                 </main>
             </div>
+
+            {/* Innehållseditor */}
+            {showEditor && currentContent && (
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <ContentEditor
+                        content={currentContent}
+                        setContent={handleSaveContent}
+                        onClose={() => {
+                            setShowEditor(false);
+                            setCurrentContent(null);
+                            setShowAIAssistant(false);
+                        }}
+                    />
+
+                    {/* AI-assistent panel */}
+                    {showAIAssistant && (
+                        <div className="absolute top-0 right-0 bottom-0 w-full md:w-96 bg-card border-l shadow-xl p-4 overflow-auto">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-medium flex items-center gap-2">
+                                    <Zap className="h-5 w-5 text-yellow-500" />
+                                    AI-innehållsassistent
+                                </h3>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setShowAIAssistant(false)}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            {aiGenerating ? (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                                    <p className="text-center text-muted-foreground">
+                                        Genererar innehållsförslag med AI...
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <p className="text-sm text-muted-foreground">
+                                        Välj ett av våra AI-genererade innehållsförslag för att komma igång snabbt.
+                                    </p>
+
+                                    <div className="space-y-2">
+                                        {aiSuggestions.map((suggestion, index) => (
+                                            <div
+                                                key={index}
+                                                onClick={() => useAISuggestion(suggestion)}
+                                                className={`p-3 rounded-md border cursor-pointer transition-colors ${selectedSuggestion === suggestion
+                                                        ? 'bg-primary/10 border-primary'
+                                                        : 'hover:bg-accent'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <p className="font-medium">{suggestion}</p>
+                                                    {selectedSuggestion === suggestion && (
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="pt-4">
+                                        <Button
+                                            className="w-full"
+                                            variant="outline"
+                                            onClick={() => generateAISuggestions()}
+                                        >
+                                            Generera fler förslag
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 } 

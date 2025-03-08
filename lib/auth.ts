@@ -28,6 +28,7 @@ declare module "next-auth/jwt" {
         provider?: string;
         youtubeAccess?: boolean;
         hasSocialAccounts?: boolean;
+        accessToken?: string;
     }
 }
 
@@ -134,7 +135,8 @@ export const authOptions: NextAuthOptions = {
             }
             return session;
         },
-        async jwt({ token, user, account }) {
+        async jwt({ token, user, account, trigger, session }) {
+            // När initial inloggning sker
             if (account && user) {
                 console.log(`Creating JWT for account type: ${account.provider}`);
                 token.accessToken = account.access_token;
@@ -145,12 +147,24 @@ export const authOptions: NextAuthOptions = {
                     token.hasSocialAccounts = true;
                 }
             }
+
+            // Vid uppdatering av sessionen
+            if (trigger === "update" && session) {
+                // Kopiera relevanta fält från session.user till token
+                if (session.user?.name) token.name = session.user.name;
+                if (session.user?.email) token.email = session.user.email;
+                if (session.user?.image) token.picture = session.user.image;
+
+                console.log(`JWT updated for user: ${token.email}`);
+            }
+
             return token;
         },
         async signIn({ user, account, profile }) {
             try {
                 console.log(`Sign in attempt with provider: ${account?.provider}`);
 
+                // För Google-inloggning
                 if (account?.provider === 'google') {
                     try {
                         console.log(`Checking YouTube API access with token: ${account.access_token?.substring(0, 10)}...`);
@@ -176,12 +190,26 @@ export const authOptions: NextAuthOptions = {
                         return true;
                     }
                 }
+
+                // För övriga providers
                 return true;
             } catch (error) {
                 console.error('Sign in error:', error);
                 return false;
             }
         },
+        async redirect({ url, baseUrl }) {
+            // Säkerställ att URL:en börjar med basen om det är en relativ URL
+            if (url.startsWith("/")) {
+                return `${baseUrl}${url}`;
+            }
+            // Om URL:en är för samma webbplats, tillåt redirect
+            else if (url.startsWith(baseUrl)) {
+                return url;
+            }
+            // Annars, omdirigera till standardsidan
+            return baseUrl;
+        }
     },
     events: {
         async signIn(message) {
@@ -192,6 +220,24 @@ export const authOptions: NextAuthOptions = {
         },
         async createUser(message) {
             console.log('Create user event:', message);
+
+            // Här kan du lägga till ytterligare initialisering av användardata om det behövs
+            if (message.user.id) {
+                try {
+                    // Skapa en gratis prenumeration för nya användare
+                    await db.subscription.create({
+                        data: {
+                            userId: message.user.id,
+                            plan: "Free",
+                            status: "active",
+                            billingCycle: "monthly",
+                        }
+                    });
+                    console.log(`Created free subscription for new user: ${message.user.id}`);
+                } catch (error) {
+                    console.error('Error creating subscription for new user:', error);
+                }
+            }
         },
         async linkAccount(message) {
             console.log('Link account event:', message);
@@ -211,5 +257,5 @@ export const authOptions: NextAuthOptions = {
             },
         },
     },
-    debug: true, // Aktivera debug-läge för att se mer information
+    debug: process.env.NODE_ENV !== 'production', // Aktivera debug-läge bara i utveckling
 }; 

@@ -1,24 +1,45 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 import type { NextRequest } from 'next/server'
 
-// Enkel middleware för att hantera Supabase-autentisering
+// Middleware för att hantera autentisering med NextAuth
 export async function middleware(req: NextRequest) {
-  // Vi skapar en respons som initialt är samma som den ursprungliga requesten
-  const res = NextResponse.next()
+  // Hämta token från session
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
 
-  // Skapa en Supabase-klient specifikt för middleware
-  const supabase = createMiddlewareClient({ req, res })
+  // Sökvägen som användaren försöker komma åt
+  const { pathname } = req.nextUrl
 
-  // Vi försöker förnya access-token genom session-cookie
-  await supabase.auth.getSession()
+  // Kontrollera om användaren är inloggad
+  const isAuth = !!token
+  const isAuthPage = pathname.startsWith('/auth')
 
-  return res
+  // Om det är en auth-sida och användaren är inloggad, omdirigera till dashboard
+  if (isAuthPage) {
+    if (isAuth) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+    return NextResponse.next()
+  }
+
+  // Skyddade sidor - kontrollera om användaren är inloggad
+  const protectedPaths = ['/dashboard', '/settings', '/billing']
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path))
+
+  if (isProtectedPath && !isAuth) {
+    // Omdirigera till inloggning
+    return NextResponse.redirect(new URL('/auth/login', req.url))
+  }
+
+  return NextResponse.next()
 }
 
 // Matcher för vilka routes som middleware ska köras på
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/dashboard/:path*',
+    '/settings/:path*',
+    '/billing/:path*',
+    '/auth/:path*',
   ],
 }

@@ -4,12 +4,12 @@ import { useState } from "react"
 import Link from "next/link"
 import { Menu, X, Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useLanguage, useTranslation } from "@/contexts/language-context"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { commonTranslations } from "@/lib/translations"
+import { signOut } from "next-auth/react"
 
 interface MobileMenuProps {
   isAuthenticated?: boolean
@@ -19,7 +19,6 @@ interface MobileMenuProps {
 export function MobileMenu({ isAuthenticated = false, onLogout }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
-  const supabase = createClientComponentClient()
   const t = useTranslation(commonTranslations)
 
   const toggleMenu = () => setIsOpen(!isOpen)
@@ -30,8 +29,7 @@ export function MobileMenu({ isAuthenticated = false, onLogout }: MobileMenuProp
     if (onLogout) {
       await onLogout()
     } else {
-      await supabase.auth.signOut()
-      router.refresh()
+      await signOut({ redirect: true, callbackUrl: '/' })
     }
     closeMenu()
   }
@@ -108,7 +106,7 @@ export function MobileMenu({ isAuthenticated = false, onLogout }: MobileMenuProp
                         {t.navigation.login}
                       </Button>
                     </Link>
-                    <Link href="/signup" onClick={closeMenu}>
+                    <Link href="/auth/register" onClick={closeMenu}>
                       <Button className="w-full" size="lg">
                         {t.navigation.signup}
                       </Button>

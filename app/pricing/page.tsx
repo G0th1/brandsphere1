@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Check, X } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
@@ -14,6 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useSession } from "next-auth/react"
+import { useToast } from "@/components/ui/use-toast"
 
 // Lägg till en enkel Spinner-komponent eftersom vi inte har en befintlig
 function Spinner({ className }: { className?: string }) {
@@ -26,6 +29,14 @@ function Spinner({ className }: { className?: string }) {
     />
   );
 }
+
+// Priskomponenter - använder samma konstanter som i resten av applikationen
+const PRICE_IDS = {
+  PRO_MONTHLY: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_MONTHLY || "price_1QxXyyBlLmUFFk8vQVg2xtZl",
+  PRO_YEARLY: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_YEARLY || "price_1QxrmABlLmUFFk8vNiTRH1c5",
+  BUSINESS_MONTHLY: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_BUSINESS_MONTHLY || "price_id_business_monthly",
+  BUSINESS_YEARLY: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_BUSINESS_YEARLY || "price_id_business_yearly",
+};
 
 type BillingCycle = "monthly" | "yearly"
 
@@ -47,6 +58,10 @@ interface Plan {
   popular: boolean;
   comingSoon: boolean;
   cta: string;
+  priceId?: {
+    monthly: string;
+    yearly: string;
+  };
 }
 
 interface FeatureDetail {
@@ -193,6 +208,7 @@ const translations: Translations = {
   }
 };
 
+// Uppdatera plans med Stripe priceIds
 const plans: Plan[] = [
   {
     name: "Free",
@@ -234,7 +250,11 @@ const plans: Plan[] = [
     excludes: ["Custom branding", "Dedicated account manager"],
     cta: "getStartedButton",
     popular: true,
-    comingSoon: false
+    comingSoon: false,
+    priceId: {
+      monthly: PRICE_IDS.PRO_MONTHLY,
+      yearly: PRICE_IDS.PRO_YEARLY
+    }
   },
   {
     name: "Business",
@@ -255,7 +275,11 @@ const plans: Plan[] = [
     excludes: [],
     cta: "getStartedButton",
     popular: false,
-    comingSoon: false
+    comingSoon: false,
+    priceId: {
+      monthly: PRICE_IDS.BUSINESS_MONTHLY,
+      yearly: PRICE_IDS.BUSINESS_YEARLY
+    }
   }
 ];
 
@@ -340,8 +364,112 @@ const featureCategories: FeatureCategory[] = [
 export default function PricingPage() {
   const { language } = useLanguage();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { toast } = useToast();
 
   const t = translations[language as keyof typeof translations];
+
+  const handlePlanSelection = async (plan: Plan) => {
+    // Om planen är gratis, gå direkt till dashboard
+    if (plan.name === "Free") {
+      router.push("/dashboard");
+      return;
+    }
+
+    // Sätt vilken plan som laddas
+    setLoadingPlan(plan.name);
+
+    // Om användaren inte är inloggad, dirigera till login-sidan
+    if (!session?.user) {
+      // Lagra information om vald plan i sessionStorage
+      const selectedPlan = {
+        name: plan.name,
+        priceId: plan.priceId?.[billingCycle === "monthly" ? "monthly" : "yearly"],
+        billingCycle
+      };
+      sessionStorage.setItem("selectedPlan", JSON.stringify(selectedPlan));
+
+      // Dirigera till login-sidan med redirect tillbaka till pricing
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent('/pricing')}`);
+      return;
+    }
+
+    // Användaren är inloggad, fortsätt till Stripe checkout
+    try {
+      const priceId = plan.priceId?.[billingCycle === "monthly" ? "monthly" : "yearly"];
+
+      if (!priceId) {
+        throw new Error("Price ID not found");
+      }
+
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          priceId,
+          plan: plan.name,
+          interval: billingCycle
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create checkout session");
+      }
+
+      // Redirect till Stripe checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast({
+        title: language === "en" ? "Error" : "Fel",
+        description: language === "en"
+          ? "Failed to initiate checkout. Please try again."
+          : "Kunde inte starta checkout. Vänligen försök igen.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  // Kontrollera om det finns en lagrad planvalsinformation efter inloggning
+  useEffect(() => {
+    if (session?.user) {
+      const storedPlanString = sessionStorage.getItem("selectedPlan");
+
+      if (storedPlanString) {
+        try {
+          const storedPlan = JSON.parse(storedPlanString);
+
+          // Tar bort lagrad plan
+          sessionStorage.removeItem("selectedPlan");
+
+          // Hitta rätt plan för att fortsätta till checkout
+          const selectedPlan = plans.find(plan => plan.name === storedPlan.name);
+          if (selectedPlan) {
+            // Uppdatera billing cycle om det behövs
+            if (storedPlan.billingCycle) {
+              setBillingCycle(storedPlan.billingCycle);
+            }
+            // Fortsätt till checkout efter kort fördröjning
+            setTimeout(() => {
+              handlePlanSelection(selectedPlan);
+            }, 500);
+          }
+        } catch (error) {
+          console.error("Error parsing stored plan:", error);
+        }
+      }
+    }
+  }, [session]);
 
   return (
     <div className="container py-10 md:py-16">
@@ -370,9 +498,15 @@ export default function PricingPage() {
 
       <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3 items-start">
         {plans.map((plan) => (
-          <Card key={plan.name} className={cn("flex flex-col justify-between", plan.popular ? "border-primary shadow-md" : "")}>
+          <Card
+            key={plan.name}
+            className={cn(
+              "flex flex-col justify-between relative",
+              plan.popular ? "border-primary shadow-md" : ""
+            )}
+          >
             {plan.popular && (
-              <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
+              <div className="absolute top-0 left-0 right-0 text-center transform -translate-y-3">
                 <Badge className="px-3 py-1 text-sm font-medium" variant="default">
                   {language === 'en' ? 'Popular' : 'Populär'}
                 </Badge>
@@ -416,10 +550,21 @@ export default function PricingPage() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className="w-full">
-                {typeof t[plan.cta as keyof typeof t] === 'string'
-                  ? t[plan.cta as keyof typeof t] as string
-                  : plan.cta}
+              <Button
+                className="w-full"
+                onClick={() => handlePlanSelection(plan)}
+                disabled={loadingPlan === plan.name || plan.comingSoon}
+              >
+                {loadingPlan === plan.name ? (
+                  <>
+                    <Spinner className="mr-2" />
+                    {language === 'en' ? 'Processing...' : 'Bearbetar...'}
+                  </>
+                ) : (
+                  typeof t[plan.cta as keyof typeof t] === 'string'
+                    ? t[plan.cta as keyof typeof t] as string
+                    : plan.cta
+                )}
               </Button>
             </CardFooter>
           </Card>

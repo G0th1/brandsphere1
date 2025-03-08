@@ -5,12 +5,45 @@ import Image from 'next/image'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, Check, Star } from 'lucide-react'
-import { useTranslation } from '@/contexts/language-context'
+import { ChevronRight, Check, Star, Zap } from 'lucide-react'
+import { useTranslation, useLanguage } from '@/contexts/language-context'
 import { homeTranslations } from '@/lib/translations'
 
 export default function HomePage() {
+  const { language } = useLanguage();
   const t = useTranslation(homeTranslations);
+
+  // Funktion för att skapa den understryckta versionen av titeln
+  const renderTitleWithUnderline = () => {
+    const title = t.hero.title;
+    const wordToUnderline = language === 'en' ? "Smarter" : "smartare";
+
+    if (!title.includes(wordToUnderline)) {
+      return title;
+    }
+
+    const parts = title.split(wordToUnderline);
+
+    return (
+      <>
+        {parts[0]}
+        <span className="relative">
+          {wordToUnderline}
+          <span className="absolute left-0 right-0 bottom-1 h-3 w-full"
+            style={{
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' width='100' height='20' preserveAspectRatio='none'%3E%3Cpath d='M0,15 Q25,5 50,15 T100,15' stroke='%23ff5500' stroke-width='3' fill='none' stroke-linecap='round' stroke-dasharray='4,8' /%3E%3C/svg%3E\")",
+              backgroundRepeat: "repeat-x",
+              backgroundSize: "100% 100%",
+              animation: "chalk-line 3s ease-in-out infinite alternate",
+              opacity: 0.8,
+              zIndex: -1
+            }}>
+          </span>
+        </span>
+        {parts[1]}
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -25,7 +58,7 @@ export default function HomePage() {
             <div className="flex flex-col items-center text-center space-y-8 max-w-3xl mx-auto">
               <div className="space-y-4 animate-fade-in">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter">
-                  {t.hero.title}
+                  {renderTitleWithUnderline()}
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                   {t.hero.subtitle}
@@ -33,13 +66,21 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-                <Button size="lg" className="group">
-                  {t.hero.getStarted}
-                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+                <Link href="/auth/register">
+                  <Button size="lg" className="group">
+                    {t.hero.getStarted}
+                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </Link>
                 <Link href="/pricing">
                   <Button variant="outline" size="lg">
                     {t.hero.viewPricing}
+                  </Button>
+                </Link>
+                <Link href="/demo/login">
+                  <Button variant="secondary" size="lg" className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    {t.hero.tryDemo}
                   </Button>
                 </Link>
               </div>
@@ -85,6 +126,53 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Ytterligare en sektion för att lyfta fram demo-funktionaliteten */}
+        <section className="py-12 md:py-16 bg-gradient-to-r from-yellow-50/10 to-primary/5">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              <div className="space-y-4">
+                <div className="inline-flex items-center rounded-full px-3 py-1 text-sm bg-yellow-100 text-yellow-800">
+                  <Zap className="h-4 w-4 mr-2" />
+                  Premium Demo
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">
+                  Testa alla premiumfunktioner kostnadsfritt
+                </h2>
+                <p className="text-lg text-muted-foreground">
+                  Upplev kraften i våra avancerade AI-funktioner, schemaläggningsverktyg och analysverktyg utan att registrera dig.
+                </p>
+                <div className="pt-2">
+                  <Link href="/demo/login">
+                    <Button className="group" size="lg">
+                      Testa Premium-demo
+                      <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="rounded-lg overflow-hidden shadow-lg border">
+                  <div className="relative w-full aspect-video">
+                    <Image
+                      src="/images/premium-demo-preview.jpg"
+                      alt="Premium funktioner"
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <Zap className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute -bottom-4 -right-4 h-24 w-24 bg-yellow-400/20 rounded-full blur-2xl"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Funktioner sektion */}
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
@@ -125,16 +213,38 @@ export default function HomePage() {
               <p className="text-xl text-muted-foreground">
                 {t.cta.subtitle}
               </p>
-              <div className="pt-4">
-                <Button size="lg" className="group">
-                  {t.cta.buttonText}
-                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+              <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/auth/register">
+                  <Button size="lg" className="group">
+                    {t.cta.buttonText}
+                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </Link>
+                <Link href="/demo/login">
+                  <Button variant="secondary" size="lg" className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    {t.hero.tryDemo}
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
         </section>
       </main>
+
+      <style jsx global>{`
+        @keyframes chalk-line {
+          0% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(1px);
+          }
+          100% {
+            transform: translateY(-1px);
+          }
+        }
+      `}</style>
 
       <Footer />
     </div>
