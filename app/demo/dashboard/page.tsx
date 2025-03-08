@@ -44,6 +44,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/components/ui/use-toast";
+import { DemoSidebar } from "@/components/demo/sidebar";
+import { DemoHeader } from "@/components/demo/header";
 
 // Komponent för Avatar
 const Avatar = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => (
@@ -166,6 +168,7 @@ interface DemoUser {
     subscription_tier: string;
     avatar_url: string;
     demo_mode: boolean;
+    language: string;
 }
 
 // Dummy data för demo
@@ -237,7 +240,7 @@ const demoData = {
 
 export default function DemoDashboardPage() {
     const { language } = useLanguage();
-    const t = translations['en'];
+    const t = translations[language === 'sv' ? 'sv' : 'en'];
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<DemoUser | null>(null);
@@ -258,12 +261,15 @@ export default function DemoDashboardPage() {
 
         try {
             const demoUser = JSON.parse(demoUserStr) as DemoUser;
+            // Spara även vilket språk användaren hade valt
+            demoUser.language = language;
+            localStorage.setItem('demoUser', JSON.stringify(demoUser));
             setUser(demoUser);
         } catch (error) {
             console.error('Error parsing demo user:', error);
             router.push('/demo/login');
         }
-    }, [router]);
+    }, [router, language]);
 
     // Om komponenten inte är monterad än, visa inget
     if (!mounted) return null;

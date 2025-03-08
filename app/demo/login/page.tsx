@@ -67,7 +67,8 @@ export default function DemoLoginPage() {
             name: 'Demo User',
             subscription_tier: 'premium',
             avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo123',
-            demo_mode: true
+            demo_mode: true,
+            language: language // Lagra användarens språkpreferens
         }));
 
         // Simulera inladdningstid för att göra det mer realistiskt
