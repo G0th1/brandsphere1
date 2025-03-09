@@ -54,34 +54,35 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
-                    console.log("Credentials auth: Missing email or password");
+                    console.log("Credentials auth: Saknar e-post eller lösenord");
                     return null;
                 }
 
                 try {
-                    console.log(`Attempting to find user with email: ${credentials.email}`);
+                    console.log(`Försöker hitta användare med e-post: ${credentials.email}`);
                     const user = await db.user.findUnique({
-                        where: { email: credentials.email }
+                        where: { email: credentials.email },
+                        include: { subscription: true } // Inkludera prenumerationsinformation
                     });
 
                     if (!user) {
-                        console.log(`No user found with email: ${credentials.email}`);
+                        console.log(`Ingen användare hittades med e-post: ${credentials.email}`);
                         return null;
                     }
 
                     if (!user.password) {
-                        console.log(`User has no password: ${credentials.email}`);
+                        console.log(`Användaren har inget lösenord: ${credentials.email}`);
                         return null;
                     }
 
                     const passwordValid = await compare(credentials.password, user.password);
 
                     if (!passwordValid) {
-                        console.log(`Invalid password for user: ${credentials.email}`);
+                        console.log(`Ogiltigt lösenord för användare: ${credentials.email}`);
                         return null;
                     }
 
-                    console.log(`Successful credentials login: ${credentials.email}`);
+                    console.log(`Lyckad inloggning med användaruppgifter: ${credentials.email}, plan: ${user.subscription?.plan || 'ingen prenumeration'}`);
                     return {
                         id: user.id,
                         name: user.name,
@@ -89,7 +90,7 @@ export const authOptions: NextAuthOptions = {
                         image: user.image
                     };
                 } catch (error) {
-                    console.error("Error during credentials auth:", error);
+                    console.error("Fel vid autentisering med användaruppgifter:", error);
                     return null;
                 }
             }
@@ -162,12 +163,22 @@ export const authOptions: NextAuthOptions = {
         },
         async signIn({ user, account, profile }) {
             try {
-                console.log(`Sign in attempt with provider: ${account?.provider}`);
+                console.log(`Inloggningsförsök med provider: ${account?.provider}`);
+
+                // För credentials provider
+                if (account?.provider === 'credentials') {
+                    if (!user || !user.email) {
+                        console.error('Inloggning misslyckades: Ogiltiga användaruppgifter');
+                        return false;
+                    }
+                    console.log(`Lyckad inloggning med användaruppgifter för: ${user.email}`);
+                    return true;
+                }
 
                 // För Google-inloggning
                 if (account?.provider === 'google') {
                     try {
-                        console.log(`Checking YouTube API access with token: ${account.access_token?.substring(0, 10)}...`);
+                        console.log(`Kontrollerar YouTube API-åtkomst med token: ${account.access_token?.substring(0, 10)}...`);
                         const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
                             headers: {
                                 Authorization: `Bearer ${account.access_token}`,
@@ -176,17 +187,41 @@ export const authOptions: NextAuthOptions = {
 
                         if (!response.ok) {
                             const errorText = await response.text();
-                            console.error('YouTube API error:', errorText);
+                            console.error('YouTube API-fel:', errorText);
                             // Vi tillåter inloggning även om YouTube-åtkomst misslyckas
-                            console.log('Allowing sign in despite YouTube API error');
+                            console.log('Tillåter inloggning trots YouTube API-fel');
                             return true;
                         }
-                        console.log('YouTube API access successful');
+
+                        // Kontrollera om vi behöver skapa en prenumeration för Google-användare
+                        if (user && user.id) {
+                            try {
+                                const existingSub = await db.subscription.findUnique({
+                                    where: { userId: user.id }
+                                });
+
+                                if (!existingSub) {
+                                    await db.subscription.create({
+                                        data: {
+                                            userId: user.id,
+                                            plan: "Free",
+                                            status: "active",
+                                            billingCycle: "monthly",
+                                        }
+                                    });
+                                    console.log(`Skapade gratis prenumeration för Google-användare: ${user.id}`);
+                                }
+                            } catch (subError) {
+                                console.error('Fel vid kontroll/skapande av prenumeration:', subError);
+                            }
+                        }
+
+                        console.log('YouTube API-åtkomst lyckades');
                         return true;
                     } catch (apiError) {
-                        console.error('YouTube API error:', apiError);
+                        console.error('YouTube API-fel:', apiError);
                         // Vi tillåter inloggning även om YouTube-åtkomst misslyckas
-                        console.log('Allowing sign in despite YouTube API error');
+                        console.log('Tillåter inloggning trots YouTube API-fel');
                         return true;
                     }
                 }
@@ -194,7 +229,7 @@ export const authOptions: NextAuthOptions = {
                 // För övriga providers
                 return true;
             } catch (error) {
-                console.error('Sign in error:', error);
+                console.error('Inloggningsfel:', error);
                 return false;
             }
         },
@@ -224,18 +259,28 @@ export const authOptions: NextAuthOptions = {
             // Här kan du lägga till ytterligare initialisering av användardata om det behövs
             if (message.user.id) {
                 try {
-                    // Skapa en gratis prenumeration för nya användare
-                    await db.subscription.create({
-                        data: {
-                            userId: message.user.id,
-                            plan: "Free",
-                            status: "active",
-                            billingCycle: "monthly",
-                        }
+                    // Kontrollera om användaren redan har en prenumeration
+                    const existingSubscription = await db.subscription.findUnique({
+                        where: { userId: message.user.id }
                     });
-                    console.log(`Created free subscription for new user: ${message.user.id}`);
+
+                    if (!existingSubscription) {
+                        // Skapa en gratis prenumeration för nya användare om ingen redan finns
+                        await db.subscription.create({
+                            data: {
+                                userId: message.user.id,
+                                plan: "Free",
+                                status: "active",
+                                billingCycle: "monthly",
+                            }
+                        });
+                        console.log(`Skapade gratis prenumeration för ny användare: ${message.user.id}`);
+                    } else {
+                        console.log(`Användare ${message.user.id} har redan en prenumeration: ${existingSubscription.plan}`);
+                    }
                 } catch (error) {
-                    console.error('Error creating subscription for new user:', error);
+                    console.error('Fel vid skapande av prenumeration för ny användare:', error);
+                    // Vi fortsätter även om prenumerationen inte kunde skapas
                 }
             }
         },
