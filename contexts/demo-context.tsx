@@ -152,10 +152,33 @@ export function DemoProvider({ children }: DemoProviderProps) {
 
     // Avsluta demo-läge
     const exitDemo = () => {
-        localStorage.removeItem('demoUser');
-        setUser(null);
-        // Använd den säkra navigeringsfunktionen
-        safeNavigate('/', router);
+        console.log("Avslutar demo-läge...");
+
+        try {
+            // Rensa demo-data från localStorage
+            localStorage.removeItem('demoUser');
+            console.log("Demo-användardata har rensats från localStorage");
+
+            // Uppdatera state
+            setUser(null);
+            console.log("Demo-användarstate har återställts");
+
+            // För att säkerställa att hela applikationen laddas om korrekt
+            // använder vi en full page reload istället för router.push
+            // Detta förhindrar problem med state som hänger kvar
+            console.log("Omdirigerar till startsidan med full page reload...");
+
+            // Kort timeout för att ge loggarna en chans att skickas
+            setTimeout(() => {
+                // Använd replace för att förhindra att användaren går tillbaka till demon med bakåtknappen
+                window.location.replace('/');
+            }, 100);
+        } catch (error) {
+            console.error("Fel vid avslut av demo:", error);
+
+            // Vid fel, gör det enklaste: hård omdirigering till startsidan
+            window.location.href = '/';
+        }
     };
 
     // Uppdatera användarinformation

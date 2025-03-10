@@ -81,42 +81,54 @@ export function DemoSidebar({ activeItem }: DemoSidebarProps) {
 
             <div className="flex-1 overflow-auto py-2">
                 <nav className="grid gap-1 px-2">
-                    <Link href="/demo/dashboard">
-                        <Button variant={activeItem === 'dashboard' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
-                            <LayoutDashboard className="h-4 w-4" />
-                            {t.dashboard}
-                        </Button>
-                    </Link>
-                    <Link href="/demo/content">
-                        <Button variant={activeItem === 'content' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
-                            <FileEdit className="h-4 w-4" />
-                            {t.content}
-                        </Button>
-                    </Link>
-                    <Link href="/demo/calendar">
-                        <Button variant={activeItem === 'calendar' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
-                            <CalendarClock className="h-4 w-4" />
-                            {t.calendar}
-                        </Button>
-                    </Link>
-                    <Link href="/demo/insights">
-                        <Button variant={activeItem === 'insights' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
-                            <PieChart className="h-4 w-4" />
-                            {t.insights}
-                        </Button>
-                    </Link>
-                    <Link href="/demo/profile">
-                        <Button variant={activeItem === 'profile' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
-                            <User className="h-4 w-4" />
-                            {t.profile}
-                        </Button>
-                    </Link>
-                    <Link href="/demo/settings">
-                        <Button variant={activeItem === 'settings' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
-                            <Settings className="h-4 w-4" />
-                            {t.settings}
-                        </Button>
-                    </Link>
+                    <Button
+                        variant={activeItem === 'dashboard' ? 'secondary' : 'ghost'}
+                        className="w-full justify-start gap-2"
+                        onClick={() => window.location.href = "/demo/dashboard"}
+                    >
+                        <LayoutDashboard className="h-4 w-4" />
+                        {t.dashboard}
+                    </Button>
+                    <Button
+                        variant={activeItem === 'content' ? 'secondary' : 'ghost'}
+                        className="w-full justify-start gap-2"
+                        onClick={() => window.location.href = "/demo/content"}
+                    >
+                        <FileEdit className="h-4 w-4" />
+                        {t.content}
+                    </Button>
+                    <Button
+                        variant={activeItem === 'calendar' ? 'secondary' : 'ghost'}
+                        className="w-full justify-start gap-2"
+                        onClick={() => window.location.href = "/demo/calendar"}
+                    >
+                        <CalendarClock className="h-4 w-4" />
+                        {t.calendar}
+                    </Button>
+                    <Button
+                        variant={activeItem === 'insights' ? 'secondary' : 'ghost'}
+                        className="w-full justify-start gap-2"
+                        onClick={() => window.location.href = "/demo/insights"}
+                    >
+                        <PieChart className="h-4 w-4" />
+                        {t.insights}
+                    </Button>
+                    <Button
+                        variant={activeItem === 'profile' ? 'secondary' : 'ghost'}
+                        className="w-full justify-start gap-2"
+                        onClick={() => window.location.href = "/demo/profile"}
+                    >
+                        <User className="h-4 w-4" />
+                        {t.profile}
+                    </Button>
+                    <Button
+                        variant={activeItem === 'settings' ? 'secondary' : 'ghost'}
+                        className="w-full justify-start gap-2"
+                        onClick={() => window.location.href = "/demo/settings"}
+                    >
+                        <Settings className="h-4 w-4" />
+                        {t.settings}
+                    </Button>
                 </nav>
             </div>
 

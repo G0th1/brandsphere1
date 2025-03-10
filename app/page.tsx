@@ -20,7 +20,7 @@ export default function HomePage() {
 
   const handleTryDemo = (e: React.MouseEvent) => {
     e.preventDefault();
-    safeNavigate('/demo/login', router);
+    window.location.href = '/demo/login';
   };
 
   // Funktion för att skapa den understryckta versionen av titeln
@@ -87,12 +87,18 @@ export default function HomePage() {
                     {t.hero.viewPricing}
                   </Button>
                 </Link>
-                <Link href="/demo/login">
-                  <Button variant="secondary" size="lg" className="flex items-center gap-2" onClick={handleTryDemo}>
-                    <Zap className="h-4 w-4 text-yellow-500" />
-                    {t.hero.tryDemo}
-                  </Button>
-                </Link>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="flex items-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/demo/login';
+                  }}
+                >
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  {t.hero.tryDemo}
+                </Button>
               </div>
 
               <div className="pt-4 flex items-center gap-4 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '400ms' }}>
@@ -152,12 +158,17 @@ export default function HomePage() {
                   Upplev kraften i våra avancerade AI-funktioner, schemaläggningsverktyg och analysverktyg utan att registrera dig.
                 </p>
                 <div className="pt-2">
-                  <Link href="/demo/login">
-                    <Button className="group" size="lg">
-                      Testa Premium-demo
-                      <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                  </Link>
+                  <Button
+                    className="group"
+                    size="lg"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = '/demo/login';
+                    }}
+                  >
+                    Testa Premium-demo
+                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
                 </div>
               </div>
               <div className="relative">
@@ -230,12 +241,18 @@ export default function HomePage() {
                     <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
-                <Link href="/demo/login">
-                  <Button variant="secondary" size="lg" className="flex items-center gap-2" onClick={handleTryDemo}>
-                    <Zap className="h-4 w-4 text-yellow-500" />
-                    {t.hero.tryDemo}
-                  </Button>
-                </Link>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="flex items-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/demo/login';
+                  }}
+                >
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  {t.hero.tryDemo}
+                </Button>
               </div>
             </div>
           </div>
