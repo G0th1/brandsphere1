@@ -1,29 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-// Enkel loggningsfunktion
-const logMiddlewareError = (req: Request, errorType: string, error: any) => {
-  console.error(`⛔ MIDDLEWARE FEL [${errorType}]:`, error);
-  console.error(`⛔ URL: ${req.url}`);
-};
-
-// Detaljerad felsökningsfunktion för att hjälpa användare
-const sendDebugResponse = (message: string) => {
-  return new NextResponse(
-    JSON.stringify({
-      error: 'middleware_error',
-      message,
-      timestamp: new Date().toISOString(),
-      support: 'Kontakta supporten med denna information för hjälp',
-      retry: 'Försök att ladda om sidan eller logga in igen'
-    }),
-    {
-      status: 500,
-      headers: { 'content-type': 'application/json' }
-    }
-  );
-};
-
 export async function middleware(req: NextRequest) {
   try {
     const pathname = req.nextUrl.pathname;
@@ -68,10 +45,9 @@ export async function middleware(req: NextRequest) {
     // För alla andra rutter, fortsätt normalt
     return NextResponse.next();
   } catch (error) {
-    // Logga fel
-    logMiddlewareError(req, 'auth', error);
-
-    // Vid fel, låt användaren fortsätta men utan autentisering
+    // Vid fel, logga och fortsätt normalt
+    console.error(`⛔ MIDDLEWARE FEL:`, error);
+    console.error(`⛔ URL: ${req.url}`);
     return NextResponse.next();
   }
 }
