@@ -92,29 +92,51 @@ export function DemoProvider({ children }: DemoProviderProps) {
             // Skapa demouser med aktuellt språk
             const demoUser = { ...DEFAULT_DEMO_USER, language };
 
-            // Spara i localStorage
-            localStorage.setItem('demoUser', JSON.stringify(demoUser));
+            // Spara i localStorage med felhantering
+            try {
+                localStorage.setItem('demoUser', JSON.stringify(demoUser));
+            } catch (storageError) {
+                console.error('Kunde inte spara demo-användare i localStorage:', storageError);
+                // Vi fortsätter ändå, utan localStorage-stöd
+            }
 
             // Uppdatera state
             setUser(demoUser);
 
-            // Omdirigera till dashboard efter kort väntetid
+            // Omdirigera till dashboard med flera fallbacks för maximal robusthet
             setTimeout(() => {
                 try {
-                    // Försök med router först
-                    router.push('/demo/dashboard');
-                } catch (routerError) {
-                    console.error('Router navigation failed:', routerError);
-                    // Fallback till window.location om router misslyckas
+                    // Direkt navigering via window.location (mest pålitlig metod)
                     window.location.href = '/demo/dashboard';
+                } catch (navError) {
+                    console.error('Fel vid navigering till dashboard:', navError);
+
+                    // Försök med router som fallback
+                    try {
+                        router.push('/demo/dashboard');
+                    } catch (routerError) {
+                        console.error('Router-navigering misslyckades:', routerError);
+
+                        // Sista utvägen: skapa och klicka på en länk
+                        try {
+                            const link = document.createElement('a');
+                            link.href = '/demo/dashboard';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        } catch (linkError) {
+                            console.error('Alla navigeringsförsök misslyckades:', linkError);
+                        }
+                    }
                 } finally {
                     setIsLoading(false);
                 }
-            }, 500); // Minska tiden för bättre användarupplevelse
+            }, 500);
         } catch (error) {
             console.error('Error starting demo:', error);
             setIsLoading(false);
-            // Fallback till direkt navigering om något går fel
+
+            // Fallback: Försök med direkt navigering
             window.location.href = '/demo/dashboard';
         }
     };

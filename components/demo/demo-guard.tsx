@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDemo } from "@/contexts/demo-context";
 import { safeNavigate } from "@/lib/utils/navigation";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DemoGuardProps {
     children: React.ReactNode;
@@ -12,21 +14,84 @@ interface DemoGuardProps {
 export function DemoGuard({ children }: DemoGuardProps) {
     const { user, isInitialized } = useDemo();
     const router = useRouter();
+    const [error, setError] = useState<Error | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (isInitialized && !user) {
-            safeNavigate("/demo/login", router);
+        // Försök initiera med skyddad kod
+        try {
+            if (isInitialized) {
+                setIsLoading(false);
+
+                if (!user) {
+                    // Om ingen användare finns, gå till inloggningssidan
+                    console.log("Ingen demo-användare, navigerar till demo/login");
+                    setTimeout(() => {
+                        try {
+                            window.location.href = "/demo/login";
+                        } catch (error) {
+                            console.error("Navigeringsfel i DemoGuard:", error);
+                            // Absolut sista försöket med en direkt länk
+                            const link = document.createElement('a');
+                            link.href = "/demo/login";
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+                    }, 300);
+                }
+            }
+        } catch (err) {
+            console.error("Fel i DemoGuard:", err);
+            setError(err instanceof Error ? err : new Error(String(err)));
+            setIsLoading(false);
         }
     }, [isInitialized, user, router]);
 
-    // Visa inget förrän vi vet om användaren är i demo-läge eller inte
-    if (!isInitialized) {
-        return null;
+    // Om ett fel uppstod, visa ett felmeddelande
+    if (error) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <h1 className="text-2xl font-bold mb-4">
+                    Ett fel uppstod vid laddning av demo
+                </h1>
+                <p className="mb-6 text-muted-foreground">
+                    {error.message || "Okänt fel"}
+                </p>
+                <div className="flex gap-4">
+                    <Button onClick={() => window.location.reload()}>
+                        Uppdatera sidan
+                    </Button>
+                    <Button variant="outline" onClick={() => window.location.href = "/"}>
+                        Gå till startsidan
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
-    // Om användaren inte är i demo-läge, visa inget (vi omdirigerar ändå)
+    // Visa laddningsindikator medan vi initierar
+    if (isLoading || !isInitialized) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="flex flex-col items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                    <p className="text-sm text-muted-foreground">Laddar demo...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Om användaren inte är i demo-läge, visa laddningsindikator (vi omdirigerar ändå)
     if (!user) {
-        return null;
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="flex flex-col items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                    <p className="text-sm text-muted-foreground">Förbereder demo...</p>
+                </div>
+            </div>
+        );
     }
 
     // Användaren är i demo-läge, visa innehållet

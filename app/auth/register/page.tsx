@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,8 @@ const translations = {
             passwordTooShort: "Password must be at least 8 characters long."
         },
         loading: "Creating account...",
-        success: "Account created! Please check your email to verify your account."
+        success: "Account created! Please check your email to verify your account.",
+        errorLoading: "Error loading the registration page. Please try refreshing."
     },
     sv: {
         title: "Skapa ett konto",
@@ -48,165 +49,213 @@ const translations = {
             passwordTooShort: "Lösenordet måste vara minst 8 tecken långt."
         },
         loading: "Skapar konto...",
-        success: "Konto skapat! Kontrollera din e-post för att verifiera ditt konto."
+        success: "Konto skapat! Kontrollera din e-post för att verifiera ditt konto.",
+        errorLoading: "Ett fel uppstod vid laddning av registreringssidan. Försök uppdatera."
     }
 };
 
 export default function RegisterPage() {
-    const { language } = useLanguage();
-    const t = translations[language as keyof typeof translations];
-    const router = useRouter();
-    const { toast } = useToast();
+    const [mounted, setMounted] = useState(false);
+    const [renderError, setRenderError] = useState(false);
 
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+    // Använd useEffect för att markera när komponenten är monterad
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // Visa laddningsindikator innan klientsidan är redo
+    if (!mounted) {
+        return (
+            <div className="flex flex-col min-h-screen">
+                <main className="flex-1 flex items-center justify-center p-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </main>
+            </div>
+        );
+    }
 
-        // Validera formuläret
-        if (password !== confirmPassword) {
-            toast({
-                title: "Fel",
-                description: t.errors.passwordMismatch,
-                variant: "destructive",
-            });
-            return;
-        }
+    try {
+        const { language } = useLanguage();
+        const t = translations[language as keyof typeof translations];
+        const router = useRouter();
+        const { toast } = useToast();
 
-        if (password.length < 8) {
-            toast({
-                title: "Fel",
-                description: t.errors.passwordTooShort,
-                variant: "destructive",
-            });
-            return;
-        }
+        const [name, setName] = useState("");
+        const [email, setEmail] = useState("");
+        const [password, setPassword] = useState("");
+        const [confirmPassword, setConfirmPassword] = useState("");
+        const [isLoading, setIsLoading] = useState(false);
 
-        setIsLoading(true);
+        const handleSubmit = async (e: React.FormEvent) => {
+            e.preventDefault();
 
-        try {
-            const response = await fetch("/api/auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    password,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || t.errors.default);
+            // Validera formuläret
+            if (password !== confirmPassword) {
+                toast({
+                    title: "Fel",
+                    description: t.errors.passwordMismatch,
+                    variant: "destructive",
+                });
+                return;
             }
 
-            toast({
-                title: "Kontot har skapats",
-                description: t.success,
-            });
+            if (password.length < 8) {
+                toast({
+                    title: "Fel",
+                    description: t.errors.passwordTooShort,
+                    variant: "destructive",
+                });
+                return;
+            }
 
-            // Redirect till inloggningssidan
-            router.push("/auth/login");
-        } catch (error: any) {
-            console.error("Registration error:", error);
-            toast({
-                title: "Registreringsfel",
-                description: error.message || t.errors.default,
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
+            setIsLoading(true);
+
+            try {
+                const response = await fetch("/api/auth/register", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        password,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || t.errors.default);
+                }
+
+                toast({
+                    title: "Kontot har skapats",
+                    description: t.success,
+                });
+
+                // Redirect till inloggningssidan
+                router.push("/auth/login");
+            } catch (error: any) {
+                console.error("Registration error:", error);
+                toast({
+                    title: "Registreringsfel",
+                    description: error.message || t.errors.default,
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        return (
+            <div className="flex flex-col min-h-screen">
+                <main className="flex-1 flex items-center justify-center p-4">
+                    <Card className="max-w-md w-full">
+                        <CardHeader>
+                            <CardTitle className="text-2xl">{t.title}</CardTitle>
+                            <CardDescription>{t.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">{t.nameLabel}</Label>
+                                    <Input
+                                        id="name"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">{t.emailLabel}</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="password">{t.passwordLabel}</Label>
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirmPassword">{t.confirmPasswordLabel}</Label>
+                                    <Input
+                                        id="confirmPassword"
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                </div>
+
+                                <Button
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={isLoading || !name || !email || !password || !confirmPassword}
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            {t.loading}
+                                        </>
+                                    ) : t.createAccount}
+                                </Button>
+                            </form>
+                        </CardContent>
+                        <CardFooter className="flex justify-center">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {t.alreadyHaveAccount}{" "}
+                                <Link href="/auth/login" className="text-primary font-medium hover:underline">
+                                    {t.signIn}
+                                </Link>
+                            </p>
+                        </CardFooter>
+                    </Card>
+                </main>
+            </div>
+        );
+    } catch (error) {
+        // Vid rendering-fel, visa ett felmeddelande
+        console.error("Error rendering RegisterPage:", error);
+        if (!renderError) {
+            setRenderError(true);
         }
-    };
 
-    return (
-        <div className="flex flex-col min-h-screen">
-            <main className="flex-1 flex items-center justify-center p-4">
-                <Card className="max-w-md w-full">
-                    <CardHeader>
-                        <CardTitle className="text-2xl">{t.title}</CardTitle>
-                        <CardDescription>{t.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">{t.nameLabel}</Label>
-                                <Input
-                                    id="name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="email">{t.emailLabel}</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="password">{t.passwordLabel}</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="confirmPassword">{t.confirmPasswordLabel}</Label>
-                                <Input
-                                    id="confirmPassword"
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="w-full"
-                                disabled={isLoading || !name || !email || !password || !confirmPassword}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        {t.loading}
-                                    </>
-                                ) : t.createAccount}
+        return (
+            <div className="flex flex-col min-h-screen">
+                <main className="flex-1 flex items-center justify-center p-4 text-center">
+                    <div>
+                        <h1 className="text-2xl font-bold mb-4">
+                            {translations.sv.errorLoading}
+                        </h1>
+                        <div className="flex flex-col sm:flex-row gap-4 mt-6 justify-center">
+                            <Button onClick={() => window.location.reload()}>
+                                Uppdatera sidan
                             </Button>
-                        </form>
-                    </CardContent>
-                    <CardFooter className="flex justify-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {t.alreadyHaveAccount}{" "}
-                            <Link href="/auth/login" className="text-primary font-medium hover:underline">
-                                {t.signIn}
-                            </Link>
-                        </p>
-                    </CardFooter>
-                </Card>
-            </main>
-        </div>
-    );
+                            <Button variant="outline" onClick={() => window.location.href = '/'}>
+                                Gå till startsidan
+                            </Button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
 } 
