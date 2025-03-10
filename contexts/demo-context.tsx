@@ -100,13 +100,22 @@ export function DemoProvider({ children }: DemoProviderProps) {
 
             // Omdirigera till dashboard efter kort väntetid
             setTimeout(() => {
-                // Använd den säkra navigeringsfunktionen
-                safeNavigate('/demo/dashboard', router);
-                setIsLoading(false);
-            }, 1000);
+                try {
+                    // Försök med router först
+                    router.push('/demo/dashboard');
+                } catch (routerError) {
+                    console.error('Router navigation failed:', routerError);
+                    // Fallback till window.location om router misslyckas
+                    window.location.href = '/demo/dashboard';
+                } finally {
+                    setIsLoading(false);
+                }
+            }, 500); // Minska tiden för bättre användarupplevelse
         } catch (error) {
             console.error('Error starting demo:', error);
             setIsLoading(false);
+            // Fallback till direkt navigering om något går fel
+            window.location.href = '/demo/dashboard';
         }
     };
 

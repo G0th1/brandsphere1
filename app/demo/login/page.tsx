@@ -11,6 +11,7 @@ import { useDemo } from "@/contexts/demo-context";
 import { Loader2, Zap, Calendar, BarChart3, FileEdit, MessageSquare, Settings2 } from "lucide-react";
 import { useSafeRouter, safeNavigate } from "@/lib/utils/navigation";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
 
 // Översättningar
 const translations = {
@@ -58,16 +59,32 @@ export default function DemoLoginPage() {
     const router = useRouter();
     const safeRouter = useSafeRouter();
     const t = translations[language === 'sv' ? 'sv' : 'en'];
+    const { toast } = useToast();
 
     const handleStartDemo = () => {
-        // Anropa både startDemo-funktionen och använd direkt navigering som extra åtgärd
+        if (isLoading) return; // Förhindra dubbla klick
+
+        // Visa en indikator på att demo startas
+        toast({
+            title: t.welcome,
+            description: t.loading,
+            duration: 2000,
+        });
+
+        // Anropa startDemo-funktionen
         startDemo();
 
         // Vänta lite och navigera sedan direkt till dashboard även om startDemo skulle misslyckas
         setTimeout(() => {
             if (document.location.pathname.includes('/demo/login')) {
-                // Om vi fortfarande är på login-sidan, tvinga navigering till dashboard
-                safeNavigate('/demo/dashboard', router);
+                try {
+                    // Försök med router först
+                    router.push('/demo/dashboard');
+                } catch (error) {
+                    console.error('Error navigating to dashboard:', error);
+                    // Fallback till direkt navigering
+                    window.location.href = '/demo/dashboard';
+                }
             }
         }, 1500);
     };
