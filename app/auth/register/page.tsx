@@ -57,14 +57,28 @@ const translations = {
 export default function RegisterPage() {
     const [mounted, setMounted] = useState(false);
     const [renderError, setRenderError] = useState(false);
+    const [initializing, setInitializing] = useState(true);
+    const router = useRouter();
 
-    // Använd useEffect för att markera när komponenten är monterad
+    // Förbättrad felhantering för debugging
     useEffect(() => {
-        setMounted(true);
+        try {
+            // Sätt timeout för att simulera laddning och förhindra snabb flicker
+            const timer = setTimeout(() => {
+                setMounted(true);
+                setInitializing(false);
+            }, 300);
+
+            return () => clearTimeout(timer);
+        } catch (error) {
+            console.error("Initializing error:", error);
+            setRenderError(true);
+            setInitializing(false);
+        }
     }, []);
 
     // Visa laddningsindikator innan klientsidan är redo
-    if (!mounted) {
+    if (initializing) {
         return (
             <div className="flex flex-col min-h-screen">
                 <main className="flex-1 flex items-center justify-center p-4">
@@ -74,10 +88,32 @@ export default function RegisterPage() {
         );
     }
 
+    // Felmeddelande om komponenten inte kunde renderas korrekt
+    if (renderError) {
+        return (
+            <div className="flex flex-col min-h-screen">
+                <main className="flex-1 flex items-center justify-center p-4 text-center">
+                    <div>
+                        <h1 className="text-2xl font-bold mb-4">
+                            Ett fel uppstod vid laddning av registreringssidan. Försök uppdatera.
+                        </h1>
+                        <div className="flex flex-col sm:flex-row gap-4 mt-6 justify-center">
+                            <Button onClick={() => window.location.reload()}>
+                                Uppdatera sidan
+                            </Button>
+                            <Button variant="outline" onClick={() => router.push("/auth/login")}>
+                                Gå till inloggning
+                            </Button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
     try {
         const { language } = useLanguage();
         const t = translations[language as keyof typeof translations];
-        const router = useRouter();
         const { toast } = useToast();
 
         const [name, setName] = useState("");
@@ -220,7 +256,7 @@ export default function RegisterPage() {
                             </form>
                         </CardContent>
                         <CardFooter className="flex justify-center">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <p className="text-sm text-muted-foreground">
                                 {t.alreadyHaveAccount}{" "}
                                 <Link href="/auth/login" className="text-primary font-medium hover:underline">
                                     {t.signIn}
@@ -243,14 +279,14 @@ export default function RegisterPage() {
                 <main className="flex-1 flex items-center justify-center p-4 text-center">
                     <div>
                         <h1 className="text-2xl font-bold mb-4">
-                            {translations.sv.errorLoading}
+                            Ett fel uppstod vid laddning av registreringssidan. Försök uppdatera.
                         </h1>
                         <div className="flex flex-col sm:flex-row gap-4 mt-6 justify-center">
                             <Button onClick={() => window.location.reload()}>
                                 Uppdatera sidan
                             </Button>
-                            <Button variant="outline" onClick={() => window.location.href = '/'}>
-                                Gå till startsidan
+                            <Button variant="outline" onClick={() => router.push("/auth/login")}>
+                                Gå till inloggning
                             </Button>
                         </div>
                     </div>
