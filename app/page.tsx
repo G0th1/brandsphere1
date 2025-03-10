@@ -76,17 +76,27 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-                <Link href="/auth/register">
-                  <Button size="lg" className="group">
-                    {t.hero.getStarted}
-                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </Link>
-                <Link href="/pricing">
-                  <Button variant="outline" size="lg">
-                    {t.hero.viewPricing}
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  className="group"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/auth/register';
+                  }}
+                >
+                  {t.hero.getStarted}
+                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/pricing';
+                  }}
+                >
+                  {t.hero.viewPricing}
+                </Button>
                 <Button
                   variant="secondary"
                   size="lg"
@@ -235,12 +245,17 @@ export default function HomePage() {
                 {t.cta.subtitle}
               </p>
               <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/auth/register">
-                  <Button size="lg" className="group">
-                    {t.cta.buttonText}
-                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  className="group"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/auth/register';
+                  }}
+                >
+                  {t.cta.buttonText}
+                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
                 <Button
                   variant="secondary"
                   size="lg"
