@@ -80,30 +80,24 @@ export default function DemoLoginPage() {
             toast({
                 title: t.welcome,
                 description: t.loading,
-                duration: 2000,
+                duration: 3000,
             });
 
             try {
-                // Anropa startDemo-funktionen
+                // Anropa startDemo-funktionen och lita på att den hanterar navigeringen
+                console.log("Anropar startDemo från demo-kontext");
                 startDemo();
 
-                // Vänta lite och navigera sedan direkt till dashboard även om startDemo skulle misslyckas
-                setTimeout(() => {
-                    if (document.location.pathname.includes('/demo/login')) {
-                        try {
-                            // Försök med router först
-                            router.push('/demo/dashboard');
-                        } catch (error) {
-                            console.error('Error navigating to dashboard:', error);
-                            // Fallback till direkt navigering
-                            window.location.href = '/demo/dashboard';
-                        }
-                    }
-                }, 1500);
+                // Ta bort timeout med navigering för att undvika konflikt med kontextens navigering
+                // Detta låter demo-kontexten hantera navigeringen som den vill
             } catch (error) {
                 console.error('Error in handleStartDemo:', error);
-                // Fallback till direkt hänvisning om något går fel
-                window.location.href = '/demo/dashboard';
+
+                // Om startDemo misslyckas, vänta lite och försök navigera direkt
+                setTimeout(() => {
+                    // Det mest grundläggande sättet att navigera
+                    window.location.href = '/demo/dashboard';
+                }, 1000);
             }
         };
 

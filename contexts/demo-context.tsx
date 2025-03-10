@@ -87,14 +87,17 @@ export function DemoProvider({ children }: DemoProviderProps) {
     // Starta demo-läge
     const startDemo = () => {
         setIsLoading(true);
+        console.log("Startar demo-läge...");
 
         try {
             // Skapa demouser med aktuellt språk
             const demoUser = { ...DEFAULT_DEMO_USER, language };
+            console.log("Skapad demo-användare:", { ...demoUser, language });
 
             // Spara i localStorage med felhantering
             try {
                 localStorage.setItem('demoUser', JSON.stringify(demoUser));
+                console.log("Demo-användare sparad i localStorage");
             } catch (storageError) {
                 console.error('Kunde inte spara demo-användare i localStorage:', storageError);
                 // Vi fortsätter ändå, utan localStorage-stöd
@@ -102,41 +105,47 @@ export function DemoProvider({ children }: DemoProviderProps) {
 
             // Uppdatera state
             setUser(demoUser);
+            console.log("Demo-användarstate uppdaterad");
 
-            // Omdirigera till dashboard med flera fallbacks för maximal robusthet
+            // Använd en timeout för att säkerställa att staten har uppdaterats
+            // innan vi försöker navigera
             setTimeout(() => {
+                console.log("Navigerar till dashboard...");
+
+                // För att undvika refresh-loop:
+                // 1. Sätt URL direkt istället för att använda router för att undvika React render-loopar
+                // 2. Använd ett lite längre timeout för att säkerställa att localStorage har uppdaterats
+
                 try {
-                    // Direkt navigering via window.location (mest pålitlig metod)
-                    window.location.href = '/demo/dashboard';
+                    // Direkt navigering utan router
+                    window.location.replace("/demo/dashboard");
                 } catch (navError) {
-                    console.error('Fel vid navigering till dashboard:', navError);
+                    console.error("Fel vid direkt navigering:", navError);
 
-                    // Försök med router som fallback
+                    // Fallback till window.href
                     try {
-                        router.push('/demo/dashboard');
-                    } catch (routerError) {
-                        console.error('Router-navigering misslyckades:', routerError);
+                        window.location.href = "/demo/dashboard";
+                    } catch (hrefError) {
+                        console.error("Fel vid href-navigering:", hrefError);
 
-                        // Sista utvägen: skapa och klicka på en länk
+                        // Sista utvägen
                         try {
-                            const link = document.createElement('a');
-                            link.href = '/demo/dashboard';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        } catch (linkError) {
-                            console.error('Alla navigeringsförsök misslyckades:', linkError);
+                            router.push("/demo/dashboard");
+                        } catch (routerError) {
+                            console.error("Fel vid router-navigering:", routerError);
+                            alert("Kunde inte navigera automatiskt. Klicka OK för att försöka igen.");
+                            window.location.href = "/demo/dashboard";
                         }
                     }
                 } finally {
                     setIsLoading(false);
                 }
-            }, 500);
+            }, 800); // Använd en lite längre timeout
         } catch (error) {
             console.error('Error starting demo:', error);
             setIsLoading(false);
 
-            // Fallback: Försök med direkt navigering
+            // Fallback: Grundläggande navigering
             window.location.href = '/demo/dashboard';
         }
     };

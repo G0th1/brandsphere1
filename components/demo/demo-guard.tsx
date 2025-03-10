@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useDemo } from "@/contexts/demo-context";
-import { safeNavigate } from "@/lib/utils/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -14,8 +13,13 @@ interface DemoGuardProps {
 export function DemoGuard({ children }: DemoGuardProps) {
     const { user, isInitialized } = useDemo();
     const router = useRouter();
+    const pathname = usePathname();
     const [error, setError] = useState<Error | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [redirectInProgress, setRedirectInProgress] = useState(false);
+
+    // Kolla om vi är på login-sidan
+    const isLoginPage = pathname === "/demo/login";
 
     useEffect(() => {
         // Försök initiera med skyddad kod
@@ -23,20 +27,26 @@ export function DemoGuard({ children }: DemoGuardProps) {
             if (isInitialized) {
                 setIsLoading(false);
 
-                if (!user) {
-                    // Om ingen användare finns, gå till inloggningssidan
-                    console.log("Ingen demo-användare, navigerar till demo/login");
+                // Endast omdirigera om:
+                // 1. Vi inte är på login-sidan
+                // 2. Ingen användare finns
+                // 3. Vi inte redan håller på att omdirigera
+                if (!isLoginPage && !user && !redirectInProgress) {
+                    console.log("Ingen demo-användare och inte på login-sidan, navigerar till demo/login");
+                    setRedirectInProgress(true);
+
+                    // Använd en timeout för att undvika omedelbara omdirigeringar
                     setTimeout(() => {
                         try {
                             window.location.href = "/demo/login";
                         } catch (error) {
                             console.error("Navigeringsfel i DemoGuard:", error);
-                            // Absolut sista försöket med en direkt länk
-                            const link = document.createElement('a');
-                            link.href = "/demo/login";
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            // Absolut sista försöket
+                            try {
+                                router.push("/demo/login");
+                            } catch (routerError) {
+                                console.error("Router-navigeringsfel:", routerError);
+                            }
                         }
                     }, 300);
                 }
@@ -46,7 +56,7 @@ export function DemoGuard({ children }: DemoGuardProps) {
             setError(err instanceof Error ? err : new Error(String(err)));
             setIsLoading(false);
         }
-    }, [isInitialized, user, router]);
+    }, [isInitialized, user, router, isLoginPage, redirectInProgress]);
 
     // Om ett fel uppstod, visa ett felmeddelande
     if (error) {
@@ -82,7 +92,13 @@ export function DemoGuard({ children }: DemoGuardProps) {
         );
     }
 
-    // Om användaren inte är i demo-läge, visa laddningsindikator (vi omdirigerar ändå)
+    // Specialhantering för login-sidan
+    if (isLoginPage) {
+        return <>{children}</>;
+    }
+
+    // Om användaren inte är i demo-läge och vi är inte på login-sidan,
+    // visa laddningsindikator (vi omdirigerar ändå)
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center">

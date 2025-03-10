@@ -21,6 +21,22 @@ export default function DemoLoginLayout({
         return () => clearTimeout(timer);
     }, []);
 
+    // För säkerhets skull, rensa localStorage om demo-data finns
+    // Detta förhindrar oändliga omdirigeringar om något gått fel
+    useEffect(() => {
+        try {
+            const storedUser = localStorage.getItem('demoUser');
+            if (storedUser) {
+                // Vi är på login-sidan men har demo-data i localStorage
+                // Rensa det för att undvika oändliga omdirigeringar
+                console.log("Rensar befintlig demo-data på login-sidan");
+                localStorage.removeItem('demoUser');
+            }
+        } catch (error) {
+            console.error("Fel vid kontroll av localStorage:", error);
+        }
+    }, []);
+
     // Hantera oväntade fel
     if (error) {
         return (
