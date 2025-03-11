@@ -106,7 +106,15 @@ export default function RegisterPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || t.errors.default);
+                if (response.status === 409) {
+                    throw new Error(t.errors.emailExists);
+                } else if (response.status === 500 && data.error) {
+                    // Mer detaljerade felmeddelanden i utvecklingsmiljö
+                    console.error("Server error details:", data.error);
+                    throw new Error(data.message || t.errors.default);
+                } else {
+                    throw new Error(data.message || t.errors.default);
+                }
             }
 
             toast({
@@ -127,6 +135,8 @@ export default function RegisterPage() {
             if (error.message) {
                 if (error.message.includes("network") || error.message.includes("fetch")) {
                     errorMessage = t.errors.networkError;
+                } else if (error.message.includes("databas") || error.message.includes("database")) {
+                    errorMessage = "Databasfel. Vänligen kontakta supporten.";
                 } else {
                     errorMessage = error.message;
                 }

@@ -55,41 +55,12 @@ async function verifyDatabaseConnection() {
 }
 
 export async function POST(req: Request) {
-    console.log("🔄 Registrering påbörjad:", new Date().toISOString());
-
-    // Kontrollera databasanslutningen innan vi fortsätter
-    const isDbConnected = await verifyDatabaseConnection();
-    if (!isDbConnected) {
-        console.error("❌ KRITISKT: Avbryter registrering pga databasproblem");
-        return NextResponse.json(
-            {
-                message: "Internt serverfel: Kunde inte ansluta till databasen",
-                dbStatus: "disconnected",
-                timestamp: new Date().toISOString()
-            },
-            { status: 500 }
-        );
-    }
-
     try {
-        // 1. Extrahera och logga användardata
-        let body;
-        try {
-            body = await req.json();
-            console.log("📝 Registreringsdata mottagen:", { ...body, password: "[DOLD]" });
-        } catch (parseError) {
-            console.error("❌ Kunde inte tolka request body:", parseError);
-            return NextResponse.json(
-                { message: "Ogiltig request: Kunde inte tolka JSON-data" },
-                { status: 400 }
-            );
-        }
-
-        // 2. Validera användardata
-        console.log("🔍 Validerar användardata...");
+        // 1. Hämta och validera användardata
+        const body = await req.json();
         const result = userSchema.safeParse(body);
+
         if (!result.success) {
-            console.error("❌ Valideringsfel:", result.error.errors);
             return NextResponse.json(
                 { message: "Ogiltig data", errors: result.error.errors },
                 { status: 400 }
@@ -98,65 +69,31 @@ export async function POST(req: Request) {
 
         const { name, email, password } = result.data;
 
-        // 3. Kontrollera om användaren redan finns
-        console.log(`🔍 Söker efter befintlig användare: ${email}`);
-        let existingUser;
-        try {
-            existingUser = await db.user.findUnique({
-                where: { email },
-            });
-        } catch (dbError) {
-            const errorInfo = logError("user-lookup", dbError);
-            return NextResponse.json(
-                { message: "Kunde inte söka efter befintlig användare", details: errorInfo },
-                { status: 500 }
-            );
-        }
+        // 2. Kontrollera om användaren redan finns
+        const existingUser = await db.user.findUnique({
+            where: { email },
+        });
 
         if (existingUser) {
-            console.log(`⚠️ Användare med e-post ${email} finns redan`);
             return NextResponse.json(
                 { message: "En användare med denna e-postadress finns redan" },
                 { status: 409 }
             );
         }
 
-        // 4. Hasha lösenordet
-        console.log("🔐 Hashar lösenord...");
-        let hashedPassword;
-        try {
-            hashedPassword = await hash(password, 10);
-            console.log("✅ Lösenord hashat framgångsrikt");
-        } catch (hashError) {
-            const errorInfo = logError("password-hashing", hashError);
-            return NextResponse.json(
-                { message: "Kunde inte hasha lösenordet", details: errorInfo },
-                { status: 500 }
-            );
-        }
+        // 3. Hasha lösenordet
+        const hashedPassword = await hash(password, 10);
 
-        // 5. Skapa användaren i databasen
-        console.log("👤 Skapar användare i databasen...");
-        let user;
-        try {
-            user = await db.user.create({
-                data: {
-                    name,
-                    email,
-                    password: hashedPassword,
-                },
-            });
-            console.log(`✅ Användare skapad med ID: ${user.id}`);
-        } catch (createError) {
-            const errorInfo = logError("user-creation", createError);
-            return NextResponse.json(
-                { message: "Kunde inte skapa användaren i databasen", details: errorInfo },
-                { status: 500 }
-            );
-        }
+        // 4. Skapa användaren i databasen
+        const user = await db.user.create({
+            data: {
+                name,
+                email,
+                password: hashedPassword,
+            },
+        });
 
-        // 6. Skapa gratis prenumeration för användaren
-        console.log(`🔄 Skapar gratisprenumeration för användare ${user.id}...`);
+        // 5. Skapa prenumeration för användaren
         try {
             await db.subscription.create({
                 data: {
@@ -166,33 +103,28 @@ export async function POST(req: Request) {
                     billingCycle: "monthly",
                 },
             });
-            console.log(`✅ Prenumeration skapad för användare ${user.id}`);
-        } catch (subscriptionError) {
-            // Logga felet men fortsätt - vi vill inte misslyckas med registreringen pga prenumeration
-            console.error("⚠️ Kunde inte skapa prenumeration:", subscriptionError);
-            // Vi fortsätter ändå eftersom användaren är skapad
+        } catch (error) {
+            console.error("Kunde inte skapa prenumeration:", error);
+            // Fortsätt trots fel med prenumerationen
         }
 
-        // 7. Ta bort lösenordet från svaret
+        // 6. Ta bort lösenordet från svaret
         const { password: _, ...userWithoutPassword } = user;
 
-        console.log(`✅ Registrering slutförd för användare: ${email}`);
         return NextResponse.json(
             {
-                message: "Användaren har registrerats",
-                user: userWithoutPassword,
-                timestamp: new Date().toISOString()
+                message: "Användaren har registrerats framgångsrikt",
+                user: userWithoutPassword
             },
             { status: 201 }
         );
     } catch (error) {
-        const errorInfo = logError("uncaught", error as Error);
-        console.error("💥 OKÄNT KRITISKT FEL VID REGISTRERING:", error);
+        console.error("Fel vid registrering:", error);
 
         return NextResponse.json(
             {
-                message: "Internt serverfel vid registrering",
-                details: errorInfo
+                message: "Ett fel uppstod vid registrering",
+                error: process.env.NODE_ENV === "development" ? String(error) : undefined
             },
             { status: 500 }
         );

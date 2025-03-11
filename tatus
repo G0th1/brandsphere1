@@ -1,0 +1,17 @@
+.env.backup
+.env.database
+.env.example
+.env.minimal
+.gitignore
+README.md
+app/api/auth/verify-email/route.ts
+app/auth/callback/route.ts
+app/auth/verify-email/page.tsx
+app/auth/verify-request/page.tsx
+lib/auth.ts
+package-lock.json
+package.json
+prisma/schema.prisma
+scripts/create-test-user.js
+scripts/migrate-to-nextauth.js
+scripts/setup-db.js
