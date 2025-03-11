@@ -132,3 +132,46 @@ Projektet har integration med Stripe för betalningshantering. För att aktivera
 5. **Uppdatera Stripe Price IDs**
    - Skapa produkter och priser i Stripe Dashboard
    - Uppdatera priceIds i `app/pricing/page.tsx` med dina faktiska Stripe priceIds 
+
+## Migrering från Supabase till NextAuth
+
+Projektet har migrerats från att använda både Supabase Auth och NextAuth till att endast använda NextAuth. Om du har en befintlig databas med användare i Supabase, följ dessa steg för att migrera dem:
+
+### 1. Kör migreringsskriptet
+
+```bash
+# Se till att alla miljövariabler är konfigurerade först
+node scripts/migrate-to-nextauth.js
+```
+
+### 2. Uppdatera miljövariabler
+
+Ta bort dessa Supabase-relaterade miljövariabler från din `.env`-fil om du inte använder Supabase för andra ändamål:
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+Lägg till dessa miljövariabler för e-postverifiering med NextAuth:
+
+```
+EMAIL_SERVER_HOST=smtp.example.com
+EMAIL_SERVER_PORT=587
+EMAIL_SERVER_USER=your-email@example.com
+EMAIL_SERVER_PASSWORD=your-password
+EMAIL_FROM=noreply@brandsphereai.com
+```
+
+### 3. Uppdatera beroenden (valfritt)
+
+Om du inte använder Supabase för andra ändamål kan du ta bort följande beroenden:
+
+```bash
+npm uninstall @supabase/auth-helpers-nextjs @supabase/supabase-js
+```
+
+## Tekniska designbeslut
+
+// ... existing code ... 
