@@ -1,52 +1,91 @@
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt');
-require('dotenv').config();
+/**
+ * SKAPA TESTANVÄNDARE I NEXTAUTH
+ * ==============================
+ * 
+ * Detta script skapar en testanvändare direkt i NextAuth-databasen.
+ * Kör med Node.js:
+ * 
+ * node scripts/create-test-user.js
+ */
 
+const fs = require('fs');
+const dotenv = require('dotenv');
+const { PrismaClient } = require('@prisma/client');
+const { hash } = require('bcrypt');
+
+// Ladda miljövariabler från .env.local om den finns, annars från .env
+const envPath = fs.existsSync('.env.local') ? '.env.local' : '.env';
+dotenv.config({ path: envPath });
+console.log(`Laddar miljövariabler från ${envPath}`);
+
+// Skapa Prisma-klient
 const prisma = new PrismaClient();
 
 async function createTestUser() {
-    console.log('Creating test user...');
+    console.log('🔄 Skapar testanvändare i NextAuth-databasen...');
 
     try {
+        // Skapa testanvändare
+        const email = 'test@example.com';
+        const password = 'password123';
+        const hashedPassword = await hash(password, 10);
+
         // Kontrollera om användaren redan finns
         const existingUser = await prisma.user.findUnique({
-            where: { email: 'test@example.com' },
+            where: { email },
         });
 
         if (existingUser) {
-            console.log('Test user already exists, updating password...');
+            console.log(`ℹ️ Användare ${email} finns redan i databasen.`);
 
-            // Hasha lösenordet
-            const hashedPassword = await bcrypt.hash('Password123', 10);
-
-            // Uppdatera användaren
+            // Uppdatera lösenordet
             await prisma.user.update({
-                where: { email: 'test@example.com' },
-                data: { password: hashedPassword },
+                where: { id: existingUser.id },
+                data: {
+                    password: hashedPassword,
+                    emailVerified: new Date(),
+                }
             });
 
-            console.log('Test user password updated.');
-            return;
+            console.log(`✅ Uppdaterade lösenord för användare ${email}.`);
+        } else {
+            // Skapa ny användare
+            const newUser = await prisma.user.create({
+                data: {
+                    email,
+                    name: 'Test User',
+                    password: hashedPassword,
+                    emailVerified: new Date(), // Markera som verifierad
+                }
+            });
+
+            console.log(`✅ Skapade ny användare ${email} med ID: ${newUser.id}`);
+
+            // Skapa prenumeration för användaren
+            await prisma.subscription.create({
+                data: {
+                    userId: newUser.id,
+                    plan: "Free",
+                    status: "active",
+                    billingCycle: "monthly",
+                }
+            });
+
+            console.log(`✅ Skapade prenumeration för användare ${email}.`);
         }
 
-        // Skapa en ny användare
-        const hashedPassword = await bcrypt.hash('Password123', 10);
+        console.log('\n🎉 Testanvändare skapad!');
+        console.log('\nAnvändaruppgifter:');
+        console.log(`E-post: ${email}`);
+        console.log(`Lösenord: ${password}`);
+        console.log('\nDu kan nu logga in med dessa uppgifter.');
 
-        const user = await prisma.user.create({
-            data: {
-                name: 'Test User',
-                email: 'test@example.com',
-                password: hashedPassword,
-                emailVerified: new Date(),
-            },
-        });
-
-        console.log('Test user created:', user);
     } catch (error) {
-        console.error('Error creating test user:', error);
+        console.error('❌ Kunde inte skapa testanvändare:', error);
     } finally {
         await prisma.$disconnect();
     }
 }
 
+// Kör funktionen
 createTestUser(); 
