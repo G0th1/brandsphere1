@@ -1,6 +1,8 @@
 {
     "version": 2,
-    "buildCommand": "prisma generate && next build",
+    "buildCommand": "npm run postinstall && npm run build",
+    "installCommand": "npm install",
+    "postBuild": "npm run vercel-db-migrate",
     "framework": "nextjs",
     "regions": [
         "fra1"
@@ -37,5 +39,15 @@
                 }
             ]
         }
-    ]
+    ],
+    "functions": {
+        "api/auth/**": {
+            "memory": 1024,
+            "maxDuration": 10
+        },
+        "api/**": {
+            "memory": 1024,
+            "maxDuration": 10
+        }
+    }
 }

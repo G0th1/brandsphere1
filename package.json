@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
@@ -17,6 +17,7 @@
     "setup:production": "node scripts/setup-production.js",
     "post-deploy": "node scripts/deploy-hook.js",
     "vercel-deploy": "node scripts/vercel-dev-deploy.js",
+    "vercel-db-migrate": "node scripts/vercel-db-migrate.js",
     "test:redis": "ts-node scripts/test-redis.ts",
     "test:enhanced-redis": "ts-node scripts/test-enhanced-redis.ts",
     "setup:db": "node scripts/setup-database.js"
