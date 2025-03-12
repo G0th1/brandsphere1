@@ -1,8 +1,7 @@
 {
     "version": 2,
-    "buildCommand": "npm run postinstall && npm run build",
+    "buildCommand": "npm run postinstall && npm run build && npm run vercel-db-migrate",
     "installCommand": "npm install",
-    "postBuild": "npm run vercel-db-migrate",
     "framework": "nextjs",
     "regions": [
         "fra1"
