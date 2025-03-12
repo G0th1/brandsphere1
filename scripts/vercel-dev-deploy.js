@@ -14,6 +14,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
+const readline = require('readline');
 
 // Läs .env filen
 dotenv.config();
@@ -30,27 +31,19 @@ const ENV_VARS_TO_SET = [
     'NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_YEARLY'
 ];
 
-// Skapa en temporär .env.vercel för användning med Vercel CLI
-function createTempVercelEnv() {
-    console.log('🔧 Skapar temporär .env.vercel fil...');
+// Skapa en rl interface för användarinput
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-    const envContent = ENV_VARS_TO_SET
-        .filter(key => process.env[key])
-        .map(key => `${key}=${process.env[key]}`)
-        .join('\n');
-
-    fs.writeFileSync('.env.vercel', envContent, 'utf8');
-    console.log('✅ Skapade .env.vercel med följande variabler:');
-    console.log(ENV_VARS_TO_SET.filter(key => process.env[key]).map(key => `- ${key}`).join('\n'));
-}
-
-// Städa upp den temporära filen
-function cleanupTempFile() {
-    console.log('🧹 Städar upp temporära filer...');
-    if (fs.existsSync('.env.vercel')) {
-        fs.unlinkSync('.env.vercel');
-    }
-    console.log('✅ Städning klar');
+// Fråga användaren om information
+function askQuestion(question) {
+    return new Promise(resolve => {
+        rl.question(question, answer => {
+            resolve(answer);
+        });
+    });
 }
 
 async function deploy() {
@@ -59,9 +52,6 @@ async function deploy() {
     console.log('====================================================');
 
     try {
-        // Skapa temporär miljöfil
-        createTempVercelEnv();
-
         // Commit lokala ändringar i git
         console.log('🔄 Lägger till alla filer till git...');
         try {
@@ -73,14 +63,63 @@ async function deploy() {
             // Vi fortsätter ändå, det kanske inte fanns några ändringar
         }
 
-        // Deploya till Vercel med miljövariabler
-        console.log('🔄 Deploying to Vercel...');
-        try {
-            execSync('vercel --env-file=.env.vercel --prod', { stdio: 'inherit' });
-            console.log('✅ Deployment till Vercel slutförd!');
-        } catch (error) {
-            console.error('❌ Vercel deployment misslyckades:', error);
-            throw error;
+        // Fråga användaren om de vill skapa en ny projektinstans eller använda en befintlig
+        const useExisting = await askQuestion('Vill du använda ett befintligt Vercel-projekt? (y/n): ');
+
+        if (useExisting.toLowerCase() === 'y') {
+            // Kör normal vercel deploy
+            console.log('🔄 Deploying till befintligt Vercel-projekt...');
+            try {
+                execSync('vercel --prod', { stdio: 'inherit' });
+                console.log('✅ Deployment till Vercel slutförd!');
+            } catch (error) {
+                console.error('❌ Vercel deployment misslyckades:', error);
+                throw error;
+            }
+        } else {
+            // Skapa nytt projekt och ställ frågor om miljövariabler
+            console.log('🔄 Skapar nytt Vercel-projekt...');
+
+            // Skapa projektet
+            try {
+                execSync('vercel', { stdio: 'inherit' });
+                console.log('✅ Vercel-projekt skapat!');
+            } catch (error) {
+                console.error('❌ Vercel projekt skapande misslyckades:', error);
+                throw error;
+            }
+
+            // Fråga om användaren vill konfigurera miljövariabler
+            const setupEnv = await askQuestion('Vill du konfigurera miljövariabler för projektet? (y/n): ');
+
+            if (setupEnv.toLowerCase() === 'y') {
+                console.log('�� Konfigurerar miljövariabler...');
+
+                for (const envVar of ENV_VARS_TO_SET) {
+                    if (process.env[envVar]) {
+                        console.log(`Ställer in ${envVar}...`);
+                        // Stänger inte rl här eftersom vi behöver den för nästa iteration
+                        try {
+                            execSync(`echo "${process.env[envVar]}" | vercel env add ${envVar} production`, { stdio: 'inherit' });
+                            console.log(`✅ ${envVar} konfigurerad`);
+                        } catch (error) {
+                            console.log(`⚠️ Kunde inte konfigurera ${envVar}: ${error.message}`);
+                        }
+                    }
+                }
+
+                console.log('✅ Miljövariabler konfigurerade');
+
+                // Kör deployment igen med de nya miljövariablerna
+                console.log('🔄 Deploying med nya miljövariabler...');
+                try {
+                    execSync('vercel --prod', { stdio: 'inherit' });
+                    console.log('✅ Deployment till Vercel slutförd!');
+                } catch (error) {
+                    console.error('❌ Vercel deployment misslyckades:', error);
+                    throw error;
+                }
+            }
         }
 
         console.log('\n✅ DEPLOYMENT PROCESSEN SLUTFÖRD');
@@ -91,7 +130,7 @@ async function deploy() {
     } catch (error) {
         console.error('❌ Deployment misslyckades:', error);
     } finally {
-        cleanupTempFile();
+        rl.close();
     }
 }
 
