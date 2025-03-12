@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrandSphere DB Setup Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-8">
+        <h1 class="text-2xl font-bold mb-6">BrandSphere DB Setup Test</h1>
+
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Testa Database Endpoints</h2>
+                <span id="timestamp" class="text-sm text-gray-500"></span>
+            </div>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <p class="text-yellow-700">
+                    <span class="font-bold">OBS!</span> Följ dessa steg i exakt ordning:
+                </p>
+                <ol class="list-decimal ml-6 mt-2 text-yellow-700">
+                    <li>Fyll i URL:en till din app på Vercel.</li>
+                    <li>Klicka på "Testa DB Connection" för att se om databasanslutningen fungerar.</li>
+                    <li>Klicka på "Setup DB" för att skapa databastabeller och användare.</li>
+                    <li>Besök inloggningssidan för att testa att det fungerar.</li>
+                </ol>
+            </div>
+
+            <div class="mb-4">
+                <label for="baseUrl" class="block text-sm font-medium text-gray-700 mb-1">Din Vercel URL:</label>
+                <input type="text" id="baseUrl" class="w-full p-2 border rounded-md"
+                    placeholder="https://din-app.vercel.app"
+                    value="https://brandsphere1-ilh1fvo9a-g0th1s-projects.vercel.app">
+            </div>
+
+            <div class="flex flex-wrap gap-4 mb-6">
+                <button id="btnTestDbConnection"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition">
+                    Testa DB Connection
+                </button>
+                <button id="btnSetupDb"
+                    class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition">
+                    Setup DB
+                </button>
+                <button id="btnClearResults"
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition">
+                    Rensa Resultat
+                </button>
+            </div>
+
+            <div id="loginInfo" class="hidden bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                <h3 class="font-semibold text-green-800">Inloggningsuppgifter:</h3>
+                <div class="mt-2 space-y-2">
+                    <div>
+                        <p class="text-green-800"><strong>Admin:</strong></p>
+                        <p class="text-green-700">E-post: admin@example.com</p>
+                        <p class="text-green-700">Lösenord: Admin123!</p>
+                    </div>
+                    <div>
+                        <p class="text-green-800"><strong>Testanvändare:</strong></p>
+                        <p class="text-green-700">E-post: test@example.com</p>
+                        <p class="text-green-700">Lösenord: Password123</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a id="loginLink" href="#" target="_blank"
+                        class="inline-block bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition">
+                        Gå till inloggningssidan
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-2">Status</h2>
+            <div id="status" class="text-gray-700 py-2">Redo att testa...</div>
+        </div>
+
+        <div>
+            <h2 class="text-xl font-semibold mb-2">Resultat</h2>
+            <pre id="result" class="text-sm text-gray-800">Inget resultat än...</pre>
+        </div>
+    </div>
+
+    <script>
+        // Uppdatera tidsstämpel
+        function updateTimestamp() {
+            document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        }
+
+        // Kontrollera basURL format
+        function getBaseUrl() {
+            let url = document.getElementById('baseUrl').value.trim();
+            if (!url) return '';
+
+            // Ta bort trailing slash om det finns
+            if (url.endsWith('/')) {
+                url = url.slice(0, -1);
+            }
+
+            return url;
+        }
+
+        // Updatera loginknapp
+        function updateLoginLink() {
+            const baseUrl = getBaseUrl();
+            if (baseUrl) {
+                const loginUrl = `${baseUrl}/auth/login`;
+                document.getElementById('loginLink').href = loginUrl;
+            }
+        }
+
+        // Testa databasanslutning
+        document.getElementById('btnTestDbConnection').addEventListener('click', async () => {
+            testEndpoint('/api/admin/db-test');
+        });
+
+        // Kör setup-db
+        document.getElementById('btnSetupDb').addEventListener('click', async () => {
+            testEndpoint('/api/setup-db');
+        });
+
+        // Rensa resultat
+        document.getElementById('btnClearResults').addEventListener('click', () => {
+            document.getElementById('result').textContent = 'Resultat rensade...';
+            document.getElementById('status').textContent = 'Redo att testa...';
+            document.getElementById('status').className = 'text-gray-700 py-2';
+        });
+
+        // Testa en endpoint
+        async function testEndpoint(endpoint) {
+            updateTimestamp();
+
+            const baseUrl = getBaseUrl();
+            if (!baseUrl) {
+                document.getElementById('status').textContent = 'Felaktig URL: Ange en giltig URL';
+                document.getElementById('status').className = 'text-red-600 py-2';
+                return;
+            }
+
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+
+            try {
+                statusEl.textContent = `Testar ${endpoint}...`;
+                statusEl.className = 'text-blue-600 py-2';
+
+                const response = await fetch(`${baseUrl}${endpoint}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusEl.textContent = `✅ ${endpoint} - Lyckades!`;
+                    statusEl.className = 'text-green-600 py-2';
+
+                    // Om setup-db kördes, visa inloggningsinfon
+                    if (endpoint === '/api/setup-db' && data.success) {
+                        document.getElementById('loginInfo').classList.remove('hidden');
+                        updateLoginLink();
+                    }
+                } else {
+                    statusEl.textContent = `❌ ${endpoint} - Misslyckades: ${response.status} ${response.statusText}`;
+                    statusEl.className = 'text-red-600 py-2';
+                }
+
+                resultEl.textContent = JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                statusEl.textContent = `❌ ${endpoint} - Fel: ${error.message}`;
+                statusEl.className = 'text-red-600 py-2';
+                resultEl.textContent = error.toString();
+            }
+        }
+
+        // Initiera
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);
+        updateLoginLink();
+    </script>
+</body>
+
+</html>

@@ -1,11 +1,13 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["metrics"]
 }
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("POSTGRES_URL_NON_POOLING") // Används för prisma migrate och andra direktanslutningar
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+  relationMode = "foreignKeys"
 }
 
 model User {

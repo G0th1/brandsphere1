@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "buildCommand": "prisma generate && npm run build",
+    "buildCommand": "npm run vercel-build",
     "installCommand": "npm install",
     "framework": "nextjs",
     "regions": [
@@ -40,18 +40,13 @@
         }
     ],
     "functions": {
-        "app/api/auth/**/*.ts": {
+        "app/api/auth/**/*": {
             "memory": 1024,
             "maxDuration": 10
         },
-        "app/api/**/*.ts": {
+        "app/api/**/*": {
             "memory": 1024,
             "maxDuration": 10
-        }
-    },
-    "build": {
-        "env": {
-            "PRISMA_SKIP_POSTINSTALL_GENERATE": "true"
         }
     }
 }
