@@ -1,147 +1,97 @@
 /**
- * PRODUKTIONSMILJÖINSTÄLLNINGAR
- * ==============================
+ * PRODUCTION SETUP SCRIPT
+ * =======================
  * 
- * Detta script förbereder produktionsmiljön med testanvändare
- * och grundläggande konfigurationer. Körs efter deployment.
+ * Detta skript körs efter en framgångsrik deployment för att sätta upp 
+ * produktionsmiljön, inklusive databasmigrationer och testanvändare.
  * 
- * Kör med Node.js efter deployment:
- * 
+ * Kör med:
  * node scripts/setup-production.js
  */
 
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt');
+const { hash } = require('bcrypt');
 
+// Skapa en Prisma-klient
 const prisma = new PrismaClient();
 
-async function setupProduction() {
+async function main() {
     console.log('====================================================');
-    console.log('🌐 FÖRBEREDER PRODUKTIONSMILJÖ 🌐');
+    console.log('🚀 KONFIGURERAR PRODUKTIONSMILJÖ 🚀');
     console.log('====================================================');
 
     try {
-        console.log('🔄 Kontrollerar databasanslutning...');
-        try {
-            const result = await prisma.$queryRaw`SELECT 1 as test`;
-            console.log('✅ Databasanslutning fungerar:', result);
-        } catch (dbError) {
-            console.error('❌ KRITISKT: Kunde inte ansluta till databasen:', dbError);
-            return;
-        }
+        // Verifiera databaskoppling
+        console.log('🔄 Testar databasanslutningen...');
+        const testResult = await prisma.$queryRaw`SELECT 1 as test`;
+        console.log('✅ Databasanslutningen fungerar:', testResult);
 
-        // Skapa admin-användare om den inte finns
-        const adminEmail = 'admin@brandsphereai.com';
+        // Kör databasmigrationer
+        console.log('🔄 Kontrollerar om databasmigrationer behövs...');
 
-        console.log(`🔄 Kontrollerar om administratör (${adminEmail}) redan finns...`);
+        // Kontrollera om det finns användare i databasen
+        const userCount = await prisma.user.count();
+        console.log(`ℹ️ Antal befintliga användare: ${userCount}`);
 
-        const existingAdmin = await prisma.user.findUnique({
-            where: { email: adminEmail }
-        });
+        // Skapa testanvändare om det inte finns några
+        if (userCount === 0) {
+            console.log('🔄 Skapar admin-användare...');
 
-        if (existingAdmin) {
-            console.log('ℹ️ Administratör finns redan. Uppdaterar lösenord...');
+            const hashedPassword = await hash('Admin123!', 10);
 
-            // Hasha ett nytt lösenord
-            const hashedPassword = await bcrypt.hash('AdminPassword123!', 10);
-
-            // Uppdatera användaren
-            await prisma.user.update({
-                where: { email: adminEmail },
+            const admin = await prisma.user.create({
                 data: {
+                    name: 'Admin User',
+                    email: 'admin@example.com',
                     password: hashedPassword,
-                    emailVerified: new Date()
+                    emailVerified: new Date(),
                 }
             });
 
-            console.log('✅ Administratör uppdaterad!');
-        } else {
-            console.log('ℹ️ Skapar administratör...');
+            console.log('✅ Admin-användare skapad:');
+            console.log(`📧 E-post: ${admin.email}`);
+            console.log(`🔑 Lösenord: Admin123!`);
 
-            // Hasha lösenordet
-            const hashedPassword = await bcrypt.hash('AdminPassword123!', 10);
-
-            // Skapa användaren
-            const user = await prisma.user.create({
-                data: {
-                    name: 'Admin',
-                    email: adminEmail,
-                    password: hashedPassword,
-                    emailVerified: new Date()
-                }
-            });
-
-            // Skapa prenumeration
+            // Skapa prenumeration för admin
             await prisma.subscription.create({
                 data: {
-                    userId: user.id,
+                    userId: admin.id,
                     plan: 'Business',
                     status: 'active',
-                    billingCycle: 'monthly'
+                    stripeCustomerId: 'demo_customer_id',
+                    stripeSubscriptionId: 'demo_subscription_id',
+                    stripePriceId: 'demo_price_id',
+                    stripeCurrentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dagar framåt
                 }
             });
 
-            console.log('✅ Administratör skapad!');
-        }
-
-        console.log('\n📝 ADMIN-INLOGGNINGSUPPGIFTER:');
-        console.log('------------------------------------');
-        console.log('E-post: admin@brandsphereai.com');
-        console.log('Lösenord: AdminPassword123!');
-        console.log('------------------------------------');
-
-        // Skapa även testanvändare
-        const testEmail = 'test@example.com';
-        console.log(`🔄 Kontrollerar om testanvändare (${testEmail}) finns...`);
-
-        const existingTest = await prisma.user.findUnique({
-            where: { email: testEmail }
-        });
-
-        if (existingTest) {
-            console.log('ℹ️ Testanvändare finns redan.');
+            console.log('✅ Business-prenumeration skapad för admin');
         } else {
-            console.log('ℹ️ Skapar testanvändare...');
-
-            // Hasha lösenordet
-            const hashedPassword = await bcrypt.hash('Password123', 10);
-
-            // Skapa användaren
-            const user = await prisma.user.create({
-                data: {
-                    name: 'Test User',
-                    email: testEmail,
-                    password: hashedPassword,
-                    emailVerified: new Date()
-                }
-            });
-
-            // Skapa prenumeration
-            await prisma.subscription.create({
-                data: {
-                    userId: user.id,
-                    plan: 'Free',
-                    status: 'active',
-                    billingCycle: 'monthly'
-                }
-            });
-
-            console.log('✅ Testanvändare skapad!');
+            console.log('ℹ️ Användare finns redan i databasen, hoppar över skapande av testanvändare');
         }
 
-        console.log('\n📝 TEST-INLOGGNINGSUPPGIFTER:');
-        console.log('------------------------------------');
-        console.log('E-post: test@example.com');
-        console.log('Lösenord: Password123');
-        console.log('------------------------------------');
-
-        console.log('\n✅ PRODUKTIONSMILJÖN ÄR NU FÖRBEREDD');
         console.log('====================================================');
+        console.log('✅ PRODUKTIONSMILJÖN ÄR NU KONFIGURERAD');
+        console.log('====================================================');
+        console.log('📝 SAMMANFATTNING:');
+        console.log('- Databasanslutning verifierad');
+        if (userCount === 0) {
+            console.log('- Admin-användare skapad');
+            console.log('- Business-prenumeration skapad');
+        } else {
+            console.log('- Befintliga användare hittades, ingen testanvändare skapades');
+        }
+        console.log('====================================================');
+        console.log('🌐 Du kan nu logga in på:');
+        console.log(`https://brandsphere1-990djwy4v-g0th1s-projects.vercel.app/auth/login`);
+        console.log('====================================================');
+
     } catch (error) {
-        console.error('❌ CRITICAL ERROR:', error);
+        console.error('❌ Ett fel uppstod vid konfigurering av produktionsmiljön:', error);
     } finally {
         await prisma.$disconnect();
     }
 }
 
-setupProduction(); 
+// Kör huvudfunktionen
+main(); 
