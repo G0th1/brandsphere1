@@ -16,6 +16,7 @@
     "db:push": "prisma db push",
     "setup:production": "node scripts/setup-production.js",
     "post-deploy": "node scripts/deploy-hook.js",
+    "vercel-deploy": "node scripts/vercel-dev-deploy.js",
     "test:redis": "ts-node scripts/test-redis.ts",
     "test:enhanced-redis": "ts-node scripts/test-enhanced-redis.ts",
     "setup:db": "node scripts/setup-database.js"
