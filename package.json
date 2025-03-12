@@ -57,6 +57,7 @@
     "nodemailer": "^6.10.0",
     "pg": "^8.13.3",
     "postcss": "^8",
+    "prisma": "^5.8.1",
     "react": "^18",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18",
@@ -75,7 +76,6 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
-    "prisma": "^5.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5"
   }

@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "buildCommand": "npm install --production=false && npm run build",
+    "buildCommand": "prisma generate && npm run build",
     "installCommand": "npm install",
     "framework": "nextjs",
     "regions": [
@@ -47,6 +47,11 @@
         "app/api/**/*.ts": {
             "memory": 1024,
             "maxDuration": 10
+        }
+    },
+    "build": {
+        "env": {
+            "PRISMA_SKIP_POSTINSTALL_GENERATE": "true"
         }
     }
 }
