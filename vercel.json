@@ -40,11 +40,11 @@
         }
     ],
     "functions": {
-        "api/auth/**": {
+        "app/api/auth/**/*.ts": {
             "memory": 1024,
             "maxDuration": 10
         },
-        "api/**": {
+        "app/api/**/*.ts": {
             "memory": 1024,
             "maxDuration": 10
         }
