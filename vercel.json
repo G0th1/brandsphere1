@@ -16,7 +16,8 @@
     ],
     "env": {
         "NEXTAUTH_URL": "https://${VERCEL_URL}",
-        "NEXT_PUBLIC_SITE_URL": "https://${VERCEL_URL}"
+        "NEXT_PUBLIC_SITE_URL": "https://${VERCEL_URL}",
+        "VERCEL_PROTECTION": "0"
     },
     "crons": [
         {
@@ -46,5 +47,6 @@
                 }
             ]
         }
-    ]
+    ],
+    "public": true
 }
