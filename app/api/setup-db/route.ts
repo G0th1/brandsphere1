@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcrypt";
-import { execSync } from "child_process";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+// Lägg till CORS-headers
+export async function OPTIONS() {
+    return NextResponse.json({}, {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization"
+        }
+    });
+}
 
 export async function GET() {
     try {
@@ -138,7 +148,7 @@ export async function GET() {
         // Stäng anslutningen
         await prisma.$disconnect();
 
-        // Returnera diagnostisk information
+        // Returnera diagnostisk information med CORS-headers
         return NextResponse.json({
             success: true,
             message: "Databaskonfiguration slutförd",
@@ -149,6 +159,13 @@ export async function GET() {
                 DATABASE_URL: process.env.DATABASE_URL ? "Inställd" : "Saknas",
                 POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL ? "Inställd" : "Saknas",
                 POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING ? "Inställd" : "Saknas",
+            },
+            timestamp: new Date().toISOString()
+        }, {
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
             }
         });
     } catch (error) {
@@ -159,7 +176,14 @@ export async function GET() {
                 error: error.message,
                 stack: error.stack,
             },
-            { status: 500 }
+            {
+                status: 500,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization"
+                }
+            }
         );
     }
 } 

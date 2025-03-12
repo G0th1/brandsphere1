@@ -55,7 +55,8 @@ export async function GET() {
                 DATABASE_URL: process.env.DATABASE_URL ? "Inställd" : "Saknas",
                 POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL ? "Inställd" : "Saknas",
                 POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING ? "Inställd" : "Saknas",
-            }
+            },
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         console.error("❌ Fel vid databasanslutning:", error);
