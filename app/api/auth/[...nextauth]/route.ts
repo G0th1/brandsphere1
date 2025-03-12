@@ -10,11 +10,17 @@ const handler = async (req: Request, context: { params: { nextauth: string[] } }
         return await authHandler(req, context);
     } catch (error: any) {
         console.error(`⛔ NextAuth API error: ${error.message}`, error);
+        // Logga detaljer för bättre felsökning
+        console.error('Request path:', req.url);
+        console.error('Request method:', req.method);
+        console.error('NextAuth path param:', context.params.nextauth.join('/'));
+
         // Returnera ett användbart felmeddelande
         return new Response(
             JSON.stringify({
                 error: "AuthServerError",
-                message: "Autentiseringsservern stötte på ett problem."
+                message: "Autentiseringsservern stötte på ett problem.",
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
             }),
             {
                 status: 500,
