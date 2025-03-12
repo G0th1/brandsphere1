@@ -33,13 +33,26 @@ declare module "next-auth/jwt" {
     }
 }
 
+// Loggfunktion för att hjälpa till med debugging
+function authLog(message: string, data?: any) {
+    console.log(`🔐 Auth: ${message}`, data ? data : '');
+}
+
+// Säkerställ att NextAuth har korrekta uppgifter även om miljövariabler saknas
+const nextAuthUrl = process.env.NEXTAUTH_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+const nextAuthSecret = process.env.NEXTAUTH_SECRET || 'fallback-dev-secret-do-not-use-in-production';
+
+authLog(`Konfigurerar auth med URL: ${nextAuthUrl}`);
+
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(db) as any,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: nextAuthSecret,
     session: {
         strategy: "jwt",
         maxAge: 30 * 24 * 60 * 60, // 30 dagar
     },
+    debug: process.env.NODE_ENV !== 'production',
     pages: {
         signIn: "/auth/login",
         signOut: "/auth/logout",
@@ -48,18 +61,20 @@ export const authOptions: NextAuthOptions = {
         verifyRequest: "/auth/verify-request", // Sida för att be användaren verifiera sin e-post
     },
     providers: [
-        // E-postverifiering via NextAuth
-        EmailProvider({
-            server: {
-                host: process.env.EMAIL_SERVER_HOST || "",
-                port: Number(process.env.EMAIL_SERVER_PORT) || 587,
-                auth: {
-                    user: process.env.EMAIL_SERVER_USER || "",
-                    pass: process.env.EMAIL_SERVER_PASSWORD || "",
+        // E-postverifiering via NextAuth - bara om miljövariabler finns
+        ...(process.env.EMAIL_SERVER_HOST ? [
+            EmailProvider({
+                server: {
+                    host: process.env.EMAIL_SERVER_HOST || "",
+                    port: Number(process.env.EMAIL_SERVER_PORT) || 587,
+                    auth: {
+                        user: process.env.EMAIL_SERVER_USER || "",
+                        pass: process.env.EMAIL_SERVER_PASSWORD || "",
+                    },
                 },
-            },
-            from: process.env.EMAIL_FROM || "noreply@brandsphereai.com",
-        }),
+                from: process.env.EMAIL_FROM || "noreply@brandsphereai.com",
+            })
+        ] : []),
         CredentialsProvider({
             name: "Email & Password",
             credentials: {
@@ -68,35 +83,35 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
-                    console.log("Credentials auth: Saknar e-post eller lösenord");
+                    authLog("Credentials auth: Saknar e-post eller lösenord");
                     return null;
                 }
 
                 try {
-                    console.log(`Försöker hitta användare med e-post: ${credentials.email}`);
+                    authLog(`Försöker hitta användare med e-post: ${credentials.email}`);
                     const user = await db.user.findUnique({
                         where: { email: credentials.email },
                         include: { subscription: true }
                     });
 
                     if (!user) {
-                        console.log(`Ingen användare hittades med e-post: ${credentials.email}`);
+                        authLog(`Ingen användare hittades med e-post: ${credentials.email}`);
                         return null;
                     }
 
                     if (!user.password) {
-                        console.log(`Användaren har inget lösenord: ${credentials.email}`);
+                        authLog(`Användaren har inget lösenord: ${credentials.email}`);
                         return null;
                     }
 
                     const passwordValid = await compare(credentials.password, user.password);
 
                     if (!passwordValid) {
-                        console.log(`Ogiltigt lösenord för användare: ${credentials.email}`);
+                        authLog(`Ogiltigt lösenord för användare: ${credentials.email}`);
                         return null;
                     }
 
-                    console.log(`Lyckad inloggning med användaruppgifter: ${credentials.email}`);
+                    authLog(`✅ Lyckad inloggning med användaruppgifter: ${credentials.email}`);
                     return {
                         id: user.id,
                         name: user.name,
@@ -104,32 +119,35 @@ export const authOptions: NextAuthOptions = {
                         image: user.image
                     };
                 } catch (error) {
-                    console.error("Fel vid autentisering med användaruppgifter:", error);
+                    authLog("Fel vid autentisering med användaruppgifter:", error);
                     return null;
                 }
             }
         }),
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID || "",
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-            authorization: {
-                params: {
-                    scope: 'https://www.googleapis.com/auth/youtube.readonly openid email profile',
-                    prompt: "consent",
-                    access_type: "offline",
-                    response_type: "code"
+        // Google Provider - bara om miljövariabler finns
+        ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
+            GoogleProvider({
+                clientId: process.env.GOOGLE_CLIENT_ID,
+                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                authorization: {
+                    params: {
+                        scope: 'https://www.googleapis.com/auth/youtube.readonly openid email profile',
+                        prompt: "consent",
+                        access_type: "offline",
+                        response_type: "code"
+                    },
                 },
-            },
-            profile(profile) {
-                console.log(`Google login profile:`, profile);
-                return {
-                    id: profile.sub,
-                    name: profile.name,
-                    email: profile.email,
-                    image: profile.picture,
-                };
-            },
-        }),
+                profile(profile) {
+                    authLog(`Google login profile:`, profile);
+                    return {
+                        id: profile.sub,
+                        name: profile.name,
+                        email: profile.email,
+                        image: profile.picture,
+                    };
+                },
+            })
+        ] : []),
     ],
     callbacks: {
         async session({ session, token }) {
@@ -157,7 +175,7 @@ export const authOptions: NextAuthOptions = {
 
             // När initial inloggning sker
             if (account && user) {
-                console.log(`Creating JWT for account type: ${account.provider}`);
+                authLog(`Creating JWT for account type: ${account.provider}`);
                 token.accessToken = account.access_token;
                 token.provider = account.provider;
 

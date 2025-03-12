@@ -70,7 +70,20 @@ export default function LoginPage() {
         e.preventDefault();
         setIsLoading(true);
 
+        // Grundläggande validering
+        if (!email || !password) {
+            toast({
+                title: t.errors.title,
+                description: "Du måste ange både e-post och lösenord.",
+                variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+        }
+
         try {
+            console.log(`🔄 Försöker logga in användare: ${email}`);
+
             const result = await signIn("credentials", {
                 email,
                 password,
@@ -78,13 +91,23 @@ export default function LoginPage() {
                 callbackUrl,
             });
 
+            console.log(`📊 Inloggningsresultat:`, JSON.stringify(result));
+
             if (result?.error) {
                 console.error("Login error:", result.error);
+
+                // Visa specifika felmeddelanden baserat på olika felkoder
+                let errorMessage = t.errors.default;
+
+                if (result.error === "CredentialsSignin") {
+                    errorMessage = t.errors.credentialsSignin;
+                } else if (result.error.includes("fetch")) {
+                    errorMessage = t.errors.networkError;
+                }
+
                 toast({
                     title: t.errors.title,
-                    description: result.error === "CredentialsSignin"
-                        ? t.errors.credentialsSignin
-                        : t.errors.default,
+                    description: errorMessage,
                     variant: "destructive",
                 });
                 setIsLoading(false);
@@ -92,7 +115,16 @@ export default function LoginPage() {
             }
 
             if (result?.url) {
+                console.log(`✅ Inloggning lyckades, omdirigerar till: ${result.url}`);
                 router.push(result.url);
+            } else {
+                console.error("Ingen URL returnerades efter inloggning");
+                toast({
+                    title: t.errors.title,
+                    description: t.errors.default,
+                    variant: "destructive",
+                });
+                setIsLoading(false);
             }
         } catch (error: any) {
             console.error("Sign in error:", error);
@@ -101,6 +133,7 @@ export default function LoginPage() {
             let errorMessage = t.errors.default;
 
             if (error.message) {
+                console.error(`Felmeddelande: ${error.message}`);
                 if (error.message.includes("network") || error.message.includes("fetch")) {
                     errorMessage = t.errors.networkError;
                 }
@@ -111,7 +144,6 @@ export default function LoginPage() {
                 description: errorMessage,
                 variant: "destructive",
             });
-        } finally {
             setIsLoading(false);
         }
     };
@@ -119,9 +151,14 @@ export default function LoginPage() {
     const handleGoogleSignIn = async () => {
         setIsLoading(true);
         try {
+            console.log(`🔄 Försöker logga in med Google`);
+
             await signIn("google", {
                 callbackUrl,
             });
+
+            // Vi kommer inte hit om Google auth lyckas eftersom sidan omdirigeras
+            console.log("Google auth avslutades utan omdirigering");
         } catch (error: any) {
             console.error("Google sign in error:", error);
 
