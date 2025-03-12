@@ -1,7 +1,15 @@
 {
     "version": 2,
-    "buildCommand": "npx prisma generate && npm run build",
-    "installCommand": "npm install",
+    "builds": [
+        {
+            "src": "package.json",
+            "use": "@vercel/node",
+            "config": {
+                "installCommand": "npm install",
+                "buildCommand": "prisma generate && next build"
+            }
+        }
+    ],
     "framework": "nextjs",
     "regions": [
         "fra1"
