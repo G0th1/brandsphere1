@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "buildCommand": "npm run postinstall && npm run build && npm run vercel-db-migrate",
+    "buildCommand": "npm install --production=false && npm run build",
     "installCommand": "npm install",
     "framework": "nextjs",
     "regions": [
