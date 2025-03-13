@@ -8,7 +8,9 @@
     ],
     "env": {
         "NEXTAUTH_URL": "https://${VERCEL_URL}",
-        "NEXT_PUBLIC_SITE_URL": "https://${VERCEL_URL}"
+        "NEXT_PUBLIC_SITE_URL": "https://${VERCEL_URL}",
+        "POSTGRES_PRISMA_URL": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3-pooler.eu-central-1.aws.neon.tech/neondb?connect_timeout=15&sslmode=require",
+        "POSTGRES_URL_NON_POOLING": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
     },
     "crons": [
         {
@@ -47,6 +49,13 @@
         "app/api/**/*": {
             "memory": 1024,
             "maxDuration": 10
+        }
+    },
+    "outputDirectory": ".next",
+    "git": {
+        "deploymentEnabled": {
+            "main": true,
+            "master": true
         }
     }
 }

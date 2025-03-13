@@ -2,13 +2,14 @@ import { PrismaClient } from "@prisma/client";
 import * as path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
+import { DATABASE_URL } from './database-url';
 
 // =========== DATABASE CONFIGURATION ===========
 // Handle environment-specific database setup
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 // Only run filesystem checks in development with SQLite
-if (isDevelopment && process.env.DATABASE_URL?.startsWith('file:')) {
+if (isDevelopment && DATABASE_URL.startsWith('file:')) {
     console.log('🔍 DATABASE DIAGNOSTICS:');
 
     // Use absolute path for database location for maximum reliability
@@ -134,16 +135,24 @@ if (isDevelopment && process.env.DATABASE_URL?.startsWith('file:')) {
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
-    // In production, just use the DATABASE_URL from environment variables
-    prisma = new PrismaClient();
+    // In production, use our helper to get the right database URL
+    prisma = new PrismaClient({
+        datasources: {
+            db: {
+                url: DATABASE_URL
+            }
+        },
+        log: ['error', 'warn'],
+    });
     console.log('✅ PrismaClient initialized for production with PostgreSQL');
+    console.log('Database URL type:', DATABASE_URL.startsWith('postgres') ? 'PostgreSQL' : 'Unknown');
 } else {
     try {
         // In development, we might need more specific configuration
         prisma = new PrismaClient({
             datasources: {
                 db: {
-                    url: process.env.DATABASE_URL
+                    url: DATABASE_URL
                 }
             },
             log: ['error', 'warn'],
@@ -151,9 +160,9 @@ if (process.env.NODE_ENV === 'production') {
         console.log('✅ PrismaClient initialized successfully');
 
         // Log more details about the database connection
-        console.log('Database provider:', process.env.DATABASE_URL?.startsWith('postgres') ? 'PostgreSQL' :
-            process.env.DATABASE_URL?.startsWith('file:') ? 'SQLite' : 'Unknown');
-        console.log('Database connection string type:', process.env.DATABASE_URL ? 'Provided' : 'Missing');
+        console.log('Database provider:', DATABASE_URL.startsWith('postgres') ? 'PostgreSQL' :
+            DATABASE_URL.startsWith('file:') ? 'SQLite' : 'Unknown');
+        console.log('Database connection string type:', DATABASE_URL ? 'Provided' : 'Missing');
     } catch (initError) {
         console.error('❌ Failed to initialize PrismaClient:', initError);
         // Create a fallback client with no options
