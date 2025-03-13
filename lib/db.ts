@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { execSync } from 'child_process';
 
 // =========== DATABASE CONFIGURATION ===========
-// Use relative path for database location for better compatibility
+// Use absolute path for database location for maximum reliability
 const DATABASE_FILENAME = 'dev.db';
 const PROJECT_ROOT = process.cwd();
 const PRISMA_DIR = path.join(PROJECT_ROOT, 'prisma');
@@ -17,16 +17,11 @@ console.log(`Database path: ${DB_PATH}`);
 console.log(`Database exists: ${fs.existsSync(DB_PATH)}`);
 console.log(`Prisma dir exists: ${fs.existsSync(PRISMA_DIR)}`);
 
-// Directly define DATABASE_URL for Prisma
-const DATABASE_URL = `file:${path.relative(PROJECT_ROOT, DB_PATH)}`;
+// Use absolute path for SQLite - more reliable across environments
+const DATABASE_URL = `file:${DB_PATH}`;
 console.log(`Database URL: ${DATABASE_URL}`);
 
-// Check for proper environment variables
-if (process.env.DATABASE_URL) {
-    console.log(`Original DATABASE_URL from env: ${process.env.DATABASE_URL}`);
-}
-
-// Set environment variable
+// Override environment variable with absolute path
 process.env.DATABASE_URL = DATABASE_URL;
 
 // =========== DATABASE FILE MANAGEMENT ===========
@@ -44,50 +39,77 @@ function setupDatabase() {
             }
         }
 
-        // Check database file
+        // SQLITE FILE HANDLING
         let needsSchema = false;
-        if (!fs.existsSync(DB_PATH)) {
-            try {
-                // Create empty file with explicit permissions
-                fs.writeFileSync(DB_PATH, '', { mode: 0o666 });
-                console.log(`✅ Created database file at ${DB_PATH}`);
-                needsSchema = true;
-            } catch (fileError) {
-                console.error(`❌ Failed to create database file: ${fileError}`);
-                return false;
-            }
-        } else {
-            // File exists, check if it's a valid database by trying to get its size
-            try {
-                const stats = fs.statSync(DB_PATH);
-                console.log(`Database file size: ${stats.size} bytes`);
-                // If file is empty, needs schema
-                if (stats.size === 0) {
+
+        // Ensure database file exists with proper permissions
+        try {
+            // Remove any problematic database file
+            if (fs.existsSync(DB_PATH)) {
+                try {
+                    // Check file size to determine if it's valid
+                    const stats = fs.statSync(DB_PATH);
+                    if (stats.size < 100) {
+                        // File is too small to be valid SQLite
+                        console.log('Removing potentially corrupt database file');
+                        fs.unlinkSync(DB_PATH);
+                        needsSchema = true;
+                    } else {
+                        console.log(`Database file size: ${stats.size} bytes`);
+                        // Try to test file with SQLite directly
+                        try {
+                            execSync(`npx prisma db execute --file="scripts/test-query.sql"`, {
+                                stdio: 'inherit',
+                                env: { ...process.env, DATABASE_URL },
+                            });
+                            console.log('✅ Existing database is valid');
+                            return true; // Database is good to go
+                        } catch (testError) {
+                            console.error('❌ Existing database failed validation, recreating...');
+                            fs.unlinkSync(DB_PATH);
+                            needsSchema = true;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`❌ Error checking database file: ${error}`);
+                    try {
+                        fs.unlinkSync(DB_PATH);
+                    } catch (unlinkError) {
+                        console.error(`❌ Failed to remove problematic database: ${unlinkError}`);
+                        return false;
+                    }
                     needsSchema = true;
                 }
-            } catch (statError) {
-                console.error(`❌ Error accessing database file: ${statError}`);
-                return false;
+            } else {
+                needsSchema = true;
             }
-        }
 
-        // Initialize schema if needed
-        if (needsSchema) {
-            try {
-                console.log('Initializing database schema...');
-                // Run Prisma migration
-                execSync('npx prisma db push --force-reset', {
-                    cwd: PROJECT_ROOT,
-                    stdio: 'inherit'
-                });
-                console.log('✅ Schema successfully pushed to database');
-            } catch (schemaError) {
-                console.error(`❌ Failed to push schema: ${schemaError}`);
-                return false;
+            // Create new database file if needed
+            if (needsSchema) {
+                // Create empty file with wide-open permissions
+                fs.writeFileSync(DB_PATH, '', { mode: 0o666 });
+                console.log(`✅ Created database file at ${DB_PATH}`);
+
+                // Push schema to the new database
+                try {
+                    console.log('Initializing database schema...');
+                    // Run Prisma migration
+                    execSync('npx prisma db push --force-reset', {
+                        cwd: PROJECT_ROOT,
+                        stdio: 'inherit'
+                    });
+                    console.log('✅ Schema successfully pushed to database');
+                } catch (schemaError) {
+                    console.error(`❌ Failed to push schema: ${schemaError}`);
+                    return false;
+                }
             }
-        }
 
-        return true;
+            return true;
+        } catch (error) {
+            console.error(`❌ Database file handling error: ${error}`);
+            return false;
+        }
     } catch (error) {
         console.error(`❌ Unexpected error setting up database: ${error}`);
         return false;
@@ -101,59 +123,54 @@ if (!dbSetupSuccess) {
 }
 
 // =========== PRISMA CLIENT INITIALIZATION ===========
-// Create a standard PrismaClient with explicit database URL
-const prismaClientOptions = {
-    datasources: {
-        db: {
-            url: DATABASE_URL
-        }
-    },
-    log: ['error', 'warn']
-};
+// Simplify client creation for maximum compatibility
+let prisma: PrismaClient;
 
-// Add debug logs in development
-if (process.env.NODE_ENV === 'development') {
-    prismaClientOptions.log.push('query');
-    console.log('Debug logging enabled for database queries');
+try {
+    // Create a new instance with explicit connection URL
+    prisma = new PrismaClient({
+        datasources: {
+            db: {
+                url: DATABASE_URL
+            }
+        },
+        log: ['error', 'warn'],
+    });
+
+    console.log('✅ PrismaClient initialized successfully');
+} catch (initError) {
+    console.error('❌ Failed to initialize PrismaClient:', initError);
+    // Create a fallback client with no options
+    prisma = new PrismaClient();
 }
 
-// Initialize Prisma client
-const prisma = new PrismaClient(prismaClientOptions);
-
-// Export singleton instance
+// Create and export a singleton instance
 export const db = prisma;
 
-// Verify connection on startup
-async function verifyDatabaseConnection() {
+// Test connection immediately but don't block execution
+(async function () {
     try {
-        // Test basic connection
+        // Force connection to occur
         await db.$connect();
         console.log('✅ Database connection successful');
 
-        // Test query functionality
-        const result = await db.$queryRaw`SELECT 1 as test`;
-        console.log(`✅ Database query successful: ${JSON.stringify(result)}`);
+        // Basic test query
+        const testResult = await db.$queryRaw`SELECT 1 as test`;
+        console.log('✅ Basic query successful:', testResult);
 
-        // Test schema is working
-        const tableCount = await db.$queryRaw`SELECT count(*) as count FROM sqlite_master WHERE type='table'`;
-        console.log(`✅ Database has ${JSON.stringify(tableCount)} tables`);
+        // Check if tables exist
+        const tables = await db.$queryRaw`SELECT name FROM sqlite_master WHERE type='table'`;
+        console.log('✅ Database tables:', tables);
 
-        return true;
     } catch (error) {
-        console.error('❌ DATABASE CONNECTION ERROR:', error);
-        return false;
-    }
-}
+        console.error('❌ Database connection test failed:', error);
 
-// Run verification but don't block module export
-verifyDatabaseConnection()
-    .then(success => {
-        if (success) {
-            console.log('✅ DATABASE READY');
-        } else {
-            console.error('❌ DATABASE VERIFICATION FAILED');
+        if (error instanceof Error) {
+            if (error.message.includes('no such table')) {
+                console.error('❌ Schema missing, try running: npx prisma db push');
+            } else if (error.message.includes('SQLITE_CANTOPEN')) {
+                console.error('❌ Cannot open database file, check permissions');
+            }
         }
-    })
-    .catch(error => {
-        console.error('❌ FATAL DATABASE ERROR:', error);
-    }); 
+    }
+})(); 
