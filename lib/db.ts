@@ -16,43 +16,26 @@ function logDatabaseIssue(message: string, error?: any) {
     }
 }
 
+// Create a simple, reliable Prisma client instance
 function createPrismaClient() {
-    console.log("Creating new PrismaClient");
-
-    // Check environment variables
-    console.log("Database environment variables:", {
-        DATABASE_URL: Boolean(process.env.DATABASE_URL),
-        POSTGRES_PRISMA_URL: Boolean(process.env.POSTGRES_PRISMA_URL),
-        POSTGRES_URL_NON_POOLING: Boolean(process.env.POSTGRES_URL_NON_POOLING),
-        VERCEL: Boolean(process.env.VERCEL)
-    });
-
-    try {
-        // For Vercel, use POSTGRES_URL_NON_POOLING
-        if (process.env.VERCEL) {
-            console.log("Using Vercel Postgres configuration");
-            return new PrismaClient({
-                datasources: {
-                    db: {
-                        url: process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL
-                    }
-                }
-            });
-        }
-
-        // For local development and other environments
-        return new PrismaClient();
-    } catch (error) {
-        logDatabaseIssue("Failed to create Prisma client", error);
-        // Return a basic client as fallback
-        return new PrismaClient();
+    // For development, log the database configuration
+    if (process.env.NODE_ENV !== "production") {
+        console.log("Database configuration:", {
+            DATABASE_URL: Boolean(process.env.DATABASE_URL),
+            POSTGRES_PRISMA_URL: Boolean(process.env.POSTGRES_PRISMA_URL),
+            POSTGRES_URL_NON_POOLING: Boolean(process.env.POSTGRES_URL_NON_POOLING)
+        });
     }
+
+    // Create a basic Prisma client - Prisma will handle the connection URL priority
+    return new PrismaClient();
 }
 
-// PrismaClient is attached to global object in development to prevent
-// exhaustion of connection pools due to hot reloads
+// Use the global instance in development to prevent connection exhaustion
+// during hot reloads, or create a new instance
 const prisma = global.prisma || createPrismaClient();
 
+// Store the instance globally in development
 if (process.env.NODE_ENV !== "production") {
     global.prisma = prisma;
 }
