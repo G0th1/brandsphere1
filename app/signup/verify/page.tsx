@@ -19,7 +19,6 @@ import { useToast } from "@/components/ui/use-toast"
 export default function VerifyPage() {
   const [isResending, setIsResending] = useState(false)
   const [email, setEmail] = useState("")
-  const supabase = createClientComponentClient()
   const { toast } = useToast()
 
   // Try to get the email from localStorage if it was saved during signup
@@ -46,6 +45,14 @@ export default function VerifyPage() {
     setIsResending(true)
 
     try {
+      // Only create the Supabase client when needed and in the browser
+      if (typeof window === 'undefined') {
+        console.log('Running in SSG mode, skipping Supabase client creation');
+        return;
+      }
+
+      const supabase = createClientComponentClient()
+
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
