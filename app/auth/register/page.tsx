@@ -45,6 +45,8 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
+            console.log("Submitting registration for:", email);
+
             const response = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: {
@@ -58,9 +60,17 @@ export default function RegisterPage() {
             });
 
             const data = await response.json();
+            console.log("Registration response:", { status: response.status, data });
 
             if (!response.ok) {
-                throw new Error(data.message || "Something went wrong. Please try again.");
+                // Handle specific error cases
+                if (response.status === 409) {
+                    throw new Error("An account with this email already exists.");
+                } else if (response.status === 400) {
+                    throw new Error(data.message || "Invalid form data. Please check your inputs.");
+                } else {
+                    throw new Error(data.message || "Something went wrong. Please try again.");
+                }
             }
 
             toast({
@@ -73,6 +83,8 @@ export default function RegisterPage() {
                 router.push("/auth/login");
             }, 1500);
         } catch (error) {
+            console.error("Registration error:", error);
+
             toast({
                 title: "Registration Error",
                 description: error instanceof Error ? error.message : "Something went wrong. Please try again.",

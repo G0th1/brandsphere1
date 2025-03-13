@@ -37,6 +37,8 @@ export default function LoginPage() {
         }
 
         try {
+            console.log("Attempting login with email:", email);
+
             const result = await signIn("credentials", {
                 email,
                 password,
@@ -44,10 +46,25 @@ export default function LoginPage() {
                 callbackUrl,
             });
 
+            console.log("Login result:", result);
+
             if (result?.error) {
+                console.error("Login error:", result.error);
+
+                // Show more specific error messages
+                let errorMessage = "Invalid login credentials.";
+
+                if (result.error === "CredentialsSignin") {
+                    errorMessage = "The email or password you entered is incorrect.";
+                } else if (result.error.includes("fetch")) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else {
+                    errorMessage = `Error: ${result.error}`;
+                }
+
                 toast({
                     title: "Authentication Error",
-                    description: "Invalid login credentials.",
+                    description: errorMessage,
                     variant: "destructive",
                 });
                 setIsLoading(false);
@@ -55,8 +72,10 @@ export default function LoginPage() {
             }
 
             if (result?.url) {
+                console.log("Login successful, redirecting to:", result.url);
                 router.push(result.url);
             } else {
+                console.error("No URL returned after login");
                 toast({
                     title: "Error",
                     description: "Something went wrong. Please try again.",
@@ -65,9 +84,15 @@ export default function LoginPage() {
                 setIsLoading(false);
             }
         } catch (error) {
+            console.error("Login error:", error);
+
+            const errorMessage = error instanceof Error
+                ? `Error: ${error.message}`
+                : "Something went wrong. Please try again.";
+
             toast({
                 title: "Error",
-                description: "Something went wrong. Please try again.",
+                description: errorMessage,
                 variant: "destructive",
             });
             setIsLoading(false);

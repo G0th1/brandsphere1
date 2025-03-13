@@ -5,74 +5,81 @@ declare global {
     var prisma: PrismaClient | undefined;
 }
 
-// Loggfunktion för databasproblem
+// Log function for database issues
 function logDatabaseIssue(message: string, error?: any) {
-    console.error(`🔴 DATABAS FEL: ${message}`);
+    console.error(`🔴 DATABASE ERROR: ${message}`);
     if (error) {
-        console.error(`💥 Feldetaljer:`, error);
+        console.error(`💥 Error details:`, error);
         if (error.code) {
-            console.error(`💥 Felkod: ${error.code}`);
+            console.error(`💥 Error code: ${error.code}`);
         }
     }
 }
 
 function createPrismaClient() {
-    console.log("Skapar ny PrismaClient");
+    console.log("Creating new PrismaClient");
 
-    // Kontrollera miljövariabler
-    console.log("Databas miljövariabler:", {
+    // Check environment variables
+    console.log("Database environment variables:", {
         DATABASE_URL: Boolean(process.env.DATABASE_URL),
         POSTGRES_PRISMA_URL: Boolean(process.env.POSTGRES_PRISMA_URL),
         POSTGRES_URL_NON_POOLING: Boolean(process.env.POSTGRES_URL_NON_POOLING),
         VERCEL: Boolean(process.env.VERCEL)
     });
 
-    // För Vercel, används POSTGRES_URL_NON_POOLING
-    if (process.env.VERCEL) {
-        console.log("Använder Vercel Postgres-konfiguration");
-        return new PrismaClient({
-            datasources: {
-                db: {
-                    url: process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL
+    try {
+        // For Vercel, use POSTGRES_URL_NON_POOLING
+        if (process.env.VERCEL) {
+            console.log("Using Vercel Postgres configuration");
+            return new PrismaClient({
+                datasources: {
+                    db: {
+                        url: process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    // För lokal utveckling och andra miljöer
-    return new PrismaClient();
+        // For local development and other environments
+        return new PrismaClient();
+    } catch (error) {
+        logDatabaseIssue("Failed to create Prisma client", error);
+        // Return a basic client as fallback
+        return new PrismaClient();
+    }
 }
 
-// PrismaClient är fäst till den globala objektet i utveckling för att förhindra
-// utmattning av anslutningspooler på grund av hot reloads
+// PrismaClient is attached to global object in development to prevent
+// exhaustion of connection pools due to hot reloads
 const prisma = global.prisma || createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
     global.prisma = prisma;
 }
 
-// Testa databasanslutningen när modulen laddas
+// Test database connection when module loads
 (async () => {
     try {
         const isProduction = process.env.NODE_ENV === "production";
         const dbType = isProduction ? "PostgreSQL" : "SQLite";
 
-        console.log(`🔄 Testar ${dbType}-databasanslutning...`);
+        console.log(`🔄 Testing ${dbType} database connection...`);
         const result = await prisma.$queryRaw`SELECT 1 as test`;
-        console.log(`✅ ${dbType}-databasanslutning lyckades!`, result);
+        console.log(`✅ ${dbType} database connection successful!`, result);
     } catch (connectionError) {
         const isProduction = process.env.NODE_ENV === "production";
         const dbType = isProduction ? "PostgreSQL" : "SQLite";
 
-        logDatabaseIssue(`Kunde inte ansluta till ${dbType}-databasen:`, connectionError);
+        logDatabaseIssue(`Could not connect to ${dbType} database:`, connectionError);
 
         if (isProduction) {
-            console.error('🚨 REKOMMENDATION: Kontrollera att databasmiljövariablerna är korrekt inställda');
-            console.error('🚨 Miljövariabler som bör finnas på Vercel:');
-            console.error('   - POSTGRES_PRISMA_URL (för pooled anslutningar)');
-            console.error('   - POSTGRES_URL_NON_POOLING (för direktanslutningar, migrations, etc)');
+            console.error('🚨 RECOMMENDATION: Verify that database environment variables are correctly set');
+            console.error('🚨 Environment variables that should exist on Vercel:');
+            console.error('   - POSTGRES_PRISMA_URL (for pooled connections)');
+            console.error('   - POSTGRES_URL_NON_POOLING (for direct connections, migrations, etc)');
         } else {
-            console.error('🚨 REKOMMENDATION: Kontrollera att SQLite-databasen är korrekt initierad');
+            console.error('🚨 RECOMMENDATION: Verify that the SQLite database is correctly initialized');
+            console.error('   Try running: npx prisma db push');
         }
     }
 })();
