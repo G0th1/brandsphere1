@@ -7,56 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
-import { useLanguage } from "@/contexts/language-context";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 
-const translations = {
-    en: {
-        title: "Create an account",
-        description: "Enter your details below to create your account",
-        nameLabel: "Full name",
-        emailLabel: "Email address",
-        passwordLabel: "Password",
-        confirmPasswordLabel: "Confirm password",
-        createAccount: "Create account",
-        alreadyHaveAccount: "Already have an account?",
-        signIn: "Sign in",
-        errors: {
-            default: "Something went wrong. Please try again.",
-            emailExists: "An account with this email already exists.",
-            passwordMismatch: "Passwords do not match.",
-            passwordTooShort: "Password must be at least 8 characters long.",
-            networkError: "Network error. Please check your connection and try again."
-        },
-        loading: "Creating account...",
-        success: "Account created! Redirecting to login..."
-    },
-    sv: {
-        title: "Skapa ett konto",
-        description: "Ange dina uppgifter nedan för att skapa ditt konto",
-        nameLabel: "Fullständigt namn",
-        emailLabel: "E-postadress",
-        passwordLabel: "Lösenord",
-        confirmPasswordLabel: "Bekräfta lösenord",
-        createAccount: "Skapa konto",
-        alreadyHaveAccount: "Har du redan ett konto?",
-        signIn: "Logga in",
-        errors: {
-            default: "Något gick fel. Försök igen.",
-            emailExists: "Ett konto med denna e-postadress finns redan.",
-            passwordMismatch: "Lösenorden matchar inte.",
-            passwordTooShort: "Lösenordet måste vara minst 8 tecken långt.",
-            networkError: "Nätverksfel. Kontrollera din anslutning och försök igen."
-        },
-        loading: "Skapar konto...",
-        success: "Konto skapat! Omdirigerar till inloggning..."
-    }
-};
-
 export default function RegisterPage() {
-    const { language } = useLanguage();
-    const t = translations[language as keyof typeof translations];
     const router = useRouter();
     const { toast } = useToast();
 
@@ -69,11 +23,11 @@ export default function RegisterPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validera formuläret
+        // Validate form
         if (password !== confirmPassword) {
             toast({
-                title: "Fel",
-                description: t.errors.passwordMismatch,
+                title: "Error",
+                description: "Passwords do not match.",
                 variant: "destructive",
             });
             return;
@@ -81,8 +35,8 @@ export default function RegisterPage() {
 
         if (password.length < 8) {
             toast({
-                title: "Fel",
-                description: t.errors.passwordTooShort,
+                title: "Error",
+                description: "Password must be at least 8 characters long.",
                 variant: "destructive",
             });
             return;
@@ -106,35 +60,22 @@ export default function RegisterPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || t.errors.default);
+                throw new Error(data.message || "Something went wrong. Please try again.");
             }
 
             toast({
-                title: "Framgång",
-                description: t.success,
+                title: "Success",
+                description: "Account created! Redirecting to login...",
             });
 
-            // Kort fördröjning för att visa framgångsmeddelandet innan omdirigering
+            // Short delay to show success message before redirecting
             setTimeout(() => {
                 router.push("/auth/login");
             }, 1500);
-        } catch (error: any) {
-            console.error("Registration error:", error);
-
-            // Hantera olika typer av fel
-            let errorMessage = t.errors.default;
-
-            if (error.message) {
-                if (error.message.includes("network") || error.message.includes("fetch")) {
-                    errorMessage = t.errors.networkError;
-                } else {
-                    errorMessage = error.message;
-                }
-            }
-
+        } catch (error) {
             toast({
-                title: "Registreringsfel",
-                description: errorMessage,
+                title: "Registration Error",
+                description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
                 variant: "destructive",
             });
         } finally {
@@ -147,13 +88,13 @@ export default function RegisterPage() {
             <main className="flex-1 flex items-center justify-center p-4">
                 <Card className="max-w-md w-full">
                     <CardHeader>
-                        <CardTitle className="text-2xl">{t.title}</CardTitle>
-                        <CardDescription>{t.description}</CardDescription>
+                        <CardTitle className="text-2xl">Create an account</CardTitle>
+                        <CardDescription>Enter your details below to create your account</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">{t.nameLabel}</Label>
+                                <Label htmlFor="name">Full name</Label>
                                 <Input
                                     id="name"
                                     value={name}
@@ -164,7 +105,7 @@ export default function RegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="email">{t.emailLabel}</Label>
+                                <Label htmlFor="email">Email address</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -176,7 +117,7 @@ export default function RegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="password">{t.passwordLabel}</Label>
+                                <Label htmlFor="password">Password</Label>
                                 <Input
                                     id="password"
                                     type="password"
@@ -188,7 +129,7 @@ export default function RegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="confirmPassword">{t.confirmPasswordLabel}</Label>
+                                <Label htmlFor="confirmPassword">Confirm password</Label>
                                 <Input
                                     id="confirmPassword"
                                     type="password"
@@ -207,17 +148,17 @@ export default function RegisterPage() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        {t.loading}
+                                        Creating account...
                                     </>
-                                ) : t.createAccount}
+                                ) : "Create account"}
                             </Button>
                         </form>
                     </CardContent>
                     <CardFooter className="flex justify-center">
                         <p className="text-sm text-muted-foreground">
-                            {t.alreadyHaveAccount}{" "}
+                            Already have an account?{" "}
                             <Link href="/auth/login" className="text-primary font-medium hover:underline">
-                                {t.signIn}
+                                Sign in
                             </Link>
                         </p>
                     </CardFooter>
