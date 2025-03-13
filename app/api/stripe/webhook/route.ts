@@ -2,7 +2,15 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
-import { supabaseAdmin } from "@/lib/supabase";
+// Import Supabase conditionally to avoid build errors
+let supabaseAdmin: any = null;
+try {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    supabaseAdmin = require("@/lib/supabase").supabaseAdmin;
+  }
+} catch (error) {
+  console.warn("Supabase configuration missing or invalid. Supabase features disabled.");
+}
 import Stripe from "stripe";
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +20,7 @@ export async function POST(req: Request) {
   const signature = headers().get("stripe-signature");
 
   if (!signature) {
-    return new NextResponse("Saknad Stripe-signatur", { status: 400 });
+    return new NextResponse("Missing Stripe signature", { status: 400 });
   }
 
   let event: Stripe.Event;
@@ -20,18 +28,18 @@ export async function POST(req: Request) {
 
   try {
     if (!webhookSecret) {
-      throw new Error("Stripe webhook-nyckel saknas");
+      throw new Error("Stripe webhook secret is missing");
     }
 
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (error: any) {
-    console.error(`Webhook-fel: ${error.message}`);
-    return new NextResponse(`Webhook-fel: ${error.message}`, { status: 400 });
+    console.error(`Webhook error: ${error.message}`);
+    return new NextResponse(`Webhook error: ${error.message}`, { status: 400 });
   }
 
   try {
     switch (event.type) {
-      // Ny prenumeration skapad
+      // New subscription created
       case "checkout.session.completed": {
         const checkoutSession = event.data.object as Stripe.Checkout.Session;
         if (checkoutSession.mode === "subscription") {
@@ -70,28 +78,28 @@ export async function POST(req: Request) {
         break;
       }
 
-      // Prenumerationen uppdaterad (t.ex. uppgradering/nedgradering)
+      // Subscription updated (e.g., upgrade/downgrade)
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
         const subscriptionId = invoice.subscription as string;
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const customerId = invoice.customer as string;
 
-        // Hitta användaren från Stripe-kundens metadata
+        // Find user from Stripe customer metadata
         const stripeCustomer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
         const userId = stripeCustomer.metadata?.userId;
 
         if (userId && subscription.status === "active") {
-          // Hitta prisinformation
+          // Find price information
           const priceId = subscription.items.data[0]?.price.id;
           let plan = "Pro"; // Default
 
-          // Identifiera planen baserad på metadata eller prissättning
+          // Identify plan based on metadata or pricing
           if (subscription.metadata?.plan) {
             plan = subscription.metadata.plan;
           }
 
-          // Identifiera faktureringsperioden
+          // Identify billing period
           const interval = subscription.items.data[0]?.price.recurring?.interval;
           const billingCycle = interval === "year" ? "annually" : "monthly";
 
@@ -109,12 +117,12 @@ export async function POST(req: Request) {
         break;
       }
 
-      // Prenumerationen avslutad
+      // Subscription ended
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
-        // Hitta användaren från Stripe-kunden
+        // Find user from Stripe customer
         const stripeCustomer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
         const userId = stripeCustomer.metadata?.userId;
 
@@ -130,12 +138,12 @@ export async function POST(req: Request) {
         break;
       }
 
-      // Prenumerationen uppdaterad
+      // Subscription updated
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
-        // Hitta användaren från Stripe-kunden
+        // Find user from Stripe customer
         const stripeCustomer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
         const userId = stripeCustomer.metadata?.userId;
 
@@ -149,7 +157,7 @@ export async function POST(req: Request) {
               },
             });
           } else if (subscription.status === "canceled") {
-            // Prenumerationen avbryts vid slutet av perioden
+            // Subscription cancels at end of period
             await db.subscription.update({
               where: { userId },
               data: {
@@ -160,7 +168,7 @@ export async function POST(req: Request) {
           } else if (
             ["unpaid", "past_due", "incomplete", "incomplete_expired"].includes(subscription.status)
           ) {
-            // Prenumerationen har betalningsproblem
+            // Subscription has payment issues
             await db.subscription.update({
               where: { userId },
               data: {
@@ -178,13 +186,13 @@ export async function POST(req: Request) {
       }
 
       default:
-        console.log(`Ohanterad event-typ: ${event.type}`);
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
     return new NextResponse(null, { status: 200 });
   } catch (error) {
-    console.error("Webhook-fel:", error);
-    return new NextResponse("Internt serverfel", { status: 500 });
+    console.error("Webhook error:", error);
+    return new NextResponse("Internal server error", { status: 500 });
   }
 }
 
@@ -193,6 +201,12 @@ async function updateUserSubscription(
   customerId: string,
   subscription: Stripe.Subscription
 ) {
+  // Skip Supabase operations if not configured
+  if (!supabaseAdmin) {
+    console.log('Supabase not configured, skipping updateUserSubscription');
+    return;
+  }
+
   try {
     // First, find the user by Stripe customer ID
     const { data: users, error: userError } = await supabaseAdmin
@@ -251,28 +265,52 @@ async function updateUserSubscription(
   }
 }
 
-// Helper to delete user subscription
+// Helper to delete user subscription in Supabase
 async function deleteUserSubscription(
   customerId: string,
   subscriptionId: string
 ) {
+  // Skip Supabase operations if not configured
+  if (!supabaseAdmin) {
+    console.log('Supabase not configured, skipping deleteUserSubscription');
+    return;
+  }
+
   try {
-    // Update user subscription status
+    // First, find the user by Stripe customer ID
+    const { data: users, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('stripe_customer_id', customerId)
+      .limit(1);
+
+    if (userError || !users || users.length === 0) {
+      console.error('Error finding user by customer ID:', userError);
+      return;
+    }
+
+    const userId = users[0].id;
+
+    // Update subscription status to canceled
     await supabaseAdmin
       .from('users')
       .update({
         subscription_status: 'canceled',
       })
-      .eq('stripe_customer_id', customerId);
+      .eq('id', userId);
 
     // Update the subscription record
-    await supabaseAdmin
+    const { error: subError } = await supabaseAdmin
       .from('stripe_subscriptions')
       .update({
         status: 'canceled',
         updated_at: new Date().toISOString(),
       })
       .eq('stripe_subscription_id', subscriptionId);
+
+    if (subError) {
+      console.error('Error updating subscription details:', subError);
+    }
   } catch (error) {
     console.error('Error deleting user subscription:', error);
   }
