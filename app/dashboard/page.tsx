@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { User } from "@supabase/supabase-js"
 import Link from "next/link"
 import {
   Calendar,
@@ -33,6 +32,7 @@ import {
 } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useLanguage } from "@/contexts/language-context"
+import { AuthGuard, useAuthUser } from "@/app/components/auth-guard"
 
 // Översättningar
 const translations = {
@@ -101,7 +101,15 @@ const translations = {
 };
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null)
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
+  )
+}
+
+function DashboardContent() {
+  const user = useAuthUser()
   const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState('free')
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false)
@@ -110,28 +118,20 @@ export default function DashboardPage() {
     facebook: false,
     youtube: false
   })
-  const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
   const { language } = useLanguage()
   const t = translations[language]
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-
-      if (error || !session) {
-        router.replace("/login")
-        return
-      }
-
-      setUser(session.user)
+    const getProfileData = async () => {
+      if (!user) return
 
       // Hämta prenumerationsstatus från profiles-tabellen
       const { data, error: profileError } = await supabase
         .from('profiles')
         .select('subscription_tier, connected_accounts')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single()
 
       if (data && !profileError) {
@@ -154,7 +154,7 @@ export default function DashboardPage() {
       setLoading(false)
     }
 
-    getUser()
+    getProfileData()
 
     // Kolla om användaren just har uppgraderat
     const upgraded = searchParams?.get('upgraded')
@@ -165,7 +165,7 @@ export default function DashboardPage() {
         window.history.replaceState({}, '', '/dashboard')
       }, 5000)
     }
-  }, [router, supabase, searchParams])
+  }, [user, supabase, searchParams])
 
   const connectAccount = async (platform: 'facebook' | 'youtube') => {
     // I en riktig app skulle detta anropa en OAuth-flöde

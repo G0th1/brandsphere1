@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { sv, enUS } from 'date-fns/locale'
+import { AuthGuard } from '@/app/components/auth-guard'
 
 // Översättningar för skapa inlägg-sidan
 const createPostTranslations = {
@@ -71,6 +72,14 @@ const createPostTranslations = {
 };
 
 export default function CreatePostPage() {
+    return (
+        <AuthGuard>
+            <CreatePostContent />
+        </AuthGuard>
+    )
+}
+
+function CreatePostContent() {
     const t = useTranslation(createPostTranslations);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [scheduleOption, setScheduleOption] = useState("now");
