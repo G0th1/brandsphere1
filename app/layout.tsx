@@ -7,6 +7,8 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { LanguageProvider } from '@/contexts/language-context'
 import { DemoProvider } from '@/contexts/demo-context'
 import { Toaster } from "../components/ui/toaster"
+import { Analytics } from "@/components/analytics"
+import DbErrorBoundary from "@/app/components/db-error-boundary"
 
 // Konfigurera Inter font
 const inter = Inter({
@@ -45,6 +47,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="sv" className={`${inter.variable}`} suppressHydrationWarning>
+      <head />
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"
@@ -54,12 +57,15 @@ export default function RootLayout({
         >
           <AuthProvider>
             <LanguageProvider>
-              <DemoProvider>
-                {children}
-                <Toaster />
-              </DemoProvider>
+              <DbErrorBoundary>
+                <DemoProvider>
+                  {children}
+                </DemoProvider>
+              </DbErrorBoundary>
             </LanguageProvider>
           </AuthProvider>
+          <Toaster />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
