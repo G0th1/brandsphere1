@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, Check, Star, Zap } from 'lucide-react'
+import { ChevronRight, Check, Star, Zap, ArrowRight } from 'lucide-react'
 import { useTranslation, useLanguage } from '@/contexts/language-context'
 import { homeTranslations } from '@/lib/translations'
 import { useState, useEffect } from "react";
@@ -248,30 +248,19 @@ export default function HomePage() {
               <p className="text-xl text-muted-foreground">
                 {t.cta.subtitle}
               </p>
-              <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  size="lg"
-                  className="group"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.location.href = '/auth/register';
-                  }}
-                >
-                  {t.cta.buttonText}
-                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="flex items-center gap-2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.location.href = '/demo/login';
-                  }}
-                >
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  {t.hero.tryDemo}
-                </Button>
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                <Link href="/auth/login">
+                  <Button size="lg">
+                    {t.cta.buttonText}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/demo/login">
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    {language === 'sv' ? 'Starta demo' : 'Start demo'}
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

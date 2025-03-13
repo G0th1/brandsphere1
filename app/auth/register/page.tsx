@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { Zap } from "lucide-react";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -180,13 +181,28 @@ export default function RegisterPage() {
                             </Button>
                         </form>
                     </CardContent>
-                    <CardFooter className="flex justify-center">
-                        <p className="text-sm text-muted-foreground">
+                    <CardFooter className="flex flex-col space-y-4">
+                        <div className="text-sm text-center">
                             Already have an account?{" "}
-                            <Link href="/auth/login" className="text-primary font-medium hover:underline">
+                            <Link href="/auth/login" className="text-primary hover:underline">
                                 Sign in
                             </Link>
-                        </p>
+                        </div>
+                        
+                        <div className="border-t pt-4 mt-2">
+                            <div className="text-center mb-2">
+                                <span className="bg-background px-2 text-xs text-muted-foreground">HAVING DATABASE ISSUES?</span>
+                            </div>
+                            <div className="text-sm text-center mb-2">
+                                Skip the hassle of registration and database setup
+                            </div>
+                            <Link href="/demo/login" className="w-full">
+                                <Button variant="outline" className="w-full flex gap-2 items-center justify-center">
+                                    <Zap className="h-4 w-4 text-yellow-500" />
+                                    Try Demo Mode Instead
+                                </Button>
+                            </Link>
+                        </div>
                     </CardFooter>
                 </Card>
             </main>

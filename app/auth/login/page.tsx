@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -147,7 +147,7 @@ export default function LoginPage() {
                             </Button>
                         </form>
                     </CardContent>
-                    <CardFooter className="flex flex-col space-y-2">
+                    <CardFooter className="flex flex-col space-y-4">
                         <div className="text-sm text-center">
                             <Link href="/auth/forgot-password" className="text-primary hover:underline">
                                 Forgot password?
@@ -157,6 +157,21 @@ export default function LoginPage() {
                             Don't have an account?{" "}
                             <Link href="/auth/register" className="text-primary hover:underline">
                                 Create an account
+                            </Link>
+                        </div>
+
+                        <div className="border-t pt-4 mt-2">
+                            <div className="text-center mb-2">
+                                <span className="bg-background px-2 text-xs text-muted-foreground">DATABASE CONNECTION ISSUES?</span>
+                            </div>
+                            <div className="text-sm text-center mb-2">
+                                Skip the database setup and try our fully-featured demo
+                            </div>
+                            <Link href="/demo/login" className="w-full">
+                                <Button variant="outline" className="w-full flex gap-2 items-center justify-center">
+                                    <Zap className="h-4 w-4 text-yellow-500" />
+                                    Use Demo Mode Instead
+                                </Button>
                             </Link>
                         </div>
                     </CardFooter>
