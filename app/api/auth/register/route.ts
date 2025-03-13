@@ -13,23 +13,43 @@ const userSchema = z.object({
     password: z.string().min(8, { message: "Password must be at least 8 characters" }),
 });
 
-// Function to verify database file existence
-function verifyDatabaseFile() {
+// Function to verify and create database file if needed
+function ensureDatabaseFile() {
     const dbPath = path.resolve(process.cwd(), 'prisma/dev.db');
     const exists = fs.existsSync(dbPath);
-    console.log(`Database file check: ${exists ? 'exists' : 'missing'} at ${dbPath}`);
-    return exists;
+
+    if (!exists) {
+        try {
+            // Make sure directory exists
+            const dirPath = path.dirname(dbPath);
+            if (!fs.existsSync(dirPath)) {
+                fs.mkdirSync(dirPath, { recursive: true });
+                console.log(`Created directory: ${dirPath}`);
+            }
+
+            // Create empty database file
+            fs.writeFileSync(dbPath, '');
+            console.log(`Created empty database file at: ${dbPath}`);
+            return true;
+        } catch (error) {
+            console.error(`Failed to create database file: ${error instanceof Error ? error.message : String(error)}`);
+            return false;
+        }
+    }
+
+    console.log(`Database file exists at: ${dbPath}`);
+    return true;
 }
 
 export async function POST(req: Request) {
     console.log("============== REGISTRATION REQUEST ==============");
 
-    // Make sure database file exists
-    const dbExists = verifyDatabaseFile();
-    if (!dbExists) {
-        console.error("DATABASE FILE MISSING - Registration cannot proceed");
+    // Make sure database file exists or create it
+    const dbReady = ensureDatabaseFile();
+    if (!dbReady) {
+        console.error("DATABASE FILE ISSUE - Registration cannot proceed");
         return NextResponse.json(
-            { success: false, message: "Server configuration error. Please contact support." },
+            { success: false, message: "Server configuration error. Please try again later." },
             { status: 500 }
         );
     }
@@ -41,8 +61,10 @@ export async function POST(req: Request) {
             console.log("✅ Database connection verified before processing request");
         } catch (dbError) {
             console.error("❌ Database connection failed:", dbError);
+
+            // If database file exists but connection fails, database may not be initialized
             return NextResponse.json(
-                { success: false, message: "Server database error. Please try again later." },
+                { success: false, message: "Database initialization required. Please try again later." },
                 { status: 503 }
             );
         }

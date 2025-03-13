@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import * as path from 'path';
 import * as fs from 'fs';
+import { execSync } from 'child_process';
 
 // --- DATABASE CONNECTION DEBUGGING ---
 // Get the absolute path to the database file
@@ -10,20 +11,45 @@ const DB_PATH = path.resolve(process.cwd(), 'prisma/dev.db');
 console.log('=== DATABASE SETUP ===');
 console.log(`Working directory: ${process.cwd()}`);
 console.log(`Database path: ${DB_PATH}`);
-console.log(`Database file exists: ${fs.existsSync(DB_PATH)}`);
 
-// If the database file doesn't exist, create it
-if (!fs.existsSync(DB_PATH)) {
+// Ensure database file and schema
+function ensureDatabaseFile() {
     try {
-        // Ensure directory exists
-        fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-        // Create empty file
-        fs.writeFileSync(DB_PATH, '');
-        console.log(`Created new database file at ${DB_PATH}`);
+        // Check if the database file exists
+        const exists = fs.existsSync(DB_PATH);
+        console.log(`Database file exists: ${exists}`);
+
+        // If the database file doesn't exist, create it
+        if (!exists) {
+            // Ensure directory exists
+            const dirPath = path.dirname(DB_PATH);
+            if (!fs.existsSync(dirPath)) {
+                fs.mkdirSync(dirPath, { recursive: true });
+                console.log(`Created directory: ${dirPath}`);
+            }
+
+            // Create empty file
+            fs.writeFileSync(DB_PATH, '');
+            console.log(`Created new database file at ${DB_PATH}`);
+
+            // Automatically push the schema to the new database
+            try {
+                execSync('npx prisma db push', { stdio: 'inherit' });
+                console.log('Successfully pushed schema to new database file');
+            } catch (schemaError) {
+                console.error(`Error pushing schema to database: ${schemaError}`);
+            }
+        }
+
+        return true;
     } catch (error) {
-        console.error(`ERROR creating database file: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`ERROR handling database file: ${error instanceof Error ? error.message : String(error)}`);
+        return false;
     }
 }
+
+// Ensure database file exists before proceeding
+ensureDatabaseFile();
 
 // Set DATABASE_URL environment variable explicitly
 process.env.DATABASE_URL = `file:${DB_PATH}`;
@@ -62,6 +88,16 @@ async function testDatabaseConnection() {
         if (error instanceof Error) {
             if (error.message.includes('table') && error.message.includes('not found')) {
                 console.error("❌ Database schema not initialized. Run 'npx prisma db push'");
+
+                // Try to auto-fix schema
+                try {
+                    console.log("Attempting to fix database schema automatically...");
+                    execSync('npx prisma db push', { stdio: 'inherit' });
+                    console.log("✅ Database schema fixed successfully");
+                    return true;
+                } catch (schemaError) {
+                    console.error("❌ Failed to fix database schema:", schemaError);
+                }
             } else if (error.message.includes('access') || error.message.includes('permission')) {
                 console.error("❌ Database permission error. Check file permissions.");
             }
