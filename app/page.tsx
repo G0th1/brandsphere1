@@ -59,6 +59,16 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
+      <div className="fixed top-4 right-4 z-50">
+        <Link href="/demo/login?bypass_db=true">
+          <Button variant="secondary" className="group gap-2 shadow-lg">
+            <Zap className="h-4 w-4 text-yellow-500" />
+            <span>Skip to Demo</span>
+            <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </Link>
+      </div>
+
       <div className="absolute top-4 left-4 z-50 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
         <a href="/test-page">Test Page</a>
       </div>

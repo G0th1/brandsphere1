@@ -4,9 +4,24 @@ import { db } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 /**
- * Simple health check endpoint to verify database connectivity
+ * Health check endpoint to verify database connectivity
+ * Includes a bypass option for demo mode
  */
-export async function GET() {
+export async function GET(request: Request) {
+    // Check for bypass flag in URL
+    const url = new URL(request.url);
+    const bypassDb = url.searchParams.get('bypass_db') === 'true';
+
+    // If bypass is requested, return success without checking DB
+    if (bypassDb) {
+        return NextResponse.json({
+            success: true,
+            message: 'Database check bypassed',
+            mode: 'demo'
+        });
+    }
+
+    // Regular database check
     try {
         // Attempt a simple database query
         await db.$queryRaw`SELECT 1 as test`;

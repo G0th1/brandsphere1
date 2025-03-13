@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, ReactNode } from 'react';
-import { AlertCircle, Database, RefreshCw } from 'lucide-react';
+import { AlertCircle, Database, RefreshCw, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -11,6 +11,7 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
+import Link from 'next/link';
 
 interface DbErrorBoundaryProps {
     children: ReactNode;
@@ -19,9 +20,30 @@ interface DbErrorBoundaryProps {
 export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
     const [hasError, setHasError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [bypassChecked, setBypassChecked] = useState(false);
 
     useEffect(() => {
-        // Check database connection
+        // Check if user is intentionally bypassing database check with URL param
+        const urlParams = new URLSearchParams(window.location.search);
+        const bypassDb = urlParams.get('bypass_db') === 'true';
+
+        if (bypassDb) {
+            setBypassChecked(true);
+            setIsLoading(false);
+            setHasError(false);
+            return;
+        }
+
+        // Check if user is on demo path
+        const isDemoPath = window.location.pathname.startsWith('/demo');
+        if (isDemoPath) {
+            setBypassChecked(true);
+            setIsLoading(false);
+            setHasError(false);
+            return;
+        }
+
+        // Otherwise check database connection
         const checkDbConnection = async () => {
             try {
                 const response = await fetch('/api/db-health-check');
@@ -42,6 +64,15 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
         setIsLoading(true);
         window.location.reload();
     };
+
+    const handleBypassAndGoToDemo = () => {
+        window.location.href = '/demo/login?bypass_db=true';
+    };
+
+    // If user explicitly bypassed the check or is on demo path, show content
+    if (bypassChecked) {
+        return <>{children}</>;
+    }
 
     if (isLoading) {
         return (
@@ -74,13 +105,17 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
                     </CardHeader>
                     <CardContent className="text-center">
                         <p className="text-sm text-muted-foreground mb-4">
-                            Try refreshing the page or coming back later. If the problem persists, please contact support.
+                            Try refreshing the page or use our demo mode which doesn't require a database connection.
                         </p>
                     </CardContent>
-                    <CardFooter className="flex justify-center">
-                        <Button onClick={handleRetry} className="gap-2">
+                    <CardFooter className="flex flex-col gap-3">
+                        <Button onClick={handleBypassAndGoToDemo} className="w-full gap-2 bg-yellow-600 hover:bg-yellow-700">
+                            <Zap className="h-4 w-4" />
+                            Enter Demo Mode
+                        </Button>
+                        <Button onClick={handleRetry} variant="outline" className="w-full gap-2">
                             <RefreshCw className="h-4 w-4" />
-                            Retry Connection
+                            Retry Database Connection
                         </Button>
                     </CardFooter>
                 </Card>
