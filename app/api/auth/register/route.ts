@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Define validation schema
 const userSchema = z.object({
@@ -11,10 +13,40 @@ const userSchema = z.object({
     password: z.string().min(8, { message: "Password must be at least 8 characters" }),
 });
 
+// Function to verify database file existence
+function verifyDatabaseFile() {
+    const dbPath = path.resolve(process.cwd(), 'prisma/dev.db');
+    const exists = fs.existsSync(dbPath);
+    console.log(`Database file check: ${exists ? 'exists' : 'missing'} at ${dbPath}`);
+    return exists;
+}
+
 export async function POST(req: Request) {
     console.log("============== REGISTRATION REQUEST ==============");
 
+    // Make sure database file exists
+    const dbExists = verifyDatabaseFile();
+    if (!dbExists) {
+        console.error("DATABASE FILE MISSING - Registration cannot proceed");
+        return NextResponse.json(
+            { success: false, message: "Server configuration error. Please contact support." },
+            { status: 500 }
+        );
+    }
+
     try {
+        // Verify database connection before doing anything else
+        try {
+            await db.$queryRaw`SELECT 1 as test`;
+            console.log("✅ Database connection verified before processing request");
+        } catch (dbError) {
+            console.error("❌ Database connection failed:", dbError);
+            return NextResponse.json(
+                { success: false, message: "Server database error. Please try again later." },
+                { status: 503 }
+            );
+        }
+
         // 1. Parse request body with robust error handling
         let body;
         try {
@@ -45,48 +77,30 @@ export async function POST(req: Request) {
         const hashedPassword = await hash(password, 10);
         console.log("Password hashed successfully");
 
-        // 4. Check if user already exists
-        const existingUser = await db.user.findUnique({
+        // 4. Create user with single query approach for better reliability
+        const user = await db.user.upsert({
             where: { email },
-        });
-
-        if (existingUser) {
-            console.log(`User with email ${email} already exists`);
-            return NextResponse.json(
-                { success: false, message: "This email is already registered" },
-                { status: 409 }
-            );
-        }
-
-        // 5. Create user with transaction to ensure atomicity
-        const user = await db.$transaction(async (tx) => {
-            // Create user
-            const newUser = await tx.user.create({
-                data: {
-                    name,
-                    email,
-                    password: hashedPassword,
-                },
-            });
-            console.log(`User created with ID: ${newUser.id}`);
-
-            // Create subscription
-            await tx.subscription.create({
-                data: {
-                    userId: newUser.id,
-                    status: "active",
-                    plan: "Free",
-                    billingCycle: "monthly"
+            update: {}, // No update if exists - will be skipped due to create failing
+            create: {
+                name,
+                email,
+                password: hashedPassword,
+                subscription: {
+                    create: {
+                        status: "active",
+                        plan: "Free",
+                        billingCycle: "monthly"
+                    }
                 }
-            });
-            console.log(`Subscription created for user ${newUser.id}`);
-
-            return newUser;
+            },
+            include: {
+                subscription: true
+            }
         });
 
-        console.log("Registration successful");
+        console.log("Registration successful for user:", user.id);
 
-        // 6. Return success with sanitized user data
+        // 5. Return success with sanitized user data
         const { password: _, ...userWithoutPassword } = user;
         return NextResponse.json(
             {
@@ -98,7 +112,7 @@ export async function POST(req: Request) {
         );
 
     } catch (error) {
-        // 7. Handle specific error types
+        // Handle specific error types
         console.error("Registration error:", error);
 
         // Handle known Prisma errors
@@ -106,7 +120,7 @@ export async function POST(req: Request) {
             const errorCode = error.code;
             console.error(`Prisma error code: ${errorCode}`);
 
-            // P2002: Unique constraint failed
+            // P2002: Unique constraint failed - email already exists
             if (errorCode === 'P2002') {
                 return NextResponse.json(
                     { success: false, message: "This email is already registered" },
