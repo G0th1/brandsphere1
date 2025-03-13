@@ -9,47 +9,44 @@ import { Check, Loader2 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { STRIPE_PRICES, StripeService } from '@/services/stripe-service';
 import SubscriptionService, { UserSubscription } from '@/services/subscription-service';
+import { AuthGuard, useAuthUser } from '@/app/components/auth-guard';
 
 export default function SubscribePage() {
+  return (
+    <AuthGuard>
+      <SubscribePageContent />
+    </AuthGuard>
+  );
+}
+
+function SubscribePageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClientComponentClient();
+  const user = useAuthUser();
 
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
-  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const fetchSubscription = async () => {
+      if (!user) return;
+
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-          router.push('/login');
-          return;
-        }
-
-        setUser(user);
-
         // Check if the user already has a subscription
-        try {
-          const userSubscription = await SubscriptionService.getUserSubscription();
-          setSubscription(userSubscription);
-        } catch (error) {
-          console.error('Error fetching subscription:', error);
-        } finally {
-          setLoadingSubscription(false);
-        }
+        const userSubscription = await SubscriptionService.getUserSubscription();
+        setSubscription(userSubscription);
       } catch (error) {
-        console.error('Authentication error:', error);
-        router.push('/login');
+        console.error('Error fetching subscription:', error);
+      } finally {
+        setLoadingSubscription(false);
       }
     };
 
-    checkAuth();
-  }, [router, supabase]);
+    fetchSubscription();
+  }, [user]);
 
   const handleSubscribe = async (priceId: string) => {
     if (!user) {
@@ -98,19 +95,19 @@ export default function SubscribePage() {
 
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const response = await StripeService.createCustomerPortalLink(
-        user.id,
-        `${origin}/dashboard`
-      );
+      const response = await StripeService.createPortalSession({
+        customerId: user.id,
+        returnUrl: `${origin}/dashboard/subscribe`,
+      });
 
       if (response && response.url) {
         router.push(response.url);
       }
     } catch (error) {
-      console.error('Error creating customer portal link:', error);
+      console.error('Error creating portal session:', error);
       toast({
         title: "Error",
-        description: "Unable to open subscription management. Please try again later.",
+        description: "Unable to access subscription management. Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -118,49 +115,36 @@ export default function SubscribePage() {
     }
   };
 
-  // Show loading status if we're still fetching user info
-  if (loadingSubscription || !user) {
+  if (loadingSubscription) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   // If the user already has an active subscription
-  if (subscription && subscription.isActive && subscription.plan !== 'free') {
+  if (subscription && subscription.status === 'active') {
     return (
-      <div className="container mx-auto max-w-4xl py-10">
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Manage Your Subscription</h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            You already have an active subscription. Manage or upgrade your plan here.
-          </p>
+      <div className="container mx-auto py-10 px-4 max-w-5xl">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold mb-2">Subscription Management</h1>
+          <p className="text-muted-foreground">You currently have an active subscription.</p>
         </div>
 
-        <Card className="w-full mb-10">
+        <Card className="mb-8 border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
           <CardHeader>
-            <CardTitle>Your Current Plan</CardTitle>
+            <CardTitle>Active Subscription</CardTitle>
             <CardDescription>
-              {subscription.renewalDate
-                ? `Your subscription is active until ${subscription.renewalDate.toLocaleDateString()}`
-                : 'Your subscription is currently active'}
+              You are currently subscribed to the {subscription.plan} plan.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="font-semibold">Plan:</span>
-                <span>{subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">Status:</span>
-                <span className="text-green-600">Active</span>
-              </div>
-              {subscription.cancelAtPeriodEnd && (
-                <div className="mt-4 p-3 bg-amber-50 text-amber-800 rounded-md">
-                  Your subscription is set to cancel at the end of the current period.
-                </div>
+              <p><strong>Status:</strong> {subscription.status}</p>
+              <p><strong>Plan:</strong> {subscription.plan}</p>
+              {subscription.currentPeriodEnd && (
+                <p><strong>Current period ends:</strong> {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>
               )}
             </div>
           </CardContent>
@@ -181,148 +165,134 @@ export default function SubscribePage() {
             </Button>
           </CardFooter>
         </Card>
+
+        <div className="text-center mt-8">
+          <p className="text-sm text-muted-foreground">
+            Need help with your subscription? Contact our support team at support@brandsphereai.com
+          </p>
+        </div>
       </div>
     );
   }
 
+  // Display subscription plans for users without an active subscription
   return (
-    <div className="container mx-auto max-w-5xl py-10">
-      <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Choose Subscription Plan</h1>
-        <p className="mt-2 text-lg text-muted-foreground">
-          Upgrade to unlock all features in BrandSphereAI
-        </p>
+    <div className="container mx-auto py-10 px-4 max-w-5xl">
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-bold mb-2">Choose Your Plan</h1>
+        <p className="text-muted-foreground">Select the plan that best fits your needs.</p>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
-        {/* Free plan */}
-        <Card className="flex flex-col border-muted">
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Basic Plan */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600" />
           <CardHeader>
-            <CardTitle>{STRIPE_PRICES.FREE.name}</CardTitle>
+            <CardTitle>Basic Plan</CardTitle>
+            <CardDescription>Perfect for individuals and small teams</CardDescription>
             <div className="mt-4">
-              <span className="text-3xl font-bold">$0</span>
-              <span className="text-muted-foreground"> / month</span>
+              <span className="text-3xl font-bold">$9.99</span>
+              <span className="text-muted-foreground ml-1">/month</span>
             </div>
-            <CardDescription>Get started with social media</CardDescription>
           </CardHeader>
-          <CardContent className="flex-1">
+          <CardContent>
             <ul className="space-y-2">
-              {STRIPE_PRICES.FREE.features.map((feature, i) => (
-                <li key={i} className="flex items-center">
-                  <Check className="mr-2 h-4 w-4 text-primary" />
-                  <span>{feature}</span>
-                </li>
-              ))}
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Up to 5 social media accounts</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Basic analytics</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Schedule up to 30 posts per month</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Email support</span>
+              </li>
             </ul>
           </CardContent>
           <CardFooter>
             <Button
-              variant="outline"
               className="w-full"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => handleSubscribe(STRIPE_PRICES.BASIC)}
+              disabled={loading && selectedPlan === STRIPE_PRICES.BASIC}
             >
-              Your Current Plan
+              {loading && selectedPlan === STRIPE_PRICES.BASIC ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Subscribe to Basic'
+              )}
             </Button>
           </CardFooter>
         </Card>
 
-        {/* Pro Monthly plan */}
-        <Card className="flex flex-col border-primary relative">
-          <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
-            <div className="px-3 py-1 text-sm font-medium text-white bg-primary rounded-md">
-              Popular
-            </div>
+        {/* Pro Plan */}
+        <Card className="relative overflow-hidden border-primary">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 to-purple-700" />
+          <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+            Popular
           </div>
           <CardHeader>
-            <CardTitle className="mt-4">{STRIPE_PRICES.PRO_MONTHLY.name}</CardTitle>
+            <CardTitle>Pro Plan</CardTitle>
+            <CardDescription>Advanced features for growing businesses</CardDescription>
             <div className="mt-4">
-              <span className="text-3xl font-bold">${(STRIPE_PRICES.PRO_MONTHLY.price / 100).toFixed(0)}</span>
-              <span className="text-muted-foreground"> / month</span>
+              <span className="text-3xl font-bold">$24.99</span>
+              <span className="text-muted-foreground ml-1">/month</span>
             </div>
-            <CardDescription>For serious content creators</CardDescription>
           </CardHeader>
-          <CardContent className="flex-1">
+          <CardContent>
             <ul className="space-y-2">
-              {STRIPE_PRICES.PRO_MONTHLY.features.map((feature, i) => (
-                <li key={i} className="flex items-center">
-                  <Check className="mr-2 h-4 w-4 text-primary" />
-                  <span>{feature}</span>
-                </li>
-              ))}
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Unlimited social media accounts</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Advanced analytics and reporting</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Unlimited scheduled posts</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>AI content suggestions</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Priority support</span>
+              </li>
             </ul>
           </CardContent>
           <CardFooter>
             <Button
               className="w-full"
-              onClick={() => handleSubscribe(STRIPE_PRICES.PRO_MONTHLY.id)}
-              disabled={loading && selectedPlan === STRIPE_PRICES.PRO_MONTHLY.id}
+              onClick={() => handleSubscribe(STRIPE_PRICES.PRO)}
+              disabled={loading && selectedPlan === STRIPE_PRICES.PRO}
             >
-              {loading && selectedPlan === STRIPE_PRICES.PRO_MONTHLY.id ? (
+              {loading && selectedPlan === STRIPE_PRICES.PRO ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
+                  Processing...
                 </>
               ) : (
-                'Subscribe Now'
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {/* Pro Yearly plan */}
-        <Card className="flex flex-col">
-          <CardHeader>
-            <div className="rounded-full bg-green-100 text-green-700 px-3 py-1 text-sm w-fit">
-              Save 17%
-            </div>
-            <CardTitle className="mt-4">{STRIPE_PRICES.PRO_YEARLY.name}</CardTitle>
-            <div className="mt-4">
-              <span className="text-3xl font-bold">${(STRIPE_PRICES.PRO_YEARLY.price / 100).toFixed(0)}</span>
-              <span className="text-muted-foreground"> / year</span>
-              <div className="text-sm text-muted-foreground mt-1">
-                Equivalent to ${((STRIPE_PRICES.PRO_YEARLY.price / 12) / 100).toFixed(0)} / month
-              </div>
-            </div>
-            <CardDescription>Best value for money</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1">
-            <ul className="space-y-2">
-              {STRIPE_PRICES.PRO_YEARLY.features.map((feature, i) => (
-                <li key={i} className="flex items-center">
-                  <Check className="mr-2 h-4 w-4 text-primary" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button
-              className="w-full"
-              onClick={() => handleSubscribe(STRIPE_PRICES.PRO_YEARLY.id)}
-              disabled={loading && selectedPlan === STRIPE_PRICES.PRO_YEARLY.id}
-            >
-              {loading && selectedPlan === STRIPE_PRICES.PRO_YEARLY.id ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                'Subscribe Now'
+                'Subscribe to Pro'
               )}
             </Button>
           </CardFooter>
         </Card>
       </div>
 
-      <div className="mt-10 text-center text-sm text-muted-foreground">
-        <p>
-          All payments are securely processed via Stripe. You can cancel your subscription at any time.
-        </p>
-        <p className="mt-1">
-          Need help? Contact us at{' '}
-          <a href="mailto:support@brandsphereai.com" className="text-primary hover:underline">
-            support@brandsphereai.com
-          </a>
+      <div className="text-center mt-8">
+        <p className="text-sm text-muted-foreground">
+          All plans include a 14-day free trial. No credit card required until the trial ends.
         </p>
       </div>
     </div>

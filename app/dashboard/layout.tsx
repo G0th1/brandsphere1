@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useEffect, useState } from "react";
+import { AuthGuard, useAuthUser } from "@/app/components/auth-guard";
 
 // Översättningar
 const translations = {
@@ -33,41 +34,31 @@ export default function DashboardLayout({
 }: {
     children: ReactNode;
 }) {
-    const [email, setEmail] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    return (
+        <AuthGuard>
+            <DashboardLayoutContent>
+                {children}
+            </DashboardLayoutContent>
+        </AuthGuard>
+    );
+}
+
+function DashboardLayoutContent({
+    children,
+}: {
+    children: ReactNode;
+}) {
+    const user = useAuthUser();
     const router = useRouter();
     const supabase = createClientComponentClient();
     const { language } = useLanguage();
     const t = translations[language];
-
-    useEffect(() => {
-        const getUser = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
-
-            if (error || !session) {
-                router.replace("/login");
-                return;
-            }
-
-            setEmail(session.user.email || null);
-            setLoading(false);
-        };
-
-        getUser();
-    }, [router, supabase]);
+    const email = user?.email || null;
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
         router.replace("/login");
     };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-pulse text-xl">{t.loading}</div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -98,6 +89,22 @@ export default function DashboardLayout({
             <main className="flex-1">
                 {children}
             </main>
+
+            <footer className="border-t py-6 md:py-0">
+                <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row px-4 md:px-6">
+                    <p className="text-sm text-muted-foreground">
+                        &copy; 2023 BrandSphereAI. All rights reserved.
+                    </p>
+                    <div className="flex items-center gap-4">
+                        <Link href="/terms" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+                            Terms
+                        </Link>
+                        <Link href="/privacy" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+                            Privacy
+                        </Link>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 } 

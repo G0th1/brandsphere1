@@ -6,9 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { AuthGuard, useAuthUser } from "@/app/components/auth-guard";
 
 export default function SuccessPage() {
+    return (
+        <AuthGuard>
+            <SuccessPageContent />
+        </AuthGuard>
+    );
+}
+
+function SuccessPageContent() {
     const router = useRouter();
+    const user = useAuthUser();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -17,17 +27,14 @@ export default function SuccessPage() {
             try {
                 setLoading(true);
 
-                // Get Supabase client
-                const supabase = createClientComponentClient();
-
-                // Get current user
-                const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-                if (userError || !user) {
+                if (!user) {
                     setError("You must be logged in to view this page");
                     setLoading(false);
                     return;
                 }
+
+                // Get Supabase client
+                const supabase = createClientComponentClient();
 
                 // Check if user has an active subscription
                 const { data: userData, error: profileError } = await supabase
@@ -56,7 +63,7 @@ export default function SuccessPage() {
         };
 
         checkSubscription();
-    }, [router]);
+    }, [user]);
 
     return (
         <div className="container max-w-6xl py-10">
