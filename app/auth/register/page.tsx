@@ -19,24 +19,38 @@ export default function RegisterPage() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError("");
 
-        // Validate form
-        if (password !== confirmPassword) {
+        // Basic form validation
+        if (!name || !email || !password || !confirmPassword) {
+            setError("All fields are required");
             toast({
                 title: "Error",
-                description: "Passwords do not match.",
+                description: "All fields are required",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError("Passwords do not match");
+            toast({
+                title: "Error",
+                description: "Passwords do not match",
                 variant: "destructive",
             });
             return;
         }
 
         if (password.length < 8) {
+            setError("Password must be at least 8 characters long");
             toast({
                 title: "Error",
-                description: "Password must be at least 8 characters long.",
+                description: "Password must be at least 8 characters long",
                 variant: "destructive",
             });
             return;
@@ -45,8 +59,7 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            console.log("Submitting registration for:", email);
-
+            // Simple POST request to registration API
             const response = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: {
@@ -60,25 +73,20 @@ export default function RegisterPage() {
             });
 
             const data = await response.json();
-            console.log("Registration response:", { status: response.status, data });
 
             if (!response.ok) {
-                // Handle specific error cases
-                if (response.status === 409) {
-                    throw new Error("An account with this email already exists.");
-                } else if (response.status === 400) {
-                    throw new Error(data.message || "Invalid form data. Please check your inputs.");
-                } else {
-                    throw new Error(data.message || "Something went wrong. Please try again.");
-                }
+                let errorMessage = data.message || "Registration failed";
+                setError(errorMessage);
+                throw new Error(errorMessage);
             }
 
+            // Success! Show message and redirect
             toast({
                 title: "Success",
                 description: "Account created! Redirecting to login...",
             });
 
-            // Short delay to show success message before redirecting
+            // Redirect after brief delay
             setTimeout(() => {
                 router.push("/auth/login");
             }, 1500);
@@ -87,7 +95,7 @@ export default function RegisterPage() {
 
             toast({
                 title: "Registration Error",
-                description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+                description: error instanceof Error ? error.message : "Registration failed. Please try again.",
                 variant: "destructive",
             });
         } finally {
@@ -104,6 +112,12 @@ export default function RegisterPage() {
                         <CardDescription>Enter your details below to create your account</CardDescription>
                     </CardHeader>
                     <CardContent>
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                                {error}
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name">Full name</Label>
@@ -155,7 +169,7 @@ export default function RegisterPage() {
                             <Button
                                 type="submit"
                                 className="w-full"
-                                disabled={isLoading || !name || !email || !password || !confirmPassword}
+                                disabled={isLoading}
                             >
                                 {isLoading ? (
                                     <>
