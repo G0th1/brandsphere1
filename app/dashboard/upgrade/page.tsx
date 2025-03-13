@@ -1,10 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { User } from "@supabase/supabase-js"
 import {
   ArrowLeft,
   Check,
@@ -26,30 +23,20 @@ import {
 import { Footer } from "@/components/footer"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
+import { AuthGuard, useAuthUser } from "@/app/components/auth-guard"
 
 export default function UpgradePage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  return (
+    <AuthGuard>
+      <UpgradePageContent />
+    </AuthGuard>
+  )
+}
+
+function UpgradePageContent() {
   const [processingPayment, setProcessingPayment] = useState(false)
-  const router = useRouter()
-  const supabase = createClientComponentClient()
+  const { user, loading } = useAuthUser()
   const { toast } = useToast()
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-
-      if (error || !session) {
-        router.replace("/login")
-        return
-      }
-
-      setUser(session.user)
-      setLoading(false)
-    }
-
-    getUser()
-  }, [router, supabase])
 
   const handleUpgrade = async () => {
     if (!user) {
