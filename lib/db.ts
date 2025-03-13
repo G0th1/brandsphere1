@@ -1,53 +1,76 @@
 import { PrismaClient } from "@prisma/client";
+import * as path from 'path';
+import * as fs from 'fs';
 
-// Create a type for the global variable
-declare global {
-    var prisma: PrismaClient | undefined;
+// --- DATABASE CONNECTION DEBUGGING ---
+// Get the absolute path to the database file
+const DB_PATH = path.resolve(process.cwd(), 'prisma/dev.db');
+
+// Log database file status on startup
+console.log('=== DATABASE SETUP ===');
+console.log(`Working directory: ${process.cwd()}`);
+console.log(`Database path: ${DB_PATH}`);
+console.log(`Database file exists: ${fs.existsSync(DB_PATH)}`);
+
+// If the database file doesn't exist, create it
+if (!fs.existsSync(DB_PATH)) {
+    try {
+        // Ensure directory exists
+        fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+        // Create empty file
+        fs.writeFileSync(DB_PATH, '');
+        console.log(`Created new database file at ${DB_PATH}`);
+    } catch (error) {
+        console.error(`ERROR creating database file: ${error instanceof Error ? error.message : String(error)}`);
+    }
 }
 
-// Initialize Prisma Client with verbose logging in development
-const prismaClientSingleton = () => {
-    return new PrismaClient({
-        log: process.env.NODE_ENV === 'development'
-            ? ['query', 'error', 'warn']
-            : ['error'],
-    });
-};
+// Set DATABASE_URL environment variable explicitly
+process.env.DATABASE_URL = `file:${DB_PATH}`;
 
-// Use a single PrismaClient instance for the entire app
-// This prevents connection errors and ensures consistency
-export const db = globalThis.prisma ?? prismaClientSingleton();
+// Create a new PrismaClient with a single configuration
+const prisma = new PrismaClient({
+    log: ['query', 'error', 'warn'],
+    datasources: {
+        db: {
+            url: `file:${DB_PATH}`
+        }
+    }
+});
 
-// In development, preserve the connection between hot reloads
-if (process.env.NODE_ENV !== "production") {
-    globalThis.prisma = db;
-}
+// Export the client instance
+export const db = prisma;
 
-// Wrap the database test in a function for more control
+// Test connection immediately
 async function testDatabaseConnection() {
     try {
-        // Explicitly test the connection
         await db.$connect();
         console.log("✅ Database connection successful");
 
-        // Basic query to verify functionality
+        // Verify with a simple query
         const result = await db.$queryRaw`SELECT 1 as test`;
         console.log("✅ Database query successful:", result);
 
+        // Try to access User table (basic schema verification)
+        const userCount = await db.user.count();
+        console.log(`✅ User table accessible. Current user count: ${userCount}`);
+
         return true;
     } catch (error) {
-        console.error("❌ Database connection failed:", error);
+        console.error("❌ DATABASE CONNECTION ERROR:", error);
 
-        // Check if we can access the SQLite database file
-        if (error instanceof Error && error.message.includes('database file')) {
-            console.error("❌ SQLite database file issue - check if file exists and is accessible");
+        if (error instanceof Error) {
+            if (error.message.includes('table') && error.message.includes('not found')) {
+                console.error("❌ Database schema not initialized. Run 'npx prisma db push'");
+            } else if (error.message.includes('access') || error.message.includes('permission')) {
+                console.error("❌ Database permission error. Check file permissions.");
+            }
         }
 
         return false;
     }
 }
 
-// Initialize the connection test without blocking module import
-testDatabaseConnection().catch(error => {
-    console.error("Fatal database error:", error);
-}); 
+// Execute test immediately
+testDatabaseConnection()
+    .catch(error => console.error("❌ Fatal database error:", error)); 

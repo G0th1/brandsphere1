@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
-// Minimal schema for user registration
+// Define validation schema
 const userSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters" }),
     email: z.string().email({ message: "Invalid email address" }),
@@ -12,125 +12,121 @@ const userSchema = z.object({
 });
 
 export async function POST(req: Request) {
-    console.log("Registration request received");
+    console.log("============== REGISTRATION REQUEST ==============");
 
     try {
-        // Parse and validate request body
+        // 1. Parse request body with robust error handling
         let body;
         try {
             body = await req.json();
-            console.log("Request body parsed successfully");
+            console.log("Request body received:", { ...body, password: '[REDACTED]' });
         } catch (error) {
             console.error("Failed to parse request body:", error);
             return NextResponse.json(
-                { message: "Invalid request format" },
+                { success: false, message: "Invalid request format" },
                 { status: 400 }
             );
         }
 
-        // Validate the data
-        const result = userSchema.safeParse(body);
-        if (!result.success) {
-            console.error("Validation failed:", result.error.format());
+        // 2. Validate user data
+        const validation = userSchema.safeParse(body);
+        if (!validation.success) {
+            console.error("Validation failed:", validation.error.format());
             return NextResponse.json(
-                { message: "Invalid data", errors: result.error.errors },
+                { success: false, message: "Invalid input data", errors: validation.error.format() },
                 { status: 400 }
             );
         }
 
-        const { name, email, password } = result.data;
-        console.log(`Registration attempt for email: ${email}`);
+        const { name, email, password } = validation.data;
+        console.log(`Processing registration for: ${email}`);
 
-        // Hash the password
-        let hashedPassword;
-        try {
-            hashedPassword = await hash(password, 10);
-            console.log("Password hashed successfully");
-        } catch (error) {
-            console.error("Failed to hash password:", error);
+        // 3. Hash password
+        const hashedPassword = await hash(password, 10);
+        console.log("Password hashed successfully");
+
+        // 4. Check if user already exists
+        const existingUser = await db.user.findUnique({
+            where: { email },
+        });
+
+        if (existingUser) {
+            console.log(`User with email ${email} already exists`);
             return NextResponse.json(
-                { message: "Password processing failed" },
-                { status: 500 }
+                { success: false, message: "This email is already registered" },
+                { status: 409 }
             );
         }
 
-        try {
-            // Verify database connection before proceeding
-            await db.$queryRaw`SELECT 1`;
-            console.log("Database connection verified");
-
-            // Create the user with a more basic approach
-            const user = await db.user.create({
+        // 5. Create user with transaction to ensure atomicity
+        const user = await db.$transaction(async (tx) => {
+            // Create user
+            const newUser = await tx.user.create({
                 data: {
                     name,
                     email,
                     password: hashedPassword,
                 },
             });
-            console.log(`User created with ID: ${user.id}`);
+            console.log(`User created with ID: ${newUser.id}`);
 
-            // Create subscription separately to simplify error handling
-            try {
-                await db.subscription.create({
-                    data: {
-                        userId: user.id,
-                        status: "active",
-                        plan: "Free",
-                        billingCycle: "monthly"
-                    }
-                });
-                console.log(`Subscription created for user ${user.id}`);
-            } catch (subscriptionError) {
-                // Log but don't fail the whole registration if subscription fails
-                console.error("Failed to create subscription:", subscriptionError);
-            }
-
-            // Remove password from the response
-            const { password: _, ...userWithoutPassword } = user;
-
-            return NextResponse.json(
-                {
-                    message: "User registered successfully",
-                    user: userWithoutPassword,
-                },
-                { status: 201 }
-            );
-        } catch (error) {
-            console.error("Registration database error:", error);
-
-            // Handle specific Prisma errors
-            if (error instanceof Prisma.PrismaClientKnownRequestError) {
-                // P2002 is the Prisma error code for unique constraint violations
-                if (error.code === 'P2002') {
-                    return NextResponse.json(
-                        { message: "This email is already in use." },
-                        { status: 409 }
-                    );
+            // Create subscription
+            await tx.subscription.create({
+                data: {
+                    userId: newUser.id,
+                    status: "active",
+                    plan: "Free",
+                    billingCycle: "monthly"
                 }
+            });
+            console.log(`Subscription created for user ${newUser.id}`);
 
-                // Log the specific Prisma error code for debugging
-                console.error(`Prisma error code: ${error.code}`);
+            return newUser;
+        });
+
+        console.log("Registration successful");
+
+        // 6. Return success with sanitized user data
+        const { password: _, ...userWithoutPassword } = user;
+        return NextResponse.json(
+            {
+                success: true,
+                message: "Registration successful",
+                user: userWithoutPassword
+            },
+            { status: 201 }
+        );
+
+    } catch (error) {
+        // 7. Handle specific error types
+        console.error("Registration error:", error);
+
+        // Handle known Prisma errors
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            const errorCode = error.code;
+            console.error(`Prisma error code: ${errorCode}`);
+
+            // P2002: Unique constraint failed
+            if (errorCode === 'P2002') {
                 return NextResponse.json(
-                    { message: `Database error: ${error.message}` },
-                    { status: 500 }
+                    { success: false, message: "This email is already registered" },
+                    { status: 409 }
                 );
             }
 
+            // Other Prisma errors
             return NextResponse.json(
-                { message: "Registration failed. Please try again." },
+                { success: false, message: `Database error (${errorCode})` },
                 { status: 500 }
             );
         }
-    } catch (error) {
-        console.error("Unexpected error during registration:", error);
 
-        // Provide more specific error message if possible
-        const errorMessage = error instanceof Error
-            ? `Error: ${error.message}`
-            : "An unexpected error occurred";
+        // General errors
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        console.error(`Registration failed: ${errorMessage}`);
 
         return NextResponse.json(
-            { message: errorMessage },
+            { success: false, message: "Registration failed. Please try again." },
             { status: 500 }
         );
     }
