@@ -30,6 +30,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
     const { toast } = useToast();
     const supabase = createSafeSupabaseClient();
 
+    // Check for offline mode
+    const isOfflineMode = typeof window !== 'undefined' && localStorage.getItem('offlineMode') === 'true';
+
+    // Skip auth check in offline mode
+    if (isOfflineMode) {
+        return <>{children}</>;
+    }
+
     useEffect(() => {
         const checkAuth = async () => {
             try {
@@ -99,8 +107,16 @@ export function AuthGuard({ children }: AuthGuardProps) {
             }
         };
 
+        // Skip redirection if in offline mode
+        if (isOfflineMode) return;
+
         checkAuth();
-    }, [router, supabase, toast]);
+    }, [router, supabase, toast, isOfflineMode]);
+
+    // Skip redirection if in offline mode
+    if (isOfflineMode) {
+        return <>{children}</>;
+    }
 
     if (loading) {
         return (

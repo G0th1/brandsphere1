@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, Check, Star, Zap, ArrowRight } from 'lucide-react'
+import { ChevronRight, Check, Star, Zap, ArrowRight, Globe } from 'lucide-react'
 import { useTranslation, useLanguage } from '@/contexts/language-context'
 import { homeTranslations } from '@/lib/translations'
 import { useState, useEffect } from "react";
@@ -59,12 +59,17 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <Link href="/?offline_mode=true">
+          <Button variant="default" className="group gap-2 shadow-lg">
+            <Globe className="h-4 w-4" />
+            <span>Use Website Offline</span>
+          </Button>
+        </Link>
         <Link href="/demo/login?bypass_db=true">
           <Button variant="secondary" className="group gap-2 shadow-lg">
             <Zap className="h-4 w-4 text-yellow-500" />
-            <span>Skip to Demo</span>
-            <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+            <span>Demo Mode</span>
           </Button>
         </Link>
       </div>
