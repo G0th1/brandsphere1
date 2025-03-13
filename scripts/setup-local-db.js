@@ -5,7 +5,7 @@ const path = require('path');
 // Simple SQLite setup for local development
 const envContent = `
 # Local SQLite Database URL
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 
 # Next Auth settings
 NEXTAUTH_URL=http://localhost:3000

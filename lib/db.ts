@@ -136,7 +136,7 @@ let prisma: PrismaClient;
 if (process.env.NODE_ENV === 'production') {
     // In production, just use the DATABASE_URL from environment variables
     prisma = new PrismaClient();
-    console.log('✅ PrismaClient initialized for production');
+    console.log('✅ PrismaClient initialized for production with PostgreSQL');
 } else {
     try {
         // In development, we might need more specific configuration
@@ -149,6 +149,11 @@ if (process.env.NODE_ENV === 'production') {
             log: ['error', 'warn'],
         });
         console.log('✅ PrismaClient initialized successfully');
+
+        // Log more details about the database connection
+        console.log('Database provider:', process.env.DATABASE_URL?.startsWith('postgres') ? 'PostgreSQL' :
+            process.env.DATABASE_URL?.startsWith('file:') ? 'SQLite' : 'Unknown');
+        console.log('Database connection string type:', process.env.DATABASE_URL ? 'Provided' : 'Missing');
     } catch (initError) {
         console.error('❌ Failed to initialize PrismaClient:', initError);
         // Create a fallback client with no options
