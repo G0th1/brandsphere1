@@ -13,6 +13,19 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true, // Under utveckling, ändra till false för produktion när alla fel är fixade
   },
+  // Configure static site generation
+  output: 'export', // Enable static site generation
+  // Disable static site generation for dynamic routes
+  exportPathMap: async function (defaultPathMap) {
+    // Filter out dashboard pages from static site generation
+    const filteredPaths = {};
+    for (const [path, page] of Object.entries(defaultPathMap)) {
+      if (!path.startsWith('/dashboard') && !path.startsWith('/signup/verify')) {
+        filteredPaths[path] = page;
+      }
+    }
+    return filteredPaths;
+  },
   async headers() {
     return [
       {
