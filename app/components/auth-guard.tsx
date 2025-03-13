@@ -2,10 +2,10 @@
 
 import { useState, useEffect, ReactNode, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { User } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { createSafeSupabaseClient } from "@/app/utils/supabase-client";
 
 // Create a context for the authenticated user
 const AuthUserContext = createContext<User | null>(null);
@@ -28,7 +28,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const { toast } = useToast();
-    const supabase = createClientComponentClient();
+    const supabase = createSafeSupabaseClient();
 
     useEffect(() => {
         const checkAuth = async () => {

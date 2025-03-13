@@ -5,8 +5,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { AuthGuard, useAuthUser } from "@/app/components/auth-guard";
+import { createSafeSupabaseClient } from "@/app/utils/supabase-client";
+import { dynamic } from "@/app/utils/dynamic-routes";
+
+// Re-export the dynamic marker
+export { dynamic };
 
 export default function SuccessPage() {
     return (
@@ -34,7 +38,7 @@ function SuccessPageContent() {
                 }
 
                 // Get Supabase client
-                const supabase = createClientComponentClient();
+                const supabase = createSafeSupabaseClient();
 
                 // Check if user has an active subscription
                 const { data: userData, error: profileError } = await supabase

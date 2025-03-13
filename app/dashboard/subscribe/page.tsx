@@ -6,10 +6,14 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, Loader2 } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { STRIPE_PRICES, StripeService } from '@/services/stripe-service';
 import SubscriptionService, { UserSubscription } from '@/services/subscription-service';
 import { AuthGuard, useAuthUser } from '@/app/components/auth-guard';
+import { createSafeSupabaseClient } from '@/app/utils/supabase-client';
+import { dynamic } from "@/app/utils/dynamic-routes";
+
+// Re-export the dynamic marker
+export { dynamic };
 
 export default function SubscribePage() {
   return (
@@ -22,7 +26,7 @@ export default function SubscribePage() {
 function SubscribePageContent() {
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClientComponentClient();
+  const supabase = createSafeSupabaseClient();
   const user = useAuthUser();
 
   const [loading, setLoading] = useState(false);

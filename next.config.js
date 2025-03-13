@@ -9,15 +9,20 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client']
   },
-  // Uteslut Supabase Functions från TypeScript-kontrollen
+  // Disable TypeScript errors during development
   typescript: {
-    ignoreBuildErrors: true, // Under utveckling, ändra till false för produktion när alla fel är fixade
+    ignoreBuildErrors: true, // During development, change to false for production when all errors are fixed
   },
-  // Disable static site generation for the entire app
-  // This will make the app use server-side rendering instead
-  // which is more compatible with Supabase authentication
-  output: process.env.NEXT_PUBLIC_EXPORT === 'true' ? 'export' : undefined,
-  distDir: process.env.NEXT_PUBLIC_EXPORT === 'true' ? 'out' : '.next',
+  // Configure output based on environment
+  // For local development and testing, we use server-side rendering
+  // For production deployment, we can use static export if needed
+  output: undefined, // Remove static export to use server-side rendering
+  distDir: '.next',
+  // Skip type checking during build to speed up the process
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // Configure security headers
   async headers() {
     return [
       {

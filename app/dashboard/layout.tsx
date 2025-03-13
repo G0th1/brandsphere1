@@ -11,6 +11,11 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { useEffect, useState } from "react";
 import { AuthGuard, useAuthUser } from "@/app/components/auth-guard";
 
+// Import the dynamic marker to prevent static generation
+import { dynamic } from "@/app/utils/dynamic-routes";
+// Re-export the dynamic marker
+export { dynamic };
+
 // Översättningar
 const translations = {
     en: {

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import Link from "next/link"
 import {
   Calendar,
@@ -33,6 +32,12 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useLanguage } from "@/contexts/language-context"
 import { AuthGuard, useAuthUser } from "@/app/components/auth-guard"
+import { createSafeSupabaseClient } from "@/app/utils/supabase-client"
+
+// Import the dynamic marker to prevent static generation
+import { dynamic } from "@/app/utils/dynamic-routes"
+// Re-export the dynamic marker
+export { dynamic }
 
 // Översättningar
 const translations = {
@@ -119,7 +124,7 @@ function DashboardContent() {
     youtube: false
   })
   const searchParams = useSearchParams()
-  const supabase = createClientComponentClient()
+  const supabase = createSafeSupabaseClient()
   const { language } = useLanguage()
   const t = translations[language]
 

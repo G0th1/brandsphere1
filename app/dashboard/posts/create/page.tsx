@@ -16,6 +16,10 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { sv, enUS } from 'date-fns/locale'
 import { AuthGuard } from '@/app/components/auth-guard'
+import { dynamic } from "@/app/utils/dynamic-routes";
+
+// Re-export the dynamic marker
+export { dynamic };
 
 // Översättningar för skapa inlägg-sidan
 const createPostTranslations = {

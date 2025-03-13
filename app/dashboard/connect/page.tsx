@@ -8,6 +8,10 @@ import { AlertCircle, Facebook, Youtube, Check, X } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useTranslation } from '@/contexts/language-context'
 import type { Language } from '@/contexts/language-context'
+import { dynamic } from "@/app/utils/dynamic-routes";
+
+// Re-export the dynamic marker
+export { dynamic };
 
 // Översättningar för anslutningssidan
 const connectTranslations = {

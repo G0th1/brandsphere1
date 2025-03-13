@@ -7,6 +7,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { useSearchParams } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
+import { dynamic } from "@/app/utils/dynamic-routes";
+
+// Re-export the dynamic marker
+export { dynamic };
 
 // Priskomponenter - du måste ersätta dessa med dina faktiska pris-ID:n från Stripe
 const PRICE_IDS = {

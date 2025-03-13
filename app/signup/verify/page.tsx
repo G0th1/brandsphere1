@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft, CheckCircle, Mail } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createSafeSupabaseClient } from "@/app/utils/supabase-client"
+import { dynamic } from "@/app/utils/dynamic-routes"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +16,9 @@ import {
   CardTitle
 } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
+
+// Re-export the dynamic marker
+export { dynamic }
 
 export default function VerifyPage() {
   const [isResending, setIsResending] = useState(false)
@@ -51,7 +55,7 @@ export default function VerifyPage() {
         return;
       }
 
-      const supabase = createClientComponentClient()
+      const supabase = createSafeSupabaseClient()
 
       const { error } = await supabase.auth.resend({
         type: 'signup',

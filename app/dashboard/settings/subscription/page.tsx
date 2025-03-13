@@ -10,6 +10,10 @@ import { CalendarClock, CreditCard, Package, Shield, AlertCircle, Check, Clock, 
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { dynamic } from "@/app/utils/dynamic-routes";
+
+// Re-export the dynamic marker
+export { dynamic };
 
 interface Subscription {
     id?: string;
