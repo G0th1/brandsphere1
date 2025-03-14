@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, ReactNode } from 'react';
-import { AlertCircle, Database, RefreshCw, Zap, Globe } from 'lucide-react';
+import { AlertCircle, Database, RefreshCw, Zap, Globe, Chrome as ChromeIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -21,8 +21,28 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
     const [hasError, setHasError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [bypassChecked, setBypassChecked] = useState(false);
+    const [isChrome, setIsChrome] = useState(true);
 
     useEffect(() => {
+        // Detect browser
+        if (typeof window !== 'undefined') {
+            const ua = window.navigator.userAgent;
+            const isChromeBrowser = ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1;
+            setIsChrome(isChromeBrowser);
+
+            // For non-Chrome browsers, automatically bypass checks
+            if (!isChromeBrowser) {
+                console.log('Non-Chrome browser detected. Bypassing database checks.');
+                setBypassChecked(true);
+                setIsLoading(false);
+                setHasError(false);
+
+                // Store offline mode preference for non-Chrome browsers
+                localStorage.setItem('offlineMode', 'true');
+                return;
+            }
+        }
+
         // Check if user previously enabled offline mode
         const offlineModeEnabled = localStorage.getItem('offlineMode') === 'true';
 
@@ -62,19 +82,49 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
         // Otherwise check database connection
         const checkDbConnection = async () => {
             try {
-                const response = await fetch('/api/db-health-check');
-                const data = await response.json();
-                setHasError(!data.success);
+                // Add a compatibility flag for non-Chrome browsers
+                const params = !isChrome ? '?bypass_db=true' : '';
+                const response = await fetch(`/api/db-health-check${params}`, {
+                    credentials: 'include',
+                    headers: {
+                        'X-Browser-Compat': 'true'
+                    }
+                });
+
+                if (!response.ok && !isChrome) {
+                    // For non-Chrome browsers, always bypass even if the API fails
+                    console.log('API returned error but bypassing for non-Chrome browser');
+                    setHasError(false);
+                    setBypassChecked(true);
+                    localStorage.setItem('offlineMode', 'true');
+                } else {
+                    const data = await response.json();
+                    setHasError(!data.success);
+
+                    // If this is a non-Chrome browser and we got success, still enable offline mode
+                    if (!isChrome && data.success) {
+                        setBypassChecked(true);
+                        localStorage.setItem('offlineMode', 'true');
+                    }
+                }
             } catch (error) {
                 console.error('Database health check failed:', error);
-                setHasError(true);
+
+                // For non-Chrome browsers, bypass even on error
+                if (!isChrome) {
+                    setHasError(false);
+                    setBypassChecked(true);
+                    localStorage.setItem('offlineMode', 'true');
+                } else {
+                    setHasError(true);
+                }
             } finally {
                 setIsLoading(false);
             }
         };
 
         checkDbConnection();
-    }, []);
+    }, [isChrome]);
 
     // Function to clean up URL parameters
     const cleanupUrlParams = () => {
@@ -104,16 +154,28 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
 
     // If checks are bypassed, show content with an offline indicator
     if (bypassChecked) {
+        let indicatorText = "Offline Mode";
+        let indicatorBg = "bg-yellow-600";
+
+        if (!isChrome) {
+            indicatorText = "Browser Compatibility Mode";
+            indicatorBg = "bg-blue-600";
+        }
+
         return (
             <>
-                {/* Offline Mode Indicator */}
-                <div className="fixed bottom-4 right-4 z-50 bg-yellow-600 text-white px-3 py-1.5 rounded-full text-sm font-medium flex items-center shadow-lg">
-                    <Globe className="h-3.5 w-3.5 mr-1.5" />
-                    Offline Mode
+                {/* Offline/Compatibility Mode Indicator */}
+                <div className={`fixed bottom-4 right-4 z-50 ${indicatorBg} text-white px-3 py-1.5 rounded-full text-sm font-medium flex items-center shadow-lg`}>
+                    {!isChrome ? (
+                        <ChromeIcon className="h-3.5 w-3.5 mr-1.5" />
+                    ) : (
+                        <Globe className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    {indicatorText}
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="ml-2 h-5 px-1.5 text-xs text-white hover:bg-yellow-700"
+                        className="ml-2 h-5 px-1.5 text-xs text-white hover:bg-opacity-70"
                         onClick={handleRetry}
                     >
                         Reconnect
@@ -157,6 +219,11 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
                         <p className="text-sm text-muted-foreground mb-4">
                             You can continue using the website in offline mode. Some features that require a database connection may be limited.
                         </p>
+                        {!isChrome && (
+                            <p className="text-sm font-medium text-orange-600 mt-2 mb-4">
+                                We recommend using Google Chrome for the best experience with all features.
+                            </p>
+                        )}
                     </CardContent>
                     <CardFooter className="flex flex-col gap-3">
                         <Button onClick={handleEnterOfflineMode} className="w-full gap-2 bg-blue-600 hover:bg-blue-700">
