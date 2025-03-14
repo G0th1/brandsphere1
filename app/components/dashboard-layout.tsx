@@ -55,11 +55,11 @@ import { useSubscription } from '@/contexts/subscription-context';
 import { ThemeToggle } from "@/app/components/theme-toggle";
 
 // Import components
-import PostManagement from '@/components/content/post-management';
-import SocialAccounts from '@/components/account/social-accounts';
-import InsightsDashboard from '@/components/analytics/insights-dashboard';
-import ContentCalendar from '@/components/calendar/content-calendar';
-import RecentActivities from '@/components/activity/recent-activities';
+import { PostManagement } from '@/app/components/content/post-management';
+import { SocialAccounts } from '@/app/components/account/social-accounts';
+import { InsightsDashboard } from '@/app/components/analytics/insights-dashboard';
+import { ContentCalendar } from '@/app/components/content/content-calendar';
+import { RecentActivities } from '@/app/components/activity/recent-activities';
 
 const NAVIGATION_ITEMS = [
     {
