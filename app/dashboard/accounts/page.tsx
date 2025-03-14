@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import DashboardLayout from '@/components/dashboard-layout';
-import SocialAccounts from '@/components/account/social-accounts';
+import { DashboardLayout } from '@/app/components/dashboard-layout';
+import { SocialAccounts } from '@/app/components/account/social-accounts';
 
 export const metadata: Metadata = {
     title: 'Social Media Accounts | BrandSphereAI',
