@@ -11,6 +11,7 @@ import { Analytics } from "@/components/analytics"
 import DbErrorBoundary from "@/app/components/db-error-boundary"
 // Import the browser compatibility notice
 import BrowserCompatibilityNotice from './components/browser-compatibility-notice'
+import { BrowserCompat } from '@/components/BrowserCompat'
 
 // Konfigurera Inter font
 const inter = Inter({
@@ -69,6 +70,7 @@ export default function RootLayout({
           <Toaster />
           <Analytics />
           <BrowserCompatibilityNotice />
+          <BrowserCompat />
         </ThemeProvider>
       </body>
     </html>

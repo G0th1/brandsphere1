@@ -137,7 +137,7 @@ export async function middleware(request: NextRequest) {
 
   // Add compatibility headers
   response.headers.set('Set-Cookie',
-    'auth-compatible=true; SameSite=Lax; Path=/; Max-Age=3600');
+    'auth-compatible=true; SameSite=Lax; Path=/; Max-Age=3600; Secure');
 
   return response;
 }

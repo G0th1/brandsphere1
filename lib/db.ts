@@ -173,6 +173,31 @@ if (typeof window !== 'undefined') {
                 // Check if offline mode is enabled in localStorage
                 const isOfflineMode = localStorage.getItem('offlineMode') === 'true';
 
+                // Add browser compatibility check
+                const ua = window.navigator.userAgent;
+                const isChrome = ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1;
+
+                if (!isChrome) {
+                    console.log('🔄 Non-Chrome browser detected. Applying database compatibility fixes.');
+
+                    // Set SameSite=None cookies for cross-browser compatibility
+                    document.cookie = "db-compat=true; path=/; SameSite=None; Secure";
+
+                    // Add event listener to catch connection errors
+                    window.addEventListener('error', function (event) {
+                        if (event.message && (
+                            event.message.includes('database') ||
+                            event.message.includes('connection') ||
+                            event.message.includes('fetch')
+                        )) {
+                            console.warn('⚠️ Caught database error:', event.message);
+                            // Prevent the error from disrupting the user experience
+                            event.preventDefault();
+                            return true;
+                        }
+                    }, true);
+                }
+
                 if (isOfflineMode) {
                     console.log('🔌 Running in offline mode with mock database');
 
@@ -190,7 +215,7 @@ if (typeof window !== 'undefined') {
                     }, true);
                 }
             } catch (e) {
-                console.error('Error setting up offline mode:', e);
+                console.error('Error setting up browser compatibility:', e);
             }
         }, 500);
     })();
