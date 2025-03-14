@@ -20,8 +20,9 @@ export default function DashboardScript() {
                         const computed = window.getComputedStyle(overlay);
                         const isInvisible = computed.opacity === '0' || computed.visibility === 'hidden';
                         const isFullScreen = computed.width === '100%' || computed.height === '100%';
+                        const isBlocking = computed.zIndex && parseInt(computed.zIndex) > 100;
 
-                        if (isInvisible && isFullScreen) {
+                        if ((isInvisible && isFullScreen) || isBlocking) {
                             console.log("Removing potentially blocking overlay", overlay);
                             overlay.remove();
                         }
@@ -38,7 +39,7 @@ export default function DashboardScript() {
                     });
 
                     // Fix any invisible content areas
-                    const contentAreas = document.querySelectorAll('main, .dashboard-content');
+                    const contentAreas = document.querySelectorAll('main, .dashboard-content, [class*="dashboard"]');
                     contentAreas.forEach(area => {
                         area.setAttribute('style', `
                             position: relative !important; 
@@ -46,14 +47,39 @@ export default function DashboardScript() {
                             visibility: visible !important;
                             opacity: 1 !important;
                             pointer-events: auto !important;
+                            display: block !important;
                         `);
                     });
+
+                    // Force body and html to be visible
+                    document.body.style.visibility = 'visible';
+                    document.body.style.opacity = '1';
+                    document.documentElement.style.visibility = 'visible';
+                    document.documentElement.style.opacity = '1';
+
+                    // Clear any loading states
+                    document.body.classList.remove('loading');
+                    document.documentElement.classList.remove('loading');
+
+                    // Fix potential z-index stacking issues
+                    const resetZIndex = () => {
+                        document.querySelectorAll('div').forEach(div => {
+                            const style = window.getComputedStyle(div);
+                            // If z-index is very high and making things invisible
+                            if (style.position === 'fixed' && style.zIndex && parseInt(style.zIndex) > 1000) {
+                                div.style.zIndex = '100';
+                            }
+                        });
+                    };
+
+                    resetZIndex();
                 };
 
                 // Run cleanup immediately and after a short delay to catch post-render issues
                 cleanup();
                 setTimeout(cleanup, 300);
                 setTimeout(cleanup, 1000);
+                setTimeout(cleanup, 2000);
 
                 // Listen for any click attempt that might be getting blocked
                 document.addEventListener('click', (e) => {

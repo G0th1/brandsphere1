@@ -20,7 +20,7 @@ export default function HomePage() {
 
   const handleTryDemo = (e: React.MouseEvent) => {
     e.preventDefault();
-    window.location.href = '/demo/login';
+    safeRouter.navigate('/demo/login');
   };
 
   // Funktion för att skapa den understryckta versionen av titeln
@@ -81,7 +81,7 @@ export default function HomePage() {
                   className="group"
                   onClick={(e) => {
                     e.preventDefault();
-                    window.location.href = '/auth/register';
+                    safeRouter.navigate('/auth/register');
                   }}
                 >
                   {t.hero.getStarted}
@@ -92,7 +92,7 @@ export default function HomePage() {
                   size="lg"
                   onClick={(e) => {
                     e.preventDefault();
-                    window.location.href = '/pricing';
+                    safeRouter.navigate('/pricing');
                   }}
                 >
                   {t.hero.viewPricing}
@@ -103,7 +103,7 @@ export default function HomePage() {
                   className="flex items-center gap-2"
                   onClick={(e) => {
                     e.preventDefault();
-                    window.location.href = '/demo/login';
+                    safeRouter.navigate('/demo/login');
                   }}
                 >
                   <Zap className="h-4 w-4 text-yellow-500" />
@@ -173,7 +173,7 @@ export default function HomePage() {
                     size="lg"
                     onClick={(e) => {
                       e.preventDefault();
-                      window.location.href = '/demo/login';
+                      safeRouter.navigate('/demo/login');
                     }}
                   >
                     Try Premium Demo
