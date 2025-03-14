@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Area, BarChart3, Calendar, Clock, Image, LineChart, MessageSquare, Settings } from 'lucide-react';
+import { BarChart3, Calendar, Clock, Image, LineChart, MessageSquare, Settings, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
 const DEMO_PROJECTS = [
@@ -165,7 +165,7 @@ export function DemoDashboardContent() {
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium">Active Projects</h3>
                         <Button variant="outline" size="sm" className="h-8">
-                            <Area className="h-4 w-4 mr-2" />
+                            <PlusCircle className="h-4 w-4 mr-2" />
                             New Project
                         </Button>
                     </div>
