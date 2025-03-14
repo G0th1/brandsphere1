@@ -2,10 +2,16 @@
  * Helper to ensure the correct database URL is used in all environments
  */
 
-// Default Neon PostgreSQL connection string
-const DEFAULT_POSTGRES_URL = "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require";
+// Default SQLite connection string for local development
+const DEFAULT_SQLITE_URL = "file:./prisma/dev.db";
 
 export function getDatabaseUrl(): string {
+    // Check if we're in offline mode
+    if (typeof window !== 'undefined' && localStorage.getItem('offlineMode') === 'true') {
+        console.log('Using offline mode with SQLite database');
+        return DEFAULT_SQLITE_URL;
+    }
+
     // 1. First try the standard DATABASE_URL
     if (process.env.DATABASE_URL) {
         return process.env.DATABASE_URL;
@@ -20,9 +26,9 @@ export function getDatabaseUrl(): string {
         return process.env.POSTGRES_URL_NON_POOLING;
     }
 
-    // 3. Finally, fall back to the default Neon URL
-    console.warn('No database URL found in environment variables. Using default connection string.');
-    return DEFAULT_POSTGRES_URL;
+    // 3. Finally, fall back to the SQLite URL for better local development
+    console.warn('No database URL found in environment variables. Using SQLite for local development.');
+    return DEFAULT_SQLITE_URL;
 }
 
 // Export the database URL for direct usage

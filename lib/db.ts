@@ -130,48 +130,16 @@ if (isDevelopment && DATABASE_URL.startsWith('file:')) {
     }
 }
 
-// =========== PRISMA CLIENT INITIALIZATION ===========
-// Simplify client creation for maximum compatibility
-let prisma: PrismaClient;
+// Use a single instance of Prisma Client in development
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-if (process.env.NODE_ENV === 'production') {
-    // In production, use our helper to get the right database URL
-    prisma = new PrismaClient({
-        datasources: {
-            db: {
-                url: DATABASE_URL
-            }
-        },
-        log: ['error', 'warn'],
+export const db =
+    globalForPrisma.prisma ||
+    new PrismaClient({
+        log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
     });
-    console.log('✅ PrismaClient initialized for production with PostgreSQL');
-    console.log('Database URL type:', DATABASE_URL.startsWith('postgres') ? 'PostgreSQL' : 'Unknown');
-} else {
-    try {
-        // In development, we might need more specific configuration
-        prisma = new PrismaClient({
-            datasources: {
-                db: {
-                    url: DATABASE_URL
-                }
-            },
-            log: ['error', 'warn'],
-        });
-        console.log('✅ PrismaClient initialized successfully');
 
-        // Log more details about the database connection
-        console.log('Database provider:', DATABASE_URL.startsWith('postgres') ? 'PostgreSQL' :
-            DATABASE_URL.startsWith('file:') ? 'SQLite' : 'Unknown');
-        console.log('Database connection string type:', DATABASE_URL ? 'Provided' : 'Missing');
-    } catch (initError) {
-        console.error('❌ Failed to initialize PrismaClient:', initError);
-        // Create a fallback client with no options
-        prisma = new PrismaClient();
-    }
-}
-
-// Create and export a singleton instance
-export const db = prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
 
 // Check if we're in the browser and in offline mode
 if (typeof window !== 'undefined') {
