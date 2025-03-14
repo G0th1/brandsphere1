@@ -50,9 +50,9 @@ export default function DashboardLayout({
                     disableTransitionOnChange
                 >
                     <AuthGuard requireAuth={true}>
-                        <div className="container mx-auto flex min-h-screen w-full flex-col">
+                        <div className="relative container mx-auto flex min-h-screen w-full flex-col">
                             <DashboardClientNav />
-                            <div className="flex-1 p-4 md:p-8">{children}</div>
+                            <div className="relative z-10 flex-1 p-4 md:p-8">{children}</div>
                         </div>
                     </AuthGuard>
                     <Toaster />

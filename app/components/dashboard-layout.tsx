@@ -111,16 +111,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     const handleQuickCreate = (option: string) => {
         setIsQuickCreateOpen(false);
 
-        switch (option) {
-            case 'post':
-                window.location.href = '/dashboard/content?create=true';
-                break;
-            case 'account':
-                window.location.href = '/dashboard/accounts?connect=true';
-                break;
-            default:
-                break;
-        }
+        setTimeout(() => {
+            switch (option) {
+                case 'post':
+                    window.location.href = '/dashboard/content?create=true';
+                    break;
+                case 'account':
+                    window.location.href = '/dashboard/accounts?connect=true';
+                    break;
+                default:
+                    break;
+            }
+        }, 100);
     };
 
     // Get content for current tab (for tabbed version)
@@ -191,7 +193,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
             {/* Sidebar (desktop) */}
-            <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
+            <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-20">
                 <div className="flex flex-col flex-grow border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 pt-5 overflow-y-auto">
                     <div className="flex items-center justify-center h-16 flex-shrink-0 px-4">
                         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -328,7 +330,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             {/* Main content area */}
             <div className="md:pl-64 flex flex-col flex-1">
                 {/* Top navigation */}
-                <div className="sticky top-0 z-10 flex-shrink-0 h-16 bg-white dark:bg-gray-950 shadow dark:shadow-gray-800">
+                <div className="sticky top-0 z-30 flex-shrink-0 h-16 bg-white dark:bg-gray-950 shadow dark:shadow-gray-800">
                     <div className="flex items-center justify-between px-4 md:px-6 h-full">
                         {/* Mobile menu button */}
                         <div className="flex items-center md:hidden">
@@ -365,17 +367,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                             {/* Quick Create Button */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" className="flex items-center gap-1">
+                                    <Button size="sm" className="relative z-20 flex items-center gap-1">
                                         <PlusCircle className="h-4 w-4" />
                                         <span className="hidden sm:inline">Create</span>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleQuickCreate('post')}>
+                                <DropdownMenuContent align="end" className="z-30">
+                                    <DropdownMenuItem
+                                        className="cursor-pointer"
+                                        onClick={() => handleQuickCreate('post')}
+                                    >
                                         <FileText className="h-4 w-4 mr-2" />
                                         New Post
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleQuickCreate('account')}>
+                                    <DropdownMenuItem
+                                        className="cursor-pointer"
+                                        onClick={() => handleQuickCreate('account')}
+                                    >
                                         <Users className="h-4 w-4 mr-2" />
                                         Connect Account
                                     </DropdownMenuItem>
@@ -387,37 +395,39 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setIsNotificationsOpen(true)}
-                                className="relative"
+                                className="relative z-20"
                             >
                                 <Bell className="h-5 w-5" />
                                 <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
                             </Button>
 
                             {/* Theme Toggler */}
-                            <ThemeToggle />
+                            <div className="relative z-20">
+                                <ThemeToggle />
+                            </div>
 
                             {/* User Menu */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                                    <Button variant="ghost" className="relative z-20 h-8 w-8 rounded-full">
                                         <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
                                             <span className="text-sm font-medium">U</span>
                                         </div>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent align="end" className="z-30">
                                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem className="cursor-pointer">
                                         <User className="h-4 w-4 mr-2" />
                                         Profile
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem className="cursor-pointer">
                                         <Settings className="h-4 w-4 mr-2" />
                                         Settings
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem className="cursor-pointer">
                                         <LogOut className="h-4 w-4 mr-2" />
                                         Logout
                                     </DropdownMenuItem>
@@ -439,7 +449,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     {/* Tabbed navigation - shown only on main dashboard route */}
                     {pathname === '/dashboard' ? (
                         <Tabs defaultValue="dashboard" className="space-y-6">
-                            <div className="border-b border-gray-200 dark:border-gray-800">
+                            <div className="relative z-10 border-b border-gray-200 dark:border-gray-800">
                                 <TabsList className="flex -mb-px space-x-8">
                                     <TabsTrigger
                                         value="dashboard"
@@ -474,36 +484,36 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                 </TabsList>
                             </div>
 
-                            <TabsContent value="dashboard">
+                            <TabsContent value="dashboard" className="relative z-10">
                                 {getTabContent('dashboard')}
                             </TabsContent>
 
-                            <TabsContent value="content">
+                            <TabsContent value="content" className="relative z-10">
                                 {getTabContent('content')}
                             </TabsContent>
 
-                            <TabsContent value="analytics">
+                            <TabsContent value="analytics" className="relative z-10">
                                 {getTabContent('analytics')}
                             </TabsContent>
 
-                            <TabsContent value="calendar">
+                            <TabsContent value="calendar" className="relative z-10">
                                 {getTabContent('calendar')}
                             </TabsContent>
 
-                            <TabsContent value="accounts">
+                            <TabsContent value="accounts" className="relative z-10">
                                 {getTabContent('accounts')}
                             </TabsContent>
                         </Tabs>
                     ) : (
                         // Regular page content
-                        <div>{children}</div>
+                        <div className="relative z-10">{children}</div>
                     )}
                 </main>
             </div>
 
             {/* Notifications Dialog */}
             <Dialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="z-50 sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Notifications</DialogTitle>
                         <DialogDescription>
@@ -521,7 +531,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         </Button>
                         <Button onClick={() => {
                             setIsNotificationsOpen(false);
-                            window.location.href = '/dashboard/notifications';
+                            setTimeout(() => {
+                                window.location.href = '/dashboard/notifications';
+                            }, 100);
                         }}>
                             View All
                         </Button>
@@ -531,7 +543,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
             {/* Quick Create Dialog */}
             <Dialog open={isQuickCreateOpen} onOpenChange={setIsQuickCreateOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="z-50 sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Create New</DialogTitle>
                         <DialogDescription>
@@ -542,7 +554,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <div className="grid gap-4 py-4">
                         <Button
                             variant="outline"
-                            className="flex items-center gap-2 justify-start h-auto p-4 text-left"
+                            className="flex items-center gap-2 justify-start h-auto p-4 text-left cursor-pointer"
                             onClick={() => handleQuickCreate('post')}
                         >
                             <FileText className="h-5 w-5" />
@@ -554,7 +566,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
                         <Button
                             variant="outline"
-                            className="flex items-center gap-2 justify-start h-auto p-4 text-left"
+                            className="flex items-center gap-2 justify-start h-auto p-4 text-left cursor-pointer"
                             onClick={() => handleQuickCreate('account')}
                         >
                             <Users className="h-5 w-5" />
