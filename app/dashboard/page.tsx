@@ -33,6 +33,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useLanguage } from "@/contexts/language-context"
 import { AuthGuard, useAuthUser } from "@/app/components/auth-guard"
 import { createSafeSupabaseClient } from "@/app/utils/supabase-client"
+import { useToast } from "@/components/ui/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 
 // Import the dynamic marker to prevent static generation
 import { dynamic } from "@/app/utils/dynamic-routes"
@@ -115,6 +118,7 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const user = useAuthUser()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState('free')
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false)
@@ -127,6 +131,7 @@ function DashboardContent() {
   const supabase = createSafeSupabaseClient()
   const { language } = useLanguage()
   const t = translations[language]
+  const [projects, setProjects] = useState([])
 
   useEffect(() => {
     const getProfileData = async () => {
@@ -170,7 +175,55 @@ function DashboardContent() {
         window.history.replaceState({}, '', '/dashboard')
       }, 5000)
     }
-  }, [user, supabase, searchParams])
+
+    // Make sure the dashboard loaded flag is set
+    try {
+      sessionStorage.setItem('dashboard_loaded', 'true');
+    } catch (e) {
+      console.warn("Could not set dashboard loaded flag", e);
+    }
+
+    // Fetch projects or other dashboard data
+    const fetchDashboardData = async () => {
+      try {
+        // In a real app, this would be a fetch to your API
+        // For demo purposes, we'll use a timeout and mock data
+        setTimeout(() => {
+          setProjects([
+            {
+              id: 1,
+              name: "Brand Redesign",
+              status: "active",
+              lastUpdated: "Today",
+            },
+            {
+              id: 2,
+              name: "Marketing Campaign",
+              status: "pending",
+              lastUpdated: "Yesterday",
+            },
+            {
+              id: 3,
+              name: "Website Refresh",
+              status: "completed",
+              lastUpdated: "2 days ago",
+            },
+          ]);
+          setLoading(false);
+        }, 800);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data",
+          variant: "destructive",
+        });
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user, supabase, searchParams, toast])
 
   const connectAccount = async (platform: 'facebook' | 'youtube') => {
     // I en riktig app skulle detta anropa en OAuth-flöde
@@ -261,186 +314,137 @@ function DashboardContent() {
     },
   ]
 
+  // Function to get status badge color
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case "active":
+        return "default";
+      case "pending":
+        return "secondary";
+      case "completed":
+        return "success";
+      default:
+        return "outline";
+    }
+  };
+
   return (
-    <div className="py-8">
-      <div className="container px-4 md:px-6">
-        {showUpgradeSuccess && (
-          <div className="mb-6">
-            <Alert className="bg-green-50 text-green-900 border-green-200">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <AlertTitle className="text-green-800">{t.upgradeSuccess}</AlertTitle>
-              <AlertDescription className="text-green-700">
-                {t.upgradeSuccessDesc}
-              </AlertDescription>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 text-green-600 hover:text-green-800 hover:bg-green-100"
-                onClick={() => setShowUpgradeSuccess(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </Alert>
-          </div>
-        )}
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back, {user?.name || user?.email?.split("@")[0] || "User"}
+          </p>
+        </div>
+      </div>
 
-        <div className="flex flex-col gap-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
-              {t.welcomeTitle}
-            </h1>
-            <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: "100ms" }}>
-              {t.welcomeDescription}
-            </p>
-          </div>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        </TabsList>
 
-          {subscription === 'free' && (
-            <Card className="border-accent/50 bg-accent/5 animate-fade-in" style={{ animationDelay: "150ms" }}>
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                      <Zap className="h-5 w-5 text-accent" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{t.upgradeTitle}</h3>
-                      <p className="text-muted-foreground text-sm">{t.upgradeDescription}</p>
-                    </div>
-                  </div>
-                  <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                    <Link href="/dashboard/upgrade">
-                      {t.upgradeButton}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
+                <div className="text-sm font-medium text-muted-foreground">
+                  Total Projects
+                </div>
+                <div className="text-3xl font-bold">
+                  {loading ? <Skeleton className="h-9 w-16" /> : "12"}
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: "200ms" }}>
-            {stats.map((stat, index) => (
-              <Card key={index} className={stat.locked ? "border-muted bg-muted/20" : ""}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <stat.icon className="h-5 w-5 text-muted-foreground" />
-                    {stat.locked && (
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <Lock className="h-3 w-3 mr-1" />
-                        Pro
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.title}</p>
-                  <p className="text-xs text-muted-foreground">{stat.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-muted-foreground">
+                  Active Projects
+                </div>
+                <div className="text-3xl font-bold">
+                  {loading ? <Skeleton className="h-9 w-16" /> : "4"}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-muted-foreground">
+                  Completed This Month
+                </div>
+                <div className="text-3xl font-bold">
+                  {loading ? <Skeleton className="h-9 w-16" /> : "8"}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-muted-foreground">
+                  Team Members
+                </div>
+                <div className="text-3xl font-bold">
+                  {loading ? <Skeleton className="h-9 w-16" /> : "6"}
+                </div>
+              </CardContent>
+            </Card>
           </div>
+        </TabsContent>
 
-          {/* Anslut sociala mediekonton om inga är anslutna */}
-          {!connectedAccounts.facebook && !connectedAccounts.youtube && (
-            <Card className="animate-fade-in border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800" style={{ animationDelay: "250ms" }}>
-              <CardHeader>
-                <CardTitle>{t.connectAccounts}</CardTitle>
-                <CardDescription>{t.connectAccountsDesc}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <p className="text-sm font-medium mb-2">För att låsa upp följande funktioner behöver du koppla minst ett socialt mediekonto:</p>
-                  <ul className="list-disc pl-5 text-sm space-y-1 mb-4">
-                    <li>Avancerad analys</li>
-                    <li>Schemaläggning av inlägg</li>
-                    <li>AI-genererade innehållsförslag</li>
-                    <li>Hantera flera konton</li>
-                    <li>Obegränsade inlägg</li>
-                  </ul>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2 justify-start h-auto py-3"
-                    onClick={() => connectAccount('facebook')}
-                  >
-                    <Facebook className="h-5 w-5 text-blue-600" />
-                    <div className="flex flex-col items-start">
-                      <span>{t.facebookConnect}</span>
-                    </div>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2 justify-start h-auto py-3"
-                    onClick={() => connectAccount('youtube')}
-                  >
-                    <Youtube className="h-5 w-5 text-red-600" />
-                    <div className="flex flex-col items-start">
-                      <span>{t.youtubeConnect}</span>
-                    </div>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="col-span-1 md:col-span-2 animate-fade-in" style={{ animationDelay: "300ms" }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div>
-                <CardTitle>{t.upcomingPostsTitle}</CardTitle>
-                <CardDescription>{t.upcomingPostsDescription}</CardDescription>
-              </div>
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm">
-                  <Link href="/dashboard/posts">
-                    {t.viewAllButton}
-                  </Link>
-                </Button>
-                <Button size="sm">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  {t.createPostButton}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {upcomingPosts.length > 0 ? (
-                <div className="space-y-4">
-                  {upcomingPosts.map((post, index) => (
-                    <div key={index} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                      <div className="flex items-start gap-4">
-                        <div className="rounded-md bg-muted p-2">
-                          {post.platform === "LinkedIn" && <div className="bg-blue-100 text-blue-800 h-8 w-8 flex items-center justify-center rounded-md">Li</div>}
-                          {post.platform === "Twitter" && <Twitter className="h-8 w-8 text-sky-500" />}
-                          {post.platform === "Instagram" && <Instagram className="h-8 w-8 text-pink-500" />}
-                          {post.platform === "Facebook" && <Facebook className="h-8 w-8 text-blue-600" />}
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium">{post.title}</h4>
-                          <p className="text-xs text-muted-foreground">{post.platform} • {post.scheduled}</p>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+        <TabsContent value="projects" className="space-y-4">
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-medium mb-4">Recent Projects</h3>
+              {loading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">{t.noPostsScheduled}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{t.noPostsDesc}</p>
-                  <Button className="mt-6">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    {t.createPostButton}
-                  </Button>
+                <div className="space-y-4">
+                  {projects.map((project: any) => (
+                    <div
+                      key={project.id}
+                      className="flex items-center justify-between border-b pb-2"
+                    >
+                      <div>
+                        <div className="font-medium">{project.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Last updated: {project.lastUpdated}
+                        </div>
+                      </div>
+                      <Badge variant={getStatusBadgeVariant(project.status)}>
+                        {project.status}
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-medium">Analytics Overview</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Detailed analytics will be available soon.
+              </p>
+              {loading ? (
+                <div className="mt-4 space-y-2">
+                  <Skeleton className="h-[200px] w-full" />
+                </div>
+              ) : (
+                <div className="mt-6 text-center text-muted-foreground">
+                  <p>Analytics data visualization coming soon</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 } 

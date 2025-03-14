@@ -43,11 +43,20 @@ export default function LoginPage() {
             // This helps prevent race conditions in the authentication flow
             sessionStorage.setItem('auth_in_progress', 'true');
 
+            // Clear any previous dashboard loaded flag
+            sessionStorage.removeItem('dashboard_loaded');
+
+            // Get the redirect URL from sessionStorage if available
+            const storedRedirect = sessionStorage.getItem('redirectAfterLogin');
+            const effectiveCallbackUrl = storedRedirect || callbackUrl;
+
+            console.log("Will redirect to:", effectiveCallbackUrl);
+
             const result = await signIn("credentials", {
                 email,
                 password,
                 redirect: false,
-                callbackUrl,
+                callbackUrl: effectiveCallbackUrl,
             });
 
             console.log("Login result:", result);
@@ -86,12 +95,22 @@ export default function LoginPage() {
             try {
                 localStorage.setItem('user_email', email);
                 localStorage.setItem('auth_timestamp', Date.now().toString());
+
+                // Also set in sessionStorage for more reliable cross-tab access
+                sessionStorage.setItem('user_email', email);
+                sessionStorage.setItem('auth_timestamp', Date.now().toString());
+
+                // Clear the redirect URL from storage
+                sessionStorage.removeItem('redirectAfterLogin');
             } catch (e) {
-                console.warn("Could not set local storage auth data", e);
+                console.warn("Could not set storage auth data", e);
             }
 
             // Add a small delay for the session to be fully established
             setTimeout(() => {
+                // Force session duration to be long by setting cookies manually
+                document.cookie = "next-auth.session-token=true; path=/; max-age=2592000"; // 30 days
+
                 if (result?.url) {
                     console.log("Login successful, redirecting to:", result.url);
                     // Use window.location for a full page reload to ensure session is applied
@@ -99,7 +118,7 @@ export default function LoginPage() {
                 } else {
                     console.log("No redirect URL, using default");
                     // Fallback to default redirect
-                    window.location.href = '/dashboard';
+                    window.location.href = effectiveCallbackUrl;
                 }
             }, 800);
         } catch (error) {

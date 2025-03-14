@@ -10,6 +10,11 @@ import { useLanguage } from "@/contexts/language-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useEffect, useState } from "react";
 import { AuthGuard, useAuthUser } from "@/app/components/auth-guard";
+import "@/app/globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Metadata } from "next";
+import DashboardNav from "@/app/components/dashboard-nav";
+import { Toaster } from "@/components/ui/toaster";
 
 // Import the dynamic marker to prevent static generation
 import { dynamic } from "@/app/utils/dynamic-routes";
@@ -34,17 +39,52 @@ const translations = {
     }
 };
 
+export const metadata: Metadata = {
+    title: "BrandSphere AI - Dashboard",
+    description: "AI-Powered Brand Identity Management",
+};
+
 export default function DashboardLayout({
     children,
 }: {
     children: ReactNode;
 }) {
     return (
-        <AuthGuard>
-            <DashboardLayoutContent>
-                {children}
-            </DashboardLayoutContent>
-        </AuthGuard>
+        <html lang="en" suppressHydrationWarning>
+            <body className="min-h-screen bg-background font-sans antialiased">
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    <AuthGuard requireAuth={true}>
+                        <div className="container mx-auto flex min-h-screen w-full flex-col">
+                            <DashboardNav />
+                            <div className="flex-1 p-4 md:p-8">{children}</div>
+                        </div>
+                    </AuthGuard>
+                    <Toaster />
+                </ThemeProvider>
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            // Mark dashboard as loaded when this script runs
+                            try {
+                                sessionStorage.setItem('dashboard_loaded', 'true');
+                                
+                                // Also clear any auth_in_progress flag
+                                sessionStorage.removeItem('auth_in_progress');
+                                
+                                console.log("Dashboard loaded flag set");
+                            } catch (e) {
+                                console.warn("Could not set dashboard loaded flag", e);
+                            }
+                        `,
+                    }}
+                />
+            </body>
+        </html>
     );
 }
 

@@ -1,83 +1,111 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function middleware(req: NextRequest) {
-  const pathname = req.nextUrl.pathname;
+// Public routes that don't require authentication
+const publicRoutes = [
+  '/',
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/api/auth/check',
+  '/api/auth',
+];
 
-  // Skip middleware for static assets and API routes
+// Routes that should be redirected to dashboard if already authenticated
+const authRoutes = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
+
+// Function to check if a path matches a list of routes (exact match or prefix)
+const matchesRoute = (path: string, routes: string[]) => {
+  if (routes.includes(path)) return true;
+
+  // Check if this is an API route
+  if (path.startsWith('/api/')) {
+    return routes.some(route => route.startsWith('/api/') && path.startsWith(route));
+  }
+
+  return false;
+};
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Skip middleware for static files, images, etc.
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/static/') ||
-    pathname.includes('.')
+    pathname.startsWith('/images') ||
+    pathname.startsWith('/fonts') ||
+    pathname.includes('.') // Handles files like favicon.ico, manifest.json, etc.
   ) {
+    return NextRequest.nextResponse;
+  }
+
+  // Check if the route is public
+  if (matchesRoute(pathname, publicRoutes)) {
+    // No need to check authentication for public routes
     return NextResponse.next();
   }
+
+  // Start by assuming user is not authenticated
+  let isAuthenticated = false;
 
   try {
-    // Get the token if the user is authenticated
+    // Get the token from next-auth
     const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET || 'default-secret-do-not-use-in-production'
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
     });
 
-    // Special handling for /dashboard/auth-check endpoint to check auth status
-    if (pathname === '/dashboard/auth-check') {
-      return token
-        ? NextResponse.json({ authenticated: true })
-        : NextResponse.json({ authenticated: false }, { status: 401 });
+    // Check if token exists
+    isAuthenticated = !!token;
+
+    // Debug output
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Middleware] Path: ${pathname}, Auth: ${isAuthenticated ? 'yes' : 'no'}`);
     }
 
-    // Check for auth_in_progress in session storage via cookies
-    const authInProgress = req.cookies.get('auth_in_progress')?.value === 'true';
+    // If user is authenticated and trying to access an auth route, redirect to dashboard
+    if (isAuthenticated && matchesRoute(pathname, authRoutes)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
 
-    // Protected routes that require authentication
-    if (pathname.startsWith('/dashboard') && !token) {
-      // If authentication is in progress, let them through temporarily
-      if (authInProgress) {
-        console.log('Auth in progress, allowing temporary access');
-        return NextResponse.next();
-      }
+    // If user is not authenticated and trying to access a protected route
+    if (!isAuthenticated && !matchesRoute(pathname, publicRoutes)) {
+      // Store the current URL to redirect back after login
+      const redirectUrl = new URL('/auth/login', request.url);
 
-      console.log('Unauthorized access attempt to dashboard, redirecting to login');
-      const redirectUrl = req.nextUrl.clone();
-      redirectUrl.pathname = '/auth/login';
+      // Add the original URL as a query param to redirect back after login
       redirectUrl.searchParams.set('callbackUrl', pathname);
+
+      // Add a message to show why they were redirected
+      redirectUrl.searchParams.set('message', 'Please log in to continue');
+
       return NextResponse.redirect(redirectUrl);
     }
-
-    // Redirect authenticated users away from auth pages
-    if ((pathname.startsWith('/auth/login') || pathname.startsWith('/auth/register')) && token) {
-      console.log('Authenticated user tried to access auth page, redirecting to dashboard');
-      const redirectUrl = req.nextUrl.clone();
-      redirectUrl.pathname = '/dashboard';
-      return NextResponse.redirect(redirectUrl);
-    }
-
-    // For all other routes, continue normally
-    return NextResponse.next();
   } catch (error) {
-    console.error('Middleware error:', error);
-    // In case of errors, allow the request to proceed
-    return NextResponse.next();
+    console.error('[Middleware] Error checking authentication:', error);
+
+    // Special handling for development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Middleware] Development mode: allowing access despite error');
+      return NextResponse.next();
+    }
+
+    // In production, redirect to login page if we can't verify authentication
+    if (!matchesRoute(pathname, publicRoutes)) {
+      return NextResponse.redirect(new URL('/auth/login?error=ServerError', request.url));
+    }
   }
+
+  return NextResponse.next();
 }
 
-// Only run middleware on relevant routes
+// Configure the paths that should use the middleware
 export const config = {
-  matcher: [
-    // Old and new registration pages
-    '/signup',
-    '/signup/:path*',
-    '/login',
-
-    // Protect all dashboard pages
-    '/dashboard/:path*',
-
-    // Auth-related pages
-    '/auth/:path*',
-
-    // Pages that need access to user data
-    '/settings/:path*',
-  ],
+  matcher: ['/((?!api/auth/[^/]+).*)'],
 };
