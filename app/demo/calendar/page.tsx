@@ -114,36 +114,36 @@ const DemoSidebar = ({ activeItem }: { activeItem: string }) => {
 
             <div className="flex-1 overflow-auto py-2">
                 <nav className="grid gap-1 px-2">
-                    <Link href="/demo/dashboard">
-                        <Button variant={activeItem === 'dashboard' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
+                    <Button variant={activeItem === 'dashboard' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" asChild>
+                        <Link href="/demo/dashboard">
                             <LayoutDashboard className="h-4 w-4" />
                             Dashboard
-                        </Button>
-                    </Link>
-                    <Link href="/demo/content">
-                        <Button variant={activeItem === 'content' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
+                        </Link>
+                    </Button>
+                    <Button variant={activeItem === 'content' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" asChild>
+                        <Link href="/demo/content">
                             <FileEdit className="h-4 w-4" />
                             Content
-                        </Button>
-                    </Link>
-                    <Link href="/demo/calendar">
-                        <Button variant={activeItem === 'calendar' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
+                        </Link>
+                    </Button>
+                    <Button variant={activeItem === 'calendar' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" asChild>
+                        <Link href="/demo/calendar">
                             <CalendarClock className="h-4 w-4" />
                             Calendar
-                        </Button>
-                    </Link>
-                    <Link href="/demo/insights">
-                        <Button variant={activeItem === 'insights' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
+                        </Link>
+                    </Button>
+                    <Button variant={activeItem === 'insights' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" asChild>
+                        <Link href="/demo/insights">
                             <PieChart className="h-4 w-4" />
                             Insights
-                        </Button>
-                    </Link>
-                    <Link href="/demo/profile">
-                        <Button variant={activeItem === 'profile' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
+                        </Link>
+                    </Button>
+                    <Button variant={activeItem === 'profile' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" asChild>
+                        <Link href="/demo/profile">
                             <User className="h-4 w-4" />
                             User Profile
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                 </nav>
             </div>
 

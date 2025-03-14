@@ -86,11 +86,11 @@ export function MobileMenu({ isAuthenticated = false, onLogout }: MobileMenuProp
               <div className="flex flex-col gap-3 border-t pt-6">
                 {isAuthenticated ? (
                   <>
-                    <Link href="/dashboard" onClick={closeMenu}>
-                      <Button className="w-full" variant="outline" size="lg">
+                    <Button className="w-full" variant="outline" size="lg" asChild>
+                      <Link href="/dashboard" onClick={closeMenu}>
                         {t.navigation.dashboard}
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                     <Button
                       className="w-full"
                       size="lg"
@@ -101,16 +101,16 @@ export function MobileMenu({ isAuthenticated = false, onLogout }: MobileMenuProp
                   </>
                 ) : (
                   <>
-                    <Link href="/auth/login" onClick={closeMenu}>
-                      <Button className="w-full" variant="outline" size="lg">
+                    <Button className="w-full" variant="outline" size="lg" asChild>
+                      <Link href="/auth/login" onClick={closeMenu}>
                         {t.navigation.login}
-                      </Button>
-                    </Link>
-                    <Link href="/auth/register" onClick={closeMenu}>
-                      <Button className="w-full" size="lg">
+                      </Link>
+                    </Button>
+                    <Button className="w-full" size="lg" asChild>
+                      <Link href="/auth/register" onClick={closeMenu}>
                         {t.navigation.signup}
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </>
                 )}
               </div>

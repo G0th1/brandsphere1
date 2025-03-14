@@ -64,27 +64,27 @@ export function Navbar() {
 
           {isAuthenticated ? (
             <div className="flex gap-2">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/dashboard">
                   {t.navigation.dashboard}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 {t.navigation.logout}
               </Button>
             </div>
           ) : (
             <div className="hidden md:flex gap-2">
-              <Link href="/auth/login">
-                <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/auth/login">
                   {t.navigation.login}
-                </Button>
-              </Link>
-              <Link href="/auth/register">
-                <Button size="sm">
+                </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href="/auth/register">
                   {t.navigation.signup}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           )}
 

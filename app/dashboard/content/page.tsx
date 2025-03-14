@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import DashboardLayout from '@/components/dashboard-layout';
-import PostManagement from '@/components/content/post-management';
+import DashboardLayout from '@/app/components/dashboard-layout';
+import PostManagement from '@/app/components/content/post-management';
 
 export const metadata: Metadata = {
     title: 'Content Management | BrandSphereAI',

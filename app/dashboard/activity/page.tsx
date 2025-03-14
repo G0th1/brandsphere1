@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import DashboardLayout from '@/components/dashboard-layout';
-import RecentActivities from '@/components/activity/recent-activities';
+import DashboardLayout from '@/app/components/dashboard-layout';
+import RecentActivities from '@/app/components/activity/recent-activities';
 
 export const metadata: Metadata = {
     title: 'Recent Activity | BrandSphereAI',

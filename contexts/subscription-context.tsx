@@ -37,13 +37,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
                 const userSubscription = await subscriptionService.getUserSubscription();
                 setSubscription(userSubscription);
 
-                // Automatically activate demo for free tier users
+                // Remove the automatic demo activation for free tier users
+                // This is causing the navigation loop issue
+                /*
                 if (userSubscription.plan === 'free' && !demoUser) {
                     // Add a slight delay to ensure context is fully initialized
                     setTimeout(() => {
                         startDemo();
                     }, 500);
                 }
+                */
             } catch (error) {
                 console.error('Error loading subscription:', error);
             } finally {

@@ -107,6 +107,8 @@ export function DemoProvider({ children }: DemoProviderProps) {
             setUser(demoUser);
             console.log("Demo-användarstate uppdaterad");
 
+            // Disable automatic navigation to avoid redirection loop
+            /*
             // Använd en timeout för att säkerställa att staten har uppdaterats
             // innan vi försöker navigera
             setTimeout(() => {
@@ -141,12 +143,17 @@ export function DemoProvider({ children }: DemoProviderProps) {
                     setIsLoading(false);
                 }
             }, 800); // Använd en lite längre timeout
+            */
+
+            // Simply finish loading without navigation
+            setIsLoading(false);
+
         } catch (error) {
             console.error('Error starting demo:', error);
             setIsLoading(false);
 
             // Fallback: Grundläggande navigering
-            window.location.href = '/demo/dashboard';
+            // window.location.href = '/demo/dashboard'; // Comment this out to prevent automatic navigation
         }
     };
 
@@ -163,6 +170,8 @@ export function DemoProvider({ children }: DemoProviderProps) {
             setUser(null);
             console.log("Demo-användarstate har återställts");
 
+            // Remove the forced navigation that's causing login issues
+            /*
             // För att säkerställa att hela applikationen laddas om korrekt
             // använder vi en full page reload istället för router.push
             // Detta förhindrar problem med state som hänger kvar
@@ -173,11 +182,13 @@ export function DemoProvider({ children }: DemoProviderProps) {
                 // Använd replace för att förhindra att användaren går tillbaka till demon med bakåtknappen
                 window.location.replace('/');
             }, 100);
+            */
         } catch (error) {
             console.error("Fel vid avslut av demo:", error);
 
             // Vid fel, gör det enklaste: hård omdirigering till startsidan
-            window.location.href = '/';
+            // Also removing this forced navigation
+            // window.location.href = '/';
         }
     };
 

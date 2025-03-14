@@ -13,6 +13,8 @@ import DbErrorBoundary from "@/app/components/db-error-boundary"
 // Import the browser compatibility notice
 import BrowserCompatibilityNotice from './components/browser-compatibility-notice'
 import { BrowserCompat } from '@/components/BrowserCompat'
+// Import the new error boundary
+import ErrorBoundary from '@/app/components/error-boundary'
 
 // Konfigurera Inter font
 const inter = Inter({
@@ -64,7 +66,9 @@ export default function RootLayout({
               <DbErrorBoundary>
                 <DemoProvider>
                   <SubscriptionProvider>
-                    {children}
+                    <ErrorBoundary>
+                      {children}
+                    </ErrorBoundary>
                   </SubscriptionProvider>
                 </DemoProvider>
               </DbErrorBoundary>
