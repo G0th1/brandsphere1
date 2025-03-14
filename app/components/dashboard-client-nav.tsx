@@ -1,6 +1,6 @@
 "use client"
 
-import DashboardNav from "@/app/components/dashboard-nav";
+import DashboardNav from "./dashboard-nav";
 
 export default function DashboardClientNav() {
     return <DashboardNav />;
