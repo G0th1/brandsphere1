@@ -15,6 +15,8 @@ import BrowserCompatibilityNotice from './components/browser-compatibility-notic
 import { BrowserCompat } from '@/components/BrowserCompat'
 // Import the new error boundary
 import ErrorBoundary from '@/app/components/error-boundary'
+// Import button fix script
+import ButtonFixScript from '@/app/components/button-fix'
 
 // Konfigurera Inter font
 const inter = Inter({
@@ -78,6 +80,7 @@ export default function RootLayout({
           <Analytics />
           <BrowserCompatibilityNotice />
           <BrowserCompat />
+          <ButtonFixScript />
         </ThemeProvider>
       </body>
     </html>

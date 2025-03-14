@@ -84,50 +84,62 @@ export function DemoSidebar({ activeItem }: DemoSidebarProps) {
                     <Button
                         variant={activeItem === 'dashboard' ? 'secondary' : 'ghost'}
                         className="w-full justify-start gap-2"
-                        onClick={() => window.location.href = "/demo/dashboard"}
+                        asChild
                     >
-                        <LayoutDashboard className="h-4 w-4" />
-                        {t.dashboard}
+                        <Link href="/demo/dashboard">
+                            <LayoutDashboard className="h-4 w-4" />
+                            {t.dashboard}
+                        </Link>
                     </Button>
                     <Button
                         variant={activeItem === 'content' ? 'secondary' : 'ghost'}
                         className="w-full justify-start gap-2"
-                        onClick={() => window.location.href = "/demo/content"}
+                        asChild
                     >
-                        <FileEdit className="h-4 w-4" />
-                        {t.content}
+                        <Link href="/demo/content">
+                            <FileEdit className="h-4 w-4" />
+                            {t.content}
+                        </Link>
                     </Button>
                     <Button
                         variant={activeItem === 'calendar' ? 'secondary' : 'ghost'}
                         className="w-full justify-start gap-2"
-                        onClick={() => window.location.href = "/demo/calendar"}
+                        asChild
                     >
-                        <CalendarClock className="h-4 w-4" />
-                        {t.calendar}
+                        <Link href="/demo/calendar">
+                            <CalendarClock className="h-4 w-4" />
+                            {t.calendar}
+                        </Link>
                     </Button>
                     <Button
                         variant={activeItem === 'insights' ? 'secondary' : 'ghost'}
                         className="w-full justify-start gap-2"
-                        onClick={() => window.location.href = "/demo/insights"}
+                        asChild
                     >
-                        <PieChart className="h-4 w-4" />
-                        {t.insights}
+                        <Link href="/demo/insights">
+                            <PieChart className="h-4 w-4" />
+                            {t.insights}
+                        </Link>
                     </Button>
                     <Button
                         variant={activeItem === 'profile' ? 'secondary' : 'ghost'}
                         className="w-full justify-start gap-2"
-                        onClick={() => window.location.href = "/demo/profile"}
+                        asChild
                     >
-                        <User className="h-4 w-4" />
-                        {t.profile}
+                        <Link href="/demo/profile">
+                            <User className="h-4 w-4" />
+                            {t.profile}
+                        </Link>
                     </Button>
                     <Button
                         variant={activeItem === 'settings' ? 'secondary' : 'ghost'}
                         className="w-full justify-start gap-2"
-                        onClick={() => window.location.href = "/demo/settings"}
+                        asChild
                     >
-                        <Settings className="h-4 w-4" />
-                        {t.settings}
+                        <Link href="/demo/settings">
+                            <Settings className="h-4 w-4" />
+                            {t.settings}
+                        </Link>
                     </Button>
                 </nav>
             </div>
