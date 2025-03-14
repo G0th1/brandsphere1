@@ -59,20 +59,6 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {/* Move offline mode button to bottom left */}
-      <div className="fixed bottom-4 left-4 z-50">
-        <Link href="/?offline_mode=true">
-          <Button variant="default" className="group gap-2 shadow-lg">
-            <Globe className="h-4 w-4" />
-            <span>Use Website Offline</span>
-          </Button>
-        </Link>
-      </div>
-
-      <div className="absolute top-4 left-4 z-50 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-        <a href="/test-page">Test Page</a>
-      </div>
-
       <main className="flex-1">
         {/* Hero sektion */}
         <section className="relative py-20 md:py-32 overflow-hidden">

@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/providers/theme-provider'
 import { AuthProvider } from '@/contexts/auth-context'
 import { LanguageProvider } from '@/contexts/language-context'
 import { DemoProvider } from '@/contexts/demo-context'
+import { SubscriptionProvider } from '@/contexts/subscription-context'
 import { Toaster } from "../components/ui/toaster"
 import { Analytics } from "@/components/analytics"
 import DbErrorBoundary from "@/app/components/db-error-boundary"
@@ -62,7 +63,9 @@ export default function RootLayout({
             <LanguageProvider>
               <DbErrorBoundary>
                 <DemoProvider>
-                  {children}
+                  <SubscriptionProvider>
+                    {children}
+                  </SubscriptionProvider>
                 </DemoProvider>
               </DbErrorBoundary>
             </LanguageProvider>
