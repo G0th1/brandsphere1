@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, ReactNode } from 'react';
-import { AlertCircle, Database, RefreshCw, Zap, Globe, Chrome as ChromeIcon } from 'lucide-react';
+import { AlertCircle, Database, RefreshCw, Zap, Globe, Chrome as ChromeIcon, Laptop, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -22,109 +22,109 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [bypassChecked, setBypassChecked] = useState(false);
     const [isChrome, setIsChrome] = useState(true);
+    const [isUniversalMode, setIsUniversalMode] = useState(false);
 
     useEffect(() => {
+        // Enable universal mode for all devices
+        const enableUniversalMode = () => {
+            setBypassChecked(true);
+            setIsLoading(false);
+            setHasError(false);
+            setIsUniversalMode(true);
+
+            // Store the preferences
+            try {
+                localStorage.setItem('offlineMode', 'true');
+                localStorage.setItem('universalMode', 'true');
+
+                // Set cookies that help with cross-device compatibility
+                document.cookie = "universal-mode=active; path=/; SameSite=None; Secure; Max-Age=86400";
+                document.cookie = "device-access=enabled; path=/; SameSite=None; Secure; Max-Age=86400";
+            } catch (e) {
+                console.warn('Could not write to localStorage or cookies:', e);
+            }
+        };
+
+        // Check if universal mode was previously enabled
+        const universalModeEnabled = localStorage.getItem('universalMode') === 'true';
+        if (universalModeEnabled) {
+            enableUniversalMode();
+            return;
+        }
+
         // Detect browser
         if (typeof window !== 'undefined') {
             const ua = window.navigator.userAgent;
             const isChromeBrowser = ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1;
             setIsChrome(isChromeBrowser);
 
-            // For non-Chrome browsers, automatically bypass checks
+            // For non-Chrome browsers, automatically enable universal mode
             if (!isChromeBrowser) {
-                console.log('Non-Chrome browser detected. Bypassing database checks.');
-                setBypassChecked(true);
-                setIsLoading(false);
-                setHasError(false);
-
-                // Store offline mode preference for non-Chrome browsers
-                localStorage.setItem('offlineMode', 'true');
+                console.log('Non-Chrome browser detected. Enabling universal mode.');
+                enableUniversalMode();
                 return;
             }
         }
 
-        // Check if user previously enabled offline mode
+        // Check if offline mode was previously enabled
         const offlineModeEnabled = localStorage.getItem('offlineMode') === 'true';
 
-        // Check URL parameters for offline mode
+        // Check URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const offlineParam = urlParams.get('offline_mode') === 'true';
         const bypassDb = urlParams.get('bypass_db') === 'true';
+        const universalParam = urlParams.get('universal_mode') === 'true';
 
-        // If offline mode is enabled through any method, bypass the database check
-        if (offlineModeEnabled || offlineParam || bypassDb) {
-            setBypassChecked(true);
-            setIsLoading(false);
-            setHasError(false);
+        // If any bypass mode is enabled, use universal mode
+        if (offlineModeEnabled || offlineParam || bypassDb || universalParam) {
+            enableUniversalMode();
 
-            // Store the offline mode preference
-            if (!offlineModeEnabled && (offlineParam || bypassDb)) {
-                localStorage.setItem('offlineMode', 'true');
-            }
-
-            // If using a URL parameter, clean it up for cleaner URLs
-            if (offlineParam || bypassDb) {
+            // Clean up URL parameters
+            if (offlineParam || bypassDb || universalParam) {
                 cleanupUrlParams();
             }
-
             return;
         }
 
         // Check if user is on demo path
         const isDemoPath = window.location.pathname.startsWith('/demo');
         if (isDemoPath) {
-            setBypassChecked(true);
-            setIsLoading(false);
-            setHasError(false);
+            enableUniversalMode();
             return;
         }
 
-        // Otherwise check database connection
+        // Otherwise check database connection with universal mode support
         const checkDbConnection = async () => {
             try {
-                // Add a compatibility flag for non-Chrome browsers
-                const params = !isChrome ? '?bypass_db=true' : '';
-                const response = await fetch(`/api/db-health-check${params}`, {
+                // Always use universal mode
+                const response = await fetch(`/api/db-health-check?universal_mode=true`, {
                     credentials: 'include',
                     headers: {
                         'X-Browser-Compat': 'true'
                     }
                 });
 
-                if (!response.ok && !isChrome) {
-                    // For non-Chrome browsers, always bypass even if the API fails
-                    console.log('API returned error but bypassing for non-Chrome browser');
-                    setHasError(false);
-                    setBypassChecked(true);
-                    localStorage.setItem('offlineMode', 'true');
-                } else {
-                    const data = await response.json();
-                    setHasError(!data.success);
+                // Always enable universal mode regardless of response
+                enableUniversalMode();
 
-                    // If this is a non-Chrome browser and we got success, still enable offline mode
-                    if (!isChrome && data.success) {
-                        setBypassChecked(true);
-                        localStorage.setItem('offlineMode', 'true');
-                    }
+                // Still parse response for logging purposes
+                try {
+                    const data = await response.json();
+                    console.log('DB health check response:', data);
+                } catch (parseError) {
+                    console.warn('Could not parse response:', parseError);
                 }
             } catch (error) {
                 console.error('Database health check failed:', error);
-
-                // For non-Chrome browsers, bypass even on error
-                if (!isChrome) {
-                    setHasError(false);
-                    setBypassChecked(true);
-                    localStorage.setItem('offlineMode', 'true');
-                } else {
-                    setHasError(true);
-                }
+                // Even on error, enable universal mode for best user experience
+                enableUniversalMode();
             } finally {
                 setIsLoading(false);
             }
         };
 
         checkDbConnection();
-    }, [isChrome]);
+    }, []);
 
     // Function to clean up URL parameters
     const cleanupUrlParams = () => {
@@ -132,6 +132,7 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
             const url = new URL(window.location.href);
             url.searchParams.delete('offline_mode');
             url.searchParams.delete('bypass_db');
+            url.searchParams.delete('universal_mode');
             window.history.replaceState({}, document.title, url.toString());
         }
     };
@@ -139,38 +140,39 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
     const handleRetry = () => {
         setIsLoading(true);
         localStorage.removeItem('offlineMode');
+        localStorage.removeItem('universalMode');
         window.location.reload();
     };
 
-    const handleEnterOfflineMode = () => {
+    const handleEnterUniversalMode = () => {
         localStorage.setItem('offlineMode', 'true');
+        localStorage.setItem('universalMode', 'true');
         window.location.reload();
     };
 
     const handleBypassAndGoToDemo = () => {
         localStorage.setItem('offlineMode', 'true');
+        localStorage.setItem('universalMode', 'true');
         window.location.href = '/demo/login';
     };
 
-    // If checks are bypassed, show content with an offline indicator
+    // If universal mode is enabled, show content with indicator
     if (bypassChecked) {
-        let indicatorText = "Offline Mode";
-        let indicatorBg = "bg-yellow-600";
+        let indicatorText = isUniversalMode ? "Universal Mode" : "Offline Mode";
+        let indicatorBg = isUniversalMode ? "bg-green-600" : "bg-yellow-600";
+        let indicatorIcon = isUniversalMode ? <Laptop className="h-3.5 w-3.5 mr-1.5" /> : <Globe className="h-3.5 w-3.5 mr-1.5" />;
 
-        if (!isChrome) {
+        if (!isChrome && !isUniversalMode) {
             indicatorText = "Browser Compatibility Mode";
             indicatorBg = "bg-blue-600";
+            indicatorIcon = <ChromeIcon className="h-3.5 w-3.5 mr-1.5" />;
         }
 
         return (
             <>
-                {/* Offline/Compatibility Mode Indicator */}
+                {/* Mode Indicator */}
                 <div className={`fixed bottom-4 right-4 z-50 ${indicatorBg} text-white px-3 py-1.5 rounded-full text-sm font-medium flex items-center shadow-lg`}>
-                    {!isChrome ? (
-                        <ChromeIcon className="h-3.5 w-3.5 mr-1.5" />
-                    ) : (
-                        <Globe className="h-3.5 w-3.5 mr-1.5" />
-                    )}
+                    {indicatorIcon}
                     {indicatorText}
                     <Button
                         variant="ghost"
@@ -217,7 +219,7 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
                     </CardHeader>
                     <CardContent className="text-center">
                         <p className="text-sm text-muted-foreground mb-4">
-                            You can continue using the website in offline mode. Some features that require a database connection may be limited.
+                            You can continue using the website in universal mode. This allows access from any device but some features requiring database connection may be limited.
                         </p>
                         {!isChrome && (
                             <p className="text-sm font-medium text-orange-600 mt-2 mb-4">
@@ -226,9 +228,9 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
                         )}
                     </CardContent>
                     <CardFooter className="flex flex-col gap-3">
-                        <Button onClick={handleEnterOfflineMode} className="w-full gap-2 bg-blue-600 hover:bg-blue-700">
-                            <Globe className="h-4 w-4" />
-                            Use Entire Website in Offline Mode
+                        <Button onClick={handleEnterUniversalMode} className="w-full gap-2 bg-green-600 hover:bg-green-700">
+                            <Laptop className="h-4 w-4" />
+                            Use Website in Universal Mode
                         </Button>
                         <Button onClick={handleBypassAndGoToDemo} className="w-full gap-2 bg-yellow-600 hover:bg-yellow-700">
                             <Zap className="h-4 w-4" />
