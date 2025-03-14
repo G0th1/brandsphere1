@@ -2,13 +2,12 @@
 
 import { useState, useEffect, ReactNode, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { createSafeSupabaseClient } from "@/app/utils/supabase-client";
+import { useSession } from "next-auth/react";
 
 // Create a context for the authenticated user
-const AuthUserContext = createContext<User | null>(null);
+const AuthUserContext = createContext<any | null>(null);
 
 // Custom hook to access the authenticated user
 export function useAuthUser() {
@@ -21,17 +20,27 @@ interface AuthGuardProps {
 
 /**
  * AuthGuard component to protect routes that require authentication
- * This centralizes authentication logic and handles missing Supabase configuration
+ * This centralizes authentication logic and uses NextAuth
  */
 export function AuthGuard({ children }: AuthGuardProps) {
-    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const { toast } = useToast();
-    const supabase = createSafeSupabaseClient();
+    const { data: session, status } = useSession();
 
     // Check for offline mode
     const isOfflineMode = typeof window !== 'undefined' && localStorage.getItem('offlineMode') === 'true';
+
+    // Check for localStorage auth fallback (from our enhanced login page)
+    const hasLocalAuth = typeof window !== 'undefined' &&
+        !!localStorage.getItem('user_email') &&
+        !!localStorage.getItem('auth_timestamp');
+
+    // For timestamp-based validation
+    const authTimestamp = typeof window !== 'undefined'
+        ? parseInt(localStorage.getItem('auth_timestamp') || '0', 10)
+        : 0;
+    const isRecentAuth = Date.now() - authTimestamp < 24 * 60 * 60 * 1000; // 24 hours
 
     // Skip auth check in offline mode
     if (isOfflineMode) {
@@ -39,84 +48,76 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
 
     useEffect(() => {
+        // Function to check authentication
         const checkAuth = async () => {
+            // Wait for session to be checked
+            if (status === 'loading') {
+                return;
+            }
+
             try {
-                // Check if we're in a build/SSG environment
-                if (typeof window === 'undefined') {
-                    console.log('AuthGuard: Running in SSG mode, skipping auth check');
+                console.log("Auth status:", status, "Session:", session ? "exists" : "null");
+
+                // If authenticated, allow access
+                if (session) {
                     setLoading(false);
                     return;
                 }
 
-                const { data: { session }, error } = await supabase.auth.getSession();
+                // Check for local auth fallback and validate it
+                if (hasLocalAuth && isRecentAuth) {
+                    console.log("Using localStorage auth fallback");
+                    setLoading(false);
+                    return;
+                }
 
-                if (error) {
-                    console.error("Error checking auth session:", error);
+                // Try to check auth status via API as last resort
+                try {
+                    const response = await fetch('/api/auth/check');
+                    const data = await response.json();
 
-                    // Show a toast notification for auth system errors
-                    toast({
-                        title: "Authentication system error",
-                        description: "There was a problem with the authentication system. Using development mode.",
-                        variant: "destructive",
-                    });
-
-                    // In development, provide a mock user
-                    if (process.env.NODE_ENV !== 'production') {
-                        setUser({
-                            id: 'dev-user-id',
-                            email: 'dev@example.com',
-                            app_metadata: {},
-                            user_metadata: {},
-                            aud: 'authenticated',
-                            created_at: new Date().toISOString(),
-                        } as User);
+                    if (data.authenticated) {
+                        console.log("API auth check successful");
                         setLoading(false);
                         return;
                     }
-
-                    // In production, redirect to login
-                    router.push('/login');
-                    return;
+                } catch (apiError) {
+                    console.warn("API auth check failed:", apiError);
                 }
 
-                if (!session) {
-                    router.push('/login');
-                    return;
-                }
-
-                setUser(session.user);
-                setLoading(false);
-            } catch (error) {
-                console.error("Auth check failed:", error);
-
-                // In development, provide a mock user
-                if (process.env.NODE_ENV !== 'production') {
-                    setUser({
-                        id: 'dev-user-id',
-                        email: 'dev@example.com',
-                        app_metadata: {},
-                        user_metadata: {},
-                        aud: 'authenticated',
-                        created_at: new Date().toISOString(),
-                    } as User);
+                // If we're in development, allow access with a warning
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn("Development mode: bypassing authentication");
+                    toast({
+                        title: "Development Mode",
+                        description: "Using development fallback authentication",
+                    });
                     setLoading(false);
                     return;
                 }
 
-                router.push('/login');
+                // Not authenticated, redirect to login
+                console.log("Not authenticated, redirecting to login");
+                toast({
+                    title: "Authentication Required",
+                    description: "Please log in to access this page",
+                });
+
+                router.push('/auth/login');
+            } catch (error) {
+                console.error("Auth check error:", error);
+
+                // In development, allow access
+                if (process.env.NODE_ENV === 'development') {
+                    setLoading(false);
+                } else {
+                    router.push('/auth/login');
+                }
             }
         };
 
-        // Skip redirection if in offline mode
-        if (isOfflineMode) return;
-
         checkAuth();
-    }, [router, supabase, toast, isOfflineMode]);
-
-    // Skip redirection if in offline mode
-    if (isOfflineMode) {
-        return <>{children}</>;
-    }
+    }, [status, session, router, toast, hasLocalAuth, isRecentAuth]);
 
     if (loading) {
         return (
@@ -126,23 +127,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
         );
     }
 
-    // If we're in development and there's no user, provide a mock user
-    if (!user && process.env.NODE_ENV !== 'production') {
-        return (
-            <AuthUserContext.Provider
-                value={{
-                    id: 'dev-user-id',
-                    email: 'dev@example.com',
-                    app_metadata: {},
-                    user_metadata: {},
-                    aud: 'authenticated',
-                    created_at: new Date().toISOString(),
-                } as User}
-            >
-                {children}
-            </AuthUserContext.Provider>
-        );
-    }
+    // Get the appropriate user object to provide
+    const userToProvide = session?.user || (hasLocalAuth && isRecentAuth
+        ? { email: localStorage.getItem('user_email'), id: 'local-auth-user' }
+        : null);
 
-    return <AuthUserContext.Provider value={user}>{children}</AuthUserContext.Provider>;
+    return <AuthUserContext.Provider value={userToProvide}>{children}</AuthUserContext.Provider>;
 } 

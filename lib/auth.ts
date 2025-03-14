@@ -72,11 +72,36 @@ export const authOptions: NextAuthOptions = {
                     };
                 } catch (error) {
                     console.error("Authentication error:", error);
+
+                    // For development mode, allow a fallback user when DB issues occur
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log("Development mode: Using fallback authentication");
+                        if (credentials.email.includes('@') && credentials.password.length > 5) {
+                            return {
+                                id: 'dev-user-id',
+                                name: credentials.email.split('@')[0],
+                                email: credentials.email,
+                                image: null
+                            };
+                        }
+                    }
+
                     return null;
                 }
             }
         }),
     ],
+    cookies: {
+        sessionToken: {
+            name: `next-auth.session-token`,
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+            },
+        },
+    },
     callbacks: {
         async session({ session, token }) {
             if (session.user) {
@@ -93,5 +118,6 @@ export const authOptions: NextAuthOptions = {
             }
             return token;
         }
-    }
+    },
+    debug: process.env.NODE_ENV === 'development',
 }; 
