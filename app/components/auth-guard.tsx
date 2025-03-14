@@ -25,6 +25,41 @@ export function useAuthUser() {
     return context;
 }
 
+// Safely access storage APIs across browsers (including Edge)
+function safeGetStorageItem(storage: Storage | null, key: string): string | null {
+    if (!storage) return null;
+    try {
+        return storage.getItem(key);
+    } catch (e) {
+        console.warn(`Failed to access ${key} from storage:`, e);
+        return null;
+    }
+}
+
+// Safely set storage item across browsers
+function safeSetStorageItem(storage: Storage | null, key: string, value: string): boolean {
+    if (!storage) return false;
+    try {
+        storage.setItem(key, value);
+        return true;
+    } catch (e) {
+        console.warn(`Failed to set ${key} in storage:`, e);
+        return false;
+    }
+}
+
+// Safely remove storage item across browsers
+function safeRemoveStorageItem(storage: Storage | null, key: string): boolean {
+    if (!storage) return false;
+    try {
+        storage.removeItem(key);
+        return true;
+    } catch (e) {
+        console.warn(`Failed to remove ${key} from storage:`, e);
+        return false;
+    }
+}
+
 interface AuthGuardProps {
     children: React.ReactNode;
     fallback?: React.ReactNode;
@@ -45,12 +80,23 @@ export default function AuthGuard({
     const [authAttempts, setAuthAttempts] = useState(0);
     const [initialCheckComplete, setInitialCheckComplete] = useState(false);
 
+    // Get browser information
+    const isBrowser = typeof window !== 'undefined';
+    const isEdgeBrowser = isBrowser && navigator.userAgent.indexOf("Edg") !== -1;
+
     // Function to check if we're in offline development mode
-    const isOfflineMode = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_OFFLINE_MODE === "true";
+    const isOfflineMode = process.env.NODE_ENV === "development" ||
+        process.env.NEXT_PUBLIC_OFFLINE_MODE === "true";
 
     useEffect(() => {
         // Flag to prevent state updates if component unmounts
         let isMounted = true;
+
+        // Show Edge browser warning
+        if (isEdgeBrowser && !safeGetStorageItem(sessionStorage, 'edge_warning_shown')) {
+            console.warn("Microsoft Edge detected. Some features may require adjusting privacy settings.");
+            safeSetStorageItem(sessionStorage, 'edge_warning_shown', 'true');
+        }
 
         const checkAuthentication = async () => {
             console.log(`AuthGuard: Checking authentication at ${pathname}, status: ${status}, attempts: ${authAttempts}`);
@@ -64,13 +110,13 @@ export default function AuthGuard({
             }
 
             // Check for active session in progress
-            const authInProgress = sessionStorage.getItem('auth_in_progress') === 'true';
-            const recentAuth = localStorage.getItem('auth_timestamp');
+            const authInProgress = safeGetStorageItem(sessionStorage, 'auth_in_progress') === 'true';
+            const recentAuth = safeGetStorageItem(localStorage, 'auth_timestamp');
             const timeSinceAuth = recentAuth ? Date.now() - parseInt(recentAuth) : Infinity;
             const isRecentAuth = timeSinceAuth < 60000; // Within last minute
 
             // Get dashboard loading state
-            const isDashboardLoaded = sessionStorage.getItem('dashboard_loaded') === 'true';
+            const isDashboardLoaded = safeGetStorageItem(sessionStorage, 'dashboard_loaded') === 'true';
 
             // Special handling for login attempts in progress
             if (authInProgress && !isDashboardLoaded) {
@@ -112,15 +158,19 @@ export default function AuthGuard({
 
                 // Store auth info as fallback
                 try {
-                    localStorage.setItem('user_email', session.user.email as string);
-                    localStorage.setItem('auth_timestamp', Date.now().toString());
+                    safeSetStorageItem(localStorage, 'user_email', session.user.email as string);
+                    safeSetStorageItem(localStorage, 'auth_timestamp', Date.now().toString());
+
+                    // Also set in sessionStorage for more reliable cross-tab access
+                    safeSetStorageItem(sessionStorage, 'user_email', session.user.email as string);
+                    safeSetStorageItem(sessionStorage, 'auth_timestamp', Date.now().toString());
                 } catch (e) {
                     console.warn("Could not store fallback auth data", e);
                 }
 
                 // Mark dashboard as loaded if we're on dashboard
                 if (pathname.includes('/dashboard')) {
-                    sessionStorage.setItem('dashboard_loaded', 'true');
+                    safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
                 }
             } else {
                 console.log("No NextAuth session, checking fallbacks...");
@@ -130,7 +180,7 @@ export default function AuthGuard({
                 // 2. Recent login with stored email (within last minute)
                 // 3. Dashboard already loaded once in this session
 
-                const userEmail = localStorage.getItem('user_email');
+                const userEmail = safeGetStorageItem(localStorage, 'user_email');
 
                 if (isOfflineMode && userEmail) {
                     console.log("Offline development mode, allowing access");
@@ -151,7 +201,7 @@ export default function AuthGuard({
 
                     // If we're on dashboard, mark it as loaded
                     if (pathname.includes('/dashboard')) {
-                        sessionStorage.setItem('dashboard_loaded', 'true');
+                        safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
                     }
 
                     // After allowing access, recheck in the background to confirm
@@ -179,14 +229,14 @@ export default function AuthGuard({
                     if (requireAuth && !initialCheckComplete) {
                         // Store current location for redirect after login
                         try {
-                            sessionStorage.setItem('redirectAfterLogin', pathname);
+                            safeSetStorageItem(sessionStorage, 'redirectAfterLogin', pathname);
                             console.log("Stored redirect:", pathname);
                         } catch (e) {
                             console.warn("Could not store redirect location", e);
                         }
 
                         // Clear auth in progress flag
-                        sessionStorage.removeItem('auth_in_progress');
+                        safeRemoveStorageItem(sessionStorage, 'auth_in_progress');
 
                         console.log("Redirecting to login page...");
                         router.push("/auth/login?message=Authentication required to access this page");
@@ -205,7 +255,7 @@ export default function AuthGuard({
         return () => {
             isMounted = false;
         };
-    }, [router, pathname, status, requireAuth, authAttempts, initialCheckComplete]);
+    }, [router, pathname, status, requireAuth, authAttempts, initialCheckComplete, isEdgeBrowser]);
 
     // Don't render anything until we've checked auth status
     if (isLoading) {

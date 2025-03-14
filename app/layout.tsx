@@ -9,6 +9,8 @@ import { DemoProvider } from '@/contexts/demo-context'
 import { Toaster } from "../components/ui/toaster"
 import { Analytics } from "@/components/analytics"
 import DbErrorBoundary from "@/app/components/db-error-boundary"
+// Import the browser compatibility notice
+import BrowserCompatibilityNotice from './components/browser-compatibility-notice'
 
 // Konfigurera Inter font
 const inter = Inter({
@@ -66,6 +68,7 @@ export default function RootLayout({
           </AuthProvider>
           <Toaster />
           <Analytics />
+          <BrowserCompatibilityNotice />
         </ThemeProvider>
       </body>
     </html>

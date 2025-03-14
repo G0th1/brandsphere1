@@ -42,13 +42,19 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/fonts') ||
     pathname.includes('.') // Handles files like favicon.ico, manifest.json, etc.
   ) {
-    return NextRequest.nextResponse;
+    return NextResponse.next();
   }
 
   // Check if the route is public
   if (matchesRoute(pathname, publicRoutes)) {
-    // No need to check authentication for public routes
-    return NextResponse.next();
+    // For public routes, we still want to add compatibility headers
+    const response = NextResponse.next();
+
+    // Add compatibility headers for Edge and other browsers
+    response.headers.set('Set-Cookie',
+      'auth-compatible=true; SameSite=Lax; Path=/; Max-Age=3600');
+
+    return response;
   }
 
   // Start by assuming user is not authenticated
@@ -71,7 +77,13 @@ export async function middleware(request: NextRequest) {
 
     // If user is authenticated and trying to access an auth route, redirect to dashboard
     if (isAuthenticated && matchesRoute(pathname, authRoutes)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      const response = NextResponse.redirect(new URL('/dashboard', request.url));
+
+      // Add compatibility headers
+      response.headers.set('Set-Cookie',
+        'auth-compatible=true; SameSite=Lax; Path=/; Max-Age=3600');
+
+      return response;
     }
 
     // If user is not authenticated and trying to access a protected route
@@ -85,7 +97,13 @@ export async function middleware(request: NextRequest) {
       // Add a message to show why they were redirected
       redirectUrl.searchParams.set('message', 'Please log in to continue');
 
-      return NextResponse.redirect(redirectUrl);
+      const response = NextResponse.redirect(redirectUrl);
+
+      // Add compatibility headers
+      response.headers.set('Set-Cookie',
+        'auth-compatible=true; SameSite=Lax; Path=/; Max-Age=3600');
+
+      return response;
     }
   } catch (error) {
     console.error('[Middleware] Error checking authentication:', error);
@@ -93,16 +111,35 @@ export async function middleware(request: NextRequest) {
     // Special handling for development mode
     if (process.env.NODE_ENV === 'development') {
       console.log('[Middleware] Development mode: allowing access despite error');
-      return NextResponse.next();
+      const response = NextResponse.next();
+
+      // Add compatibility headers
+      response.headers.set('Set-Cookie',
+        'auth-compatible=true; SameSite=Lax; Path=/; Max-Age=3600');
+
+      return response;
     }
 
     // In production, redirect to login page if we can't verify authentication
     if (!matchesRoute(pathname, publicRoutes)) {
-      return NextResponse.redirect(new URL('/auth/login?error=ServerError', request.url));
+      const response = NextResponse.redirect(new URL('/auth/login?error=ServerError', request.url));
+
+      // Add compatibility headers
+      response.headers.set('Set-Cookie',
+        'auth-compatible=true; SameSite=Lax; Path=/; Max-Age=3600');
+
+      return response;
     }
   }
 
-  return NextResponse.next();
+  // For all other scenarios, pass along with compatibility headers
+  const response = NextResponse.next();
+
+  // Add compatibility headers
+  response.headers.set('Set-Cookie',
+    'auth-compatible=true; SameSite=Lax; Path=/; Max-Age=3600');
+
+  return response;
 }
 
 // Configure the paths that should use the middleware
