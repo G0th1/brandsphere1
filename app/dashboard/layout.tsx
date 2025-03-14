@@ -12,7 +12,7 @@ import { dynamic } from "@/app/utils/dynamic-routes";
 // Re-export the dynamic marker
 export { dynamic };
 
-// Översättningar
+// Translations
 const translations = {
     en: {
         home: "Home",
@@ -35,43 +35,27 @@ export const metadata: Metadata = {
     description: "AI-Powered Brand Identity Management",
 };
 
-// Add this style block to fix possible overlay issues
+// Simplified style block for better performance
 const fixedStyle = `
-    html, body {
-        visibility: visible !important;
-        opacity: 1 !important;
-        display: block !important;
+    .dashboard-html, .dashboard-body {
+        overflow-x: hidden;
     }
     
     .dashboard-container {
-        isolation: isolate;
-        position: relative;
-        z-index: 50;
-        visibility: visible !important;
-        opacity: 1 !important;
-        display: flex !important;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
     }
     
     .dashboard-content {
-        position: relative;
-        z-index: 60;
-        pointer-events: auto !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        display: block !important;
+        flex-grow: 1;
+        padding: 1rem;
     }
     
-    button, a, [role="button"] {
-        position: relative;
-        z-index: 100;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
-    
-    main, section, article, [id*="dashboard"], [class*="dashboard"] {
-        visibility: visible !important;
-        opacity: 1 !important;
-        display: block !important;
+    @media (min-width: 768px) {
+        .dashboard-content {
+            padding: 2rem;
+        }
     }
 `;
 
@@ -93,9 +77,9 @@ export default function DashboardLayout({
                     disableTransitionOnChange
                 >
                     <AuthGuard requireAuth={true}>
-                        <div className="dashboard-container relative container mx-auto flex min-h-screen w-full flex-col">
+                        <div className="dashboard-container container mx-auto">
                             <DashboardClientNav />
-                            <main id="dashboard-content" className="dashboard-content relative z-60 flex-1 p-4 md:p-8">
+                            <main id="dashboard-content" className="dashboard-content">
                                 {children}
                             </main>
                         </div>
