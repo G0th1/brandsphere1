@@ -35,6 +35,27 @@ export const metadata: Metadata = {
     description: "AI-Powered Brand Identity Management",
 };
 
+// Add this style block to fix possible overlay issues
+const fixedStyle = `
+    .dashboard-container {
+        isolation: isolate;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .dashboard-content {
+        position: relative;
+        z-index: 10;
+        pointer-events: auto;
+    }
+    
+    button, a, [role="button"] {
+        position: relative;
+        z-index: 20;
+        pointer-events: auto !important;
+    }
+`;
+
 export default function DashboardLayout({
     children,
 }: {
@@ -42,6 +63,9 @@ export default function DashboardLayout({
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
+            <head>
+                <style dangerouslySetInnerHTML={{ __html: fixedStyle }} />
+            </head>
             <body className="min-h-screen bg-background font-sans antialiased">
                 <ThemeProvider
                     attribute="class"
@@ -50,9 +74,9 @@ export default function DashboardLayout({
                     disableTransitionOnChange
                 >
                     <AuthGuard requireAuth={true}>
-                        <div className="relative container mx-auto flex min-h-screen w-full flex-col">
+                        <div className="dashboard-container relative container mx-auto flex min-h-screen w-full flex-col">
                             <DashboardClientNav />
-                            <div className="relative z-10 flex-1 p-4 md:p-8">{children}</div>
+                            <div className="dashboard-content relative z-10 flex-1 p-4 md:p-8">{children}</div>
                         </div>
                     </AuthGuard>
                     <Toaster />

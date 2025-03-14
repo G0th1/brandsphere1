@@ -118,8 +118,13 @@ export default function AuthGuard({
             // Get dashboard loading state
             const isDashboardLoaded = safeGetStorageItem(sessionStorage, 'dashboard_loaded') === 'true';
 
+            // Force dashboard to be considered loaded if we're in development mode
+            if (process.env.NODE_ENV === "development" && !isDashboardLoaded) {
+                safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
+            }
+
             // Special handling for login attempts in progress
-            if (authInProgress && !isDashboardLoaded) {
+            if (authInProgress && !isDashboardLoaded && authAttempts < 2) {
                 console.log("Auth in progress. Waiting before deciding...");
                 setIsLoading(true);
                 // Delay to allow login to complete
@@ -128,19 +133,19 @@ export default function AuthGuard({
                         // Increment attempts to try again
                         setAuthAttempts(prev => prev + 1);
                     }
-                }, 1000);
+                }, 500);
                 return;
             }
 
             // If session is loading, display loading state
-            if (status === "loading" && authAttempts < 3) {
+            if (status === "loading" && authAttempts < 2) {
                 console.log("Session is still loading...");
                 setIsLoading(true);
                 setTimeout(() => {
                     if (isMounted) {
                         setAuthAttempts(prev => prev + 1);
                     }
-                }, 500);
+                }, 250);
                 return;
             }
 
@@ -164,6 +169,7 @@ export default function AuthGuard({
                     // Also set in sessionStorage for more reliable cross-tab access
                     safeSetStorageItem(sessionStorage, 'user_email', session.user.email as string);
                     safeSetStorageItem(sessionStorage, 'auth_timestamp', Date.now().toString());
+                    safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
                 } catch (e) {
                     console.warn("Could not store fallback auth data", e);
                 }
@@ -182,7 +188,17 @@ export default function AuthGuard({
 
                 const userEmail = safeGetStorageItem(localStorage, 'user_email');
 
-                if (isOfflineMode && userEmail) {
+                // Always allow access in development mode for testing
+                if (process.env.NODE_ENV === "development") {
+                    console.log("Development mode, allowing access without auth");
+                    setIsAuthenticated(true);
+                    setUser({
+                        email: userEmail || "dev@example.com",
+                        role: "user",
+                    });
+                    setIsLoading(false);
+                    safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
+                } else if (isOfflineMode && userEmail) {
                     console.log("Offline development mode, allowing access");
                     setIsAuthenticated(true);
                     setUser({
@@ -190,7 +206,8 @@ export default function AuthGuard({
                         role: "user",
                     });
                     setIsLoading(false);
-                } else if (isRecentAuth && userEmail && authAttempts <= 3) {
+                    safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
+                } else if (isRecentAuth && userEmail) {
                     console.log("Recent auth detected, temporarily allowing access");
                     setIsAuthenticated(true);
                     setUser({
@@ -203,13 +220,6 @@ export default function AuthGuard({
                     if (pathname.includes('/dashboard')) {
                         safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
                     }
-
-                    // After allowing access, recheck in the background to confirm
-                    setTimeout(() => {
-                        if (isMounted) {
-                            setAuthAttempts(prev => prev + 1);
-                        }
-                    }, 2000);
                 } else if (isDashboardLoaded && userEmail) {
                     console.log("Dashboard already loaded, allowing continued access");
                     setIsAuthenticated(true);
@@ -257,7 +267,21 @@ export default function AuthGuard({
         };
     }, [router, pathname, status, requireAuth, authAttempts, initialCheckComplete, isEdgeBrowser]);
 
-    // Don't render anything until we've checked auth status
+    // If in development mode, allow immediate rendering after minimal delay
+    useEffect(() => {
+        if (process.env.NODE_ENV === "development" && isLoading) {
+            const timer = setTimeout(() => {
+                setIsLoading(false);
+                setIsAuthenticated(true);
+                setUser({ email: "dev@example.com", role: "user" });
+                safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
+            }, 300);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading]);
+
+    // Don't render anything until we've checked auth status, but don't wait too long
     if (isLoading) {
         return fallback;
     }
