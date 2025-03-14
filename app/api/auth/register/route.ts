@@ -19,14 +19,54 @@ export async function POST(req: Request) {
             );
         }
 
-        // Always accept registration in this version to overcome database issues
-        console.log("API: Using bypass mode for registration");
+        try {
+            // Check if user already exists
+            const existingUser = await db.user.findUnique({
+                where: { email }
+            });
 
-        // For requests with bypass flag, return success
-        return NextResponse.json(
-            { success: true, message: "User created successfully (offline mode)" },
-            { status: 201 }
-        );
+            if (existingUser) {
+                console.log("API: User already exists");
+                return NextResponse.json(
+                    { error: "User with this email already exists" },
+                    { status: 400 }
+                );
+            }
+
+            // Hash the password
+            const hashedPassword = await hash(password, 10);
+            console.log("API: Password hashed successfully");
+
+            // Create the user in the database
+            const user = await db.user.create({
+                data: {
+                    name: name || email.split('@')[0], // Use part of email as name if not provided
+                    email,
+                    password: hashedPassword,
+                    // Create a basic subscription for the user automatically
+                    subscription: {
+                        create: {
+                            status: "active",
+                            plan: "Free",
+                            billingCycle: "monthly"
+                        }
+                    }
+                },
+            });
+            console.log("API: User created successfully");
+
+            // Return success response
+            return NextResponse.json(
+                { success: true, message: "User created successfully" },
+                { status: 201 }
+            );
+        } catch (dbError) {
+            console.error("API: Database error:", dbError);
+            return NextResponse.json(
+                { error: "Database error occurred. Please try again later." },
+                { status: 500 }
+            );
+        }
     } catch (error) {
         console.error("API: Registration error:", error);
         return NextResponse.json(

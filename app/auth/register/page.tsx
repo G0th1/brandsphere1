@@ -60,22 +60,10 @@ export default function RegisterPage() {
 
         setIsLoading(true);
 
-        // Force offline mode for immediate workaround
-        localStorage.setItem('offlineMode', 'true');
-        console.log("Enabled offline mode as a workaround");
-
         try {
-            // Check if we're in offline mode
-            const isOfflineMode = true; // Force to true as workaround
-            console.log("Using offline mode:", isOfflineMode);
-
-            // Construct the API URL with bypass_db parameter if in offline mode
-            const apiUrl = "/api/auth/register?bypass_db=true";
-            console.log("Using API URL:", apiUrl);
-
-            // Simple POST request to registration API
             console.log("Sending registration request...");
-            const response = await fetch(apiUrl, {
+            // Standard API request to registration endpoint
+            const response = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -104,22 +92,6 @@ export default function RegisterPage() {
                 title: "Success",
                 description: "Account created! Redirecting to login...",
             });
-
-            // Store user info in localStorage for offline mode
-            if (isOfflineMode) {
-                try {
-                    const mockUser = {
-                        id: 'offline-' + Date.now(),
-                        name,
-                        email,
-                        createdAt: new Date().toISOString()
-                    };
-                    localStorage.setItem('offlineUser', JSON.stringify(mockUser));
-                    console.log("Stored mock user data for offline mode");
-                } catch (err) {
-                    console.warn("Could not store offline user data", err);
-                }
-            }
 
             // Redirect after brief delay
             setTimeout(() => {

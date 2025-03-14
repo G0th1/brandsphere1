@@ -133,13 +133,36 @@ if (isDevelopment && DATABASE_URL.startsWith('file:')) {
 // Use a single instance of Prisma Client in development
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
+// Create the PrismaClient with appropriate configuration
 export const db =
     globalForPrisma.prisma ||
     new PrismaClient({
+        datasources: {
+            db: {
+                url: DATABASE_URL
+            }
+        },
         log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
     });
 
+// Save the instance in development mode
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+
+// Test connection on startup (but don't block execution)
+(async function () {
+    try {
+        console.log('🔄 Testing database connection...');
+        await db.$connect();
+        console.log('✅ Database connection successful');
+
+        // Run a simple query to validate the connection
+        const result = await db.$queryRaw`SELECT NOW()`;
+        console.log('✅ Database query successful:', result);
+    } catch (error) {
+        console.error('❌ Database connection error:', error);
+        console.error('Please check your database configuration and ensure Neon database is accessible.');
+    }
+})();
 
 // Check if we're in the browser and in offline mode
 if (typeof window !== 'undefined') {
@@ -171,37 +194,4 @@ if (typeof window !== 'undefined') {
             }
         }, 500);
     })();
-}
-
-// Test connection immediately but don't block execution
-(async function () {
-    try {
-        // Force connection to occur
-        await db.$connect();
-        console.log('✅ Database connection successful');
-
-        // Basic test query - customize for PostgreSQL if needed
-        const testResult = await db.$queryRaw`SELECT 1 as test`;
-        console.log('✅ Basic query successful:', testResult);
-
-        // Check if tables exist - this syntax works for both SQLite and PostgreSQL
-        const tables = await db.$queryRaw`
-      SELECT table_name as name FROM information_schema.tables 
-      WHERE table_schema = 'public'
-    `;
-        console.log('✅ Database tables:', tables);
-
-    } catch (error) {
-        console.error('❌ Database connection test failed:', error);
-
-        if (error instanceof Error) {
-            if (error.message.includes('no such table') || error.message.includes('relation does not exist')) {
-                console.error('❌ Schema missing, try running: npx prisma db push');
-            } else if (error.message.includes('SQLITE_CANTOPEN')) {
-                console.error('❌ Cannot open database file, check permissions');
-            } else if (error.message.includes('connection refused')) {
-                console.error('❌ Database connection refused. Check database URL and credentials.');
-            }
-        }
-    }
-})(); 
+} 
