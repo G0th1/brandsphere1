@@ -76,39 +76,29 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-                <Button
-                  size="lg"
-                  className="group"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    safeRouter.navigate('/auth/register');
-                  }}
-                >
-                  {t.hero.getStarted}
-                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    safeRouter.navigate('/pricing');
-                  }}
-                >
-                  {t.hero.viewPricing}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="flex items-center gap-2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    safeRouter.navigate('/demo/login');
-                  }}
-                >
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  {t.hero.tryDemo}
-                </Button>
+                <Link href="/auth/register" passHref>
+                  <Button size="lg" className="group" asChild>
+                    <a>
+                      {t.hero.getStarted}
+                      <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </a>
+                  </Button>
+                </Link>
+
+                <Link href="/pricing" passHref>
+                  <Button variant="outline" size="lg" asChild>
+                    <a>{t.hero.viewPricing}</a>
+                  </Button>
+                </Link>
+
+                <Link href="/demo/login" passHref>
+                  <Button variant="secondary" size="lg" className="flex items-center gap-2" asChild>
+                    <a>
+                      <Zap className="h-4 w-4 text-yellow-500" />
+                      {t.hero.tryDemo}
+                    </a>
+                  </Button>
+                </Link>
               </div>
 
               <div className="pt-4 flex items-center gap-4 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '400ms' }}>
@@ -168,17 +158,14 @@ export default function HomePage() {
                   Experience the power of our advanced AI features, scheduling tools, and analytics without registration.
                 </p>
                 <div className="pt-2">
-                  <Button
-                    className="group"
-                    size="lg"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      safeRouter.navigate('/demo/login');
-                    }}
-                  >
-                    Try Premium Demo
-                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
+                  <Link href="/demo/login" passHref>
+                    <Button className="group" size="lg" asChild>
+                      <a>
+                        Try Premium Demo
+                        <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </a>
+                    </Button>
+                  </Link>
                 </div>
               </div>
               <div className="relative">

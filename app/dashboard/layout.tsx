@@ -37,22 +37,41 @@ export const metadata: Metadata = {
 
 // Add this style block to fix possible overlay issues
 const fixedStyle = `
+    html, body {
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
+    }
+    
     .dashboard-container {
         isolation: isolate;
         position: relative;
-        z-index: 1;
+        z-index: 50;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: flex !important;
     }
     
     .dashboard-content {
         position: relative;
-        z-index: 10;
-        pointer-events: auto;
+        z-index: 60;
+        pointer-events: auto !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
     }
     
     button, a, [role="button"] {
         position: relative;
-        z-index: 20;
+        z-index: 100;
         pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+    
+    main, section, article, [id*="dashboard"], [class*="dashboard"] {
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
     }
 `;
 
@@ -62,11 +81,11 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="en" suppressHydrationWarning className="dashboard-html">
             <head>
                 <style dangerouslySetInnerHTML={{ __html: fixedStyle }} />
             </head>
-            <body className="min-h-screen bg-background font-sans antialiased">
+            <body className="min-h-screen bg-background font-sans antialiased dashboard-body">
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="system"
@@ -76,7 +95,9 @@ export default function DashboardLayout({
                     <AuthGuard requireAuth={true}>
                         <div className="dashboard-container relative container mx-auto flex min-h-screen w-full flex-col">
                             <DashboardClientNav />
-                            <div className="dashboard-content relative z-10 flex-1 p-4 md:p-8">{children}</div>
+                            <main id="dashboard-content" className="dashboard-content relative z-60 flex-1 p-4 md:p-8">
+                                {children}
+                            </main>
                         </div>
                     </AuthGuard>
                     <Toaster />
