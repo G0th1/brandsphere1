@@ -60,8 +60,16 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
+            // Check if we're in offline mode
+            const isOfflineMode = typeof window !== 'undefined' && localStorage.getItem('offlineMode') === 'true';
+
+            // Construct the API URL with bypass_db parameter if in offline mode
+            const apiUrl = isOfflineMode
+                ? "/api/auth/register?bypass_db=true"
+                : "/api/auth/register";
+
             // Simple POST request to registration API
-            const response = await fetch("/api/auth/register", {
+            const response = await fetch(apiUrl, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -188,7 +196,7 @@ export default function RegisterPage() {
                                 Sign in
                             </Link>
                         </div>
-                        
+
                         <div className="border-t pt-4 mt-2">
                             <div className="text-center mb-2">
                                 <span className="bg-background px-2 text-xs text-muted-foreground">HAVING DATABASE ISSUES?</span>
