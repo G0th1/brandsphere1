@@ -1,20 +1,10 @@
-"use client";
-
-import { ReactNode } from "react";
-import Link from "next/link";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/language-context";
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { useEffect, useState } from "react";
-import { AuthGuard, useAuthUser } from "@/app/components/auth-guard";
+// Server Component
 import "@/app/globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Metadata } from "next";
 import DashboardNav from "@/app/components/dashboard-nav";
 import { Toaster } from "@/components/ui/toaster";
+import AuthGuard from "@/app/components/auth-guard";
 
 // Import the dynamic marker to prevent static generation
 import { dynamic } from "@/app/utils/dynamic-routes";
@@ -47,7 +37,7 @@ export const metadata: Metadata = {
 export default function DashboardLayout({
     children,
 }: {
-    children: ReactNode;
+    children: React.ReactNode;
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
@@ -60,38 +50,45 @@ export default function DashboardLayout({
                 >
                     <AuthGuard requireAuth={true}>
                         <div className="container mx-auto flex min-h-screen w-full flex-col">
-                            <DashboardNav />
+                            <DashboardClientNav />
                             <div className="flex-1 p-4 md:p-8">{children}</div>
                         </div>
                     </AuthGuard>
                     <Toaster />
                 </ThemeProvider>
-                <script
-                    dangerouslySetInnerHTML={{
-                        __html: `
-                            // Mark dashboard as loaded when this script runs
-                            try {
-                                sessionStorage.setItem('dashboard_loaded', 'true');
-                                
-                                // Also clear any auth_in_progress flag
-                                sessionStorage.removeItem('auth_in_progress');
-                                
-                                console.log("Dashboard loaded flag set");
-                            } catch (e) {
-                                console.warn("Could not set dashboard loaded flag", e);
-                            }
-                        `,
-                    }}
-                />
+                <DashboardScript />
             </body>
         </html>
     );
 }
 
+// Client components separated
+"use client"
+import { useEffect } from "react";
+
+function DashboardScript() {
+    useEffect(() => {
+        // Set dashboard loaded flag when component mounts
+        try {
+            sessionStorage.setItem('dashboard_loaded', 'true');
+            sessionStorage.removeItem('auth_in_progress');
+            console.log("Dashboard loaded flag set");
+        } catch (e) {
+            console.warn("Could not set dashboard loaded flag", e);
+        }
+    }, []);
+
+    return null;
+}
+
+function DashboardClientNav() {
+    return <DashboardNav />;
+}
+
 function DashboardLayoutContent({
     children,
 }: {
-    children: ReactNode;
+    children: React.ReactNode;
 }) {
     const user = useAuthUser();
     const router = useRouter();
