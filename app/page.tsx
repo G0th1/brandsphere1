@@ -59,17 +59,12 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <div className="fixed top-4 right-4 z-50 flex gap-2">
+      {/* Move offline mode button to bottom left */}
+      <div className="fixed bottom-4 left-4 z-50">
         <Link href="/?offline_mode=true">
           <Button variant="default" className="group gap-2 shadow-lg">
             <Globe className="h-4 w-4" />
             <span>Use Website Offline</span>
-          </Button>
-        </Link>
-        <Link href="/demo/login?bypass_db=true">
-          <Button variant="secondary" className="group gap-2 shadow-lg">
-            <Zap className="h-4 w-4 text-yellow-500" />
-            <span>Demo Mode</span>
           </Button>
         </Link>
       </div>
@@ -181,10 +176,10 @@ export default function HomePage() {
                   Premium Demo
                 </div>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">
-                  Testa alla premiumfunktioner kostnadsfritt
+                  Try All Premium Features for Free
                 </h2>
                 <p className="text-lg text-muted-foreground">
-                  Upplev kraften i våra avancerade AI-funktioner, schemaläggningsverktyg och analysverktyg utan att registrera dig.
+                  Experience the power of our advanced AI features, scheduling tools, and analytics without registration.
                 </p>
                 <div className="pt-2">
                   <Button
@@ -195,7 +190,7 @@ export default function HomePage() {
                       window.location.href = '/demo/login';
                     }}
                   >
-                    Testa Premium-demo
+                    Try Premium Demo
                     <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </div>

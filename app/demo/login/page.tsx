@@ -13,46 +13,25 @@ import { useSafeRouter, safeNavigate } from "@/lib/utils/navigation";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 
-// Översättningar
+// Translations
 const translations = {
-    en: {
-        title: "Premium Demo Experience",
-        description: "Try all premium features without signing up or providing payment information",
-        googleLogin: "Start Premium Demo",
-        backToHome: "Back to home",
-        loading: "Starting demo...",
-        welcome: "Welcome to BrandSphereAI Premium",
-        featuresTitle: "Experience these premium features",
-        features: [
-            "AI-powered content generation",
-            "Advanced analytics dashboard",
-            "Unlimited social media scheduling",
-            "Custom content calendar",
-            "Multi-platform publishing",
-            "Team collaboration tools"
-        ],
-        note: "This is a demo environment. No real actions will be taken on your social media accounts.",
-        errorLoading: "Error loading demo experience. Please try refreshing the page."
-    },
-    sv: {
-        title: "Premium Demo-upplevelse",
-        description: "Testa alla premiumfunktioner utan att registrera dig eller ange betalningsinformation",
-        googleLogin: "Starta Premium Demo",
-        backToHome: "Tillbaka till startsidan",
-        loading: "Startar demo...",
-        welcome: "Välkommen till BrandSphereAI Premium",
-        featuresTitle: "Upplev dessa premiumfunktioner",
-        features: [
-            "AI-driven innehållsgenerering",
-            "Avancerad analysdashboard",
-            "Obegränsad schemaläggning för sociala medier",
-            "Anpassad innehållskalender",
-            "Publicering på flera plattformar",
-            "Verktyg för teamsamarbete"
-        ],
-        note: "Detta är en demomiljö. Inga verkliga åtgärder kommer att utföras på dina sociala mediekonton.",
-        errorLoading: "Fel vid laddning av demo-upplevelsen. Försök att uppdatera sidan."
-    }
+    title: "Premium Demo Experience",
+    description: "Try all premium features without signing up or providing payment information",
+    googleLogin: "Start Premium Demo",
+    backToHome: "Back to home",
+    loading: "Starting demo...",
+    welcome: "Welcome to BrandSphereAI Premium",
+    featuresTitle: "Experience these premium features",
+    features: [
+        "AI-powered content generation",
+        "Advanced analytics dashboard",
+        "Unlimited social media scheduling",
+        "Custom content calendar",
+        "Multi-platform publishing",
+        "Team collaboration tools"
+    ],
+    note: "This is a demo environment. No real actions will be taken on your social media accounts.",
+    errorLoading: "Error loading demo experience. Please try refreshing the page."
 };
 
 export default function DemoLoginPage() {
@@ -65,7 +44,7 @@ export default function DemoLoginPage() {
         const { startDemo, isLoading } = useDemo();
         const router = useRouter();
         const safeRouter = useSafeRouter();
-        const t = translations[language === 'sv' ? 'sv' : 'en'];
+        const t = translations;
         const { toast } = useToast();
 
         // Sätt mounted till true när komponenten har laddats
@@ -252,7 +231,7 @@ export default function DemoLoginPage() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
                 <h1 className="text-2xl font-bold mb-4">
-                    {translations.sv.errorLoading}
+                    {translations.errorLoading}
                 </h1>
                 <div className="flex gap-4 mt-6">
                     <Button onClick={() => window.location.reload()}>
