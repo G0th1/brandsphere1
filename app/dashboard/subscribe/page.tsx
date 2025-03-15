@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Check, Loader2 } from 'lucide-react';
 import { STRIPE_PRICES, StripeService } from '@/services/stripe-service';
 import SubscriptionService, { UserSubscription } from '@/services/subscription-service';
-import { AuthGuard, useAuthUser } from '@/app/components/auth-guard';
+import AuthGuard from '@/app/components/auth-guard';
 import { createSafeSupabaseClient } from '@/app/utils/supabase-client';
 import { dynamic } from "@/app/utils/dynamic-routes";
 

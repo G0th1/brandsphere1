@@ -23,7 +23,7 @@ import {
 import { Footer } from "@/components/footer"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
-import { AuthGuard, useAuthUser } from "@/app/components/auth-guard"
+import AuthGuard from '@/app/components/auth-guard'
 
 export default function UpgradePage() {
   return (

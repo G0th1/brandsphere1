@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Instagram, Twitter, Facebook, Linkedin, CheckCircle, AlertCircle, Link as LinkIcon, Plus, ArrowUpRight, Loader2, RefreshCw, Settings, Trash2, Info } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import AuthGuard from '@/app/components/auth-guard';
 
 // Interface for social media account
 interface SocialAccount {
@@ -139,7 +140,7 @@ const getPlatformIcon = (platform: string) => {
     }
 };
 
-export default function AccountsPage() {
+function AccountsPageContent() {
     const { toast } = useToast();
     const [accounts, setAccounts] = useState<SocialAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -601,5 +602,13 @@ export default function AccountsPage() {
                 </Dialog>
             </div>
         </div>
+    );
+}
+
+export default function AccountsPage() {
+    return (
+        <AuthGuard>
+            <AccountsPageContent />
+        </AuthGuard>
     );
 } 

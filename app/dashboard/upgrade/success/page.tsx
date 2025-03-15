@@ -5,22 +5,22 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
-import { AuthGuard, useAuthUser } from "@/app/components/auth-guard";
+import AuthGuard from '@/app/components/auth-guard';
 import { createSafeSupabaseClient } from "@/app/utils/supabase-client";
 import { dynamic } from "@/app/utils/dynamic-routes";
 
 // Re-export the dynamic marker
 export { dynamic };
 
-export default function SuccessPage() {
+export default function UpgradeSuccessPage() {
     return (
         <AuthGuard>
-            <SuccessPageContent />
+            <UpgradeSuccessPageContent />
         </AuthGuard>
     );
 }
 
-function SuccessPageContent() {
+function UpgradeSuccessPageContent() {
     const router = useRouter();
     const user = useAuthUser();
     const [loading, setLoading] = useState(true);
