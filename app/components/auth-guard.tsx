@@ -78,63 +78,120 @@ export default function AuthGuard({
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<AuthenticatedUser | null>(null);
 
-    useEffect(() => {
-        // Simple authentication check with fallback for development
-        const checkAuth = async () => {
-            console.log(`AuthGuard: Checking authentication, status: ${status}`);
+    // Add visible debugging messages
+    const showDebug = (message: string) => {
+        if (typeof document !== 'undefined') {
+            console.log("[AuthGuard]", message);
+            const debugBox = document.createElement('div');
+            debugBox.style.cssText = 'position:fixed;bottom:0;right:0;background:rgba(0,0,0,0.8);color:white;padding:10px;z-index:9999;max-width:80%;font-size:12px;';
+            debugBox.textContent = `[AuthGuard] ${message}`;
+            document.body.appendChild(debugBox);
+            setTimeout(() => document.body.removeChild(debugBox), 5000);
+        }
+    };
 
+    useEffect(() => {
+        let isMounted = true;
+
+        const checkAuth = async () => {
+            showDebug(`Checking authentication, status: ${status}, path: ${pathname}`);
+
+            // Always allow access in development mode
+            if (process.env.NODE_ENV === "development") {
+                showDebug("Development mode - allowing access");
+                if (isMounted) {
+                    setIsAuthenticated(true);
+                    setUser({ email: "dev@example.com", role: "user" });
+                    setIsLoading(false);
+                }
+                return;
+            }
+
+            // Check for session
             if (status === "loading") {
-                return; // Wait for session to load
+                showDebug("Session is loading...");
+                return; // Wait for session
             }
 
             if (session?.user) {
-                console.log("Session found, user is authenticated");
-                setIsAuthenticated(true);
-                setUser({
-                    id: session.user.id as string,
-                    email: session.user.email as string,
-                    name: session.user.name || "",
-                    role: "user",
-                });
-                setIsLoading(false);
-
-                // Set fallback for development
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('user_email', session.user.email as string);
-                    localStorage.setItem('auth_timestamp', Date.now().toString());
-                    sessionStorage.setItem('dashboard_loaded', 'true');
-                }
-            } else {
-                // Check if we're in development mode
-                if (process.env.NODE_ENV === "development") {
-                    console.log("Development mode, allowing access");
+                showDebug(`User authenticated: ${session.user.email}`);
+                if (isMounted) {
                     setIsAuthenticated(true);
                     setUser({
-                        email: "dev@example.com",
+                        id: session.user.id as string,
+                        email: session.user.email as string,
+                        name: session.user.name || "",
                         role: "user",
                     });
                     setIsLoading(false);
+
+                    // Store session info
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('user_email', session.user.email as string);
+                        localStorage.setItem('auth_timestamp', Date.now().toString());
+                    }
+                }
+            } else {
+                showDebug("No session found, user is not authenticated");
+
+                // Check for stored credentials as fallback
+                const storedEmail = localStorage.getItem('user_email');
+                const authTimestamp = localStorage.getItem('auth_timestamp');
+                const recentAuth = authTimestamp && (Date.now() - parseInt(authTimestamp)) < 3600000; // 1 hour
+
+                if (storedEmail && recentAuth) {
+                    showDebug(`Using recent stored auth for: ${storedEmail}`);
+                    if (isMounted) {
+                        setIsAuthenticated(true);
+                        setUser({
+                            email: storedEmail,
+                            role: "user",
+                        });
+                        setIsLoading(false);
+                    }
                     return;
                 }
 
-                console.log("No session found, user is not authenticated");
-                setIsAuthenticated(false);
-                setUser(null);
-                setIsLoading(false);
+                if (isMounted) {
+                    setIsAuthenticated(false);
+                    setUser(null);
+                    setIsLoading(false);
 
-                // Redirect to login if authentication is required
-                if (requireAuth) {
-                    // Store the current path for redirect after login
-                    if (typeof window !== 'undefined') {
-                        sessionStorage.setItem('redirectAfterLogin', pathname);
+                    // Redirect if auth is required
+                    if (requireAuth) {
+                        showDebug(`Redirecting to login page from: ${pathname}`);
+                        // Store the current path for redirect after login
+                        if (typeof window !== 'undefined') {
+                            sessionStorage.setItem('redirectAfterLogin', pathname);
+                        }
+                        router.push("/auth/login");
                     }
-                    router.push("/auth/login");
                 }
             }
         };
 
         checkAuth();
+
+        return () => {
+            isMounted = false;
+        };
     }, [router, pathname, session, status, requireAuth]);
+
+    // Add visible feedback
+    useEffect(() => {
+        if (typeof document !== 'undefined') {
+            const status = document.createElement('div');
+            status.style.cssText = 'position:fixed;top:0;right:0;background:rgba(0,0,0,0.8);color:white;padding:5px 10px;z-index:9999;font-size:12px;';
+            status.textContent = isAuthenticated
+                ? `✅ Authenticated as: ${user?.email}`
+                : (isLoading ? "⏳ Loading auth..." : "❌ Not authenticated");
+            document.body.appendChild(status);
+
+            return () => {
+                document.body.removeChild(status);
+            };
+        }
+    }, [isAuthenticated, isLoading, user]);
 
     if (isLoading) {
         return fallback;

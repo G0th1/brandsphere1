@@ -1,11 +1,9 @@
 // Server Component
 import "@/app/globals.css";
-import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Metadata } from "next";
-import { Toaster } from "@/components/ui/toaster";
 import AuthGuard from "@/app/components/auth-guard";
 import DashboardClientNav from "@/app/components/dashboard-client-nav";
-import DashboardScript from "@/app/components/dashboard-script";
+import { Suspense } from "react";
 
 // Import the dynamic marker to prevent static generation
 import { dynamic } from "@/app/utils/dynamic-routes";
@@ -59,35 +57,61 @@ const fixedStyle = `
     }
 `;
 
+// Simplified dashboard indicator component
+function DashboardStatusBar() {
+    return (
+        <div
+            className="fixed bottom-0 left-0 right-0 bg-primary text-white text-xs p-1 z-50 text-center"
+            id="dashboard-indicator"
+            suppressHydrationWarning
+        >
+            Dashboard Loaded • <span id="dashboard-time">{new Date().toLocaleTimeString()}</span>
+            <script
+                dangerouslySetInnerHTML={{
+                    __html: `
+                        try {
+                            // Mark dashboard as loaded for auth continuity
+                            sessionStorage.setItem('dashboard_loaded', 'true');
+                            
+                            // Update time every second
+                            setInterval(() => {
+                                document.getElementById('dashboard-time').textContent = new Date().toLocaleTimeString();
+                            }, 1000);
+                            
+                            // Add user info if available
+                            const email = localStorage.getItem('user_email');
+                            if (email) {
+                                document.getElementById('dashboard-indicator').textContent += ' • User: ' + email;
+                            }
+                        } catch (e) {
+                            console.warn('Dashboard indicator error:', e);
+                        }
+                    `,
+                }}
+            />
+        </div>
+    );
+}
+
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" suppressHydrationWarning className="dashboard-html">
-            <head>
-                <style dangerouslySetInnerHTML={{ __html: fixedStyle }} />
-            </head>
-            <body className="min-h-screen bg-background font-sans antialiased dashboard-body">
-                <ThemeProvider
-                    attribute="class"
-                    defaultTheme="system"
-                    enableSystem
-                    disableTransitionOnChange
-                >
-                    <AuthGuard requireAuth={true}>
-                        <div className="dashboard-container container mx-auto">
-                            <DashboardClientNav />
-                            <main id="dashboard-content" className="dashboard-content">
-                                {children}
-                            </main>
-                        </div>
-                    </AuthGuard>
-                    <Toaster />
-                </ThemeProvider>
-                <DashboardScript />
-            </body>
-        </html>
+        <>
+            <style dangerouslySetInnerHTML={{ __html: fixedStyle }} />
+            <AuthGuard requireAuth={true}>
+                <div className="dashboard-container container mx-auto">
+                    <DashboardClientNav />
+                    <main id="dashboard-content" className="dashboard-content p-4 md:p-6 pb-8">
+                        <Suspense fallback={<div className="p-4 border rounded-md">Loading dashboard content...</div>}>
+                            {children}
+                        </Suspense>
+                    </main>
+                    <DashboardStatusBar />
+                </div>
+            </AuthGuard>
+        </>
     );
 } 

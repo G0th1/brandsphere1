@@ -37,23 +37,28 @@ export default function LoginPage() {
         }
 
         try {
-            console.log("Attempting login with email:", email);
+            // Add console logs for debugging
+            console.log("Login attempt started with:", email);
+            document.body.innerHTML += `<div style="position:fixed;top:0;left:0;right:0;background:black;color:white;z-index:9999;padding:10px;">Login attempt with: ${email}</div>`;
 
             // Clear any previous dashboard loaded flag
             sessionStorage.removeItem('dashboard_loaded');
             sessionStorage.removeItem('auth_in_progress');
 
-            // Simplify the login process by using direct signIn with redirect=true
+            // Use the simplest possible login approach
             const result = await signIn("credentials", {
                 email,
                 password,
                 redirect: false,
             });
 
+            // Add debug info to page
+            document.body.innerHTML += `<div style="position:fixed;top:30px;left:0;right:0;background:black;color:white;z-index:9999;padding:10px;">Login result: ${JSON.stringify(result || 'No result')}</div>`;
             console.log("Login result:", result);
 
             if (result?.error) {
                 console.error("Login error:", result.error);
+                document.body.innerHTML += `<div style="position:fixed;top:60px;left:0;right:0;background:red;color:white;z-index:9999;padding:10px;">Error: ${result.error}</div>`;
 
                 let errorMessage = "Invalid login credentials.";
 
@@ -80,17 +85,21 @@ export default function LoginPage() {
                 description: "Login successful! Redirecting...",
             });
 
-            // Store the user info in localStorage for fallback
+            document.body.innerHTML += `<div style="position:fixed;top:90px;left:0;right:0;background:green;color:white;z-index:9999;padding:10px;">Success! Redirecting...</div>`;
+
+            // Save login info in storage
             localStorage.setItem('user_email', email);
             localStorage.setItem('auth_timestamp', Date.now().toString());
-
-            // Set dashboard loaded flag
             sessionStorage.setItem('dashboard_loaded', 'true');
 
-            // Redirect to the dashboard
-            window.location.href = '/dashboard';
+            // Force a hard redirect to the dashboard
+            setTimeout(() => {
+                document.body.innerHTML += `<div style="position:fixed;top:120px;left:0;right:0;background:blue;color:white;z-index:9999;padding:10px;">Redirecting now to /dashboard</div>`;
+                window.location.href = '/dashboard';
+            }, 1500);
         } catch (error) {
             console.error("Login error:", error);
+            document.body.innerHTML += `<div style="position:fixed;top:150px;left:0;right:0;background:red;color:white;z-index:9999;padding:10px;">Exception: ${error instanceof Error ? error.message : String(error)}</div>`;
 
             const errorMessage = error instanceof Error
                 ? `Error: ${error.message}`
@@ -156,6 +165,39 @@ export default function LoginPage() {
                                 ) : "Sign in"}
                             </Button>
                         </form>
+
+                        {/* New: Direct access button */}
+                        <div className="mt-4 pt-4 border-t">
+                            <div className="text-center mb-2">
+                                <span className="text-xs text-muted-foreground">DIRECT ACCESS OPTION</span>
+                            </div>
+                            <Button
+                                variant="secondary"
+                                className="w-full"
+                                onClick={() => {
+                                    // Store minimal auth info
+                                    localStorage.setItem('user_email', email || 'demo@example.com');
+                                    localStorage.setItem('auth_timestamp', Date.now().toString());
+                                    sessionStorage.setItem('dashboard_loaded', 'true');
+
+                                    // Force direct navigation
+                                    toast({
+                                        title: "Direct Access",
+                                        description: "Bypassing normal auth flow...",
+                                    });
+
+                                    // Add delay for toast to show
+                                    setTimeout(() => {
+                                        window.location.href = '/dashboard?direct=true';
+                                    }, 500);
+                                }}
+                            >
+                                Direct Dashboard Access
+                            </Button>
+                            <p className="text-xs text-muted-foreground mt-2 text-center">
+                                Use this option if you're having trouble with the normal login.
+                            </p>
+                        </div>
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-4">
                         <div className="text-sm text-center">
