@@ -2,16 +2,55 @@
 import "@/app/globals.css";
 import { Metadata } from "next";
 import AuthGuard from "@/app/components/auth-guard";
-import SidebarNav from "@/app/components/sidebar-nav";
 import DashboardScript from "@/app/components/dashboard-script";
 import CacheBuster from "@/app/components/cache-buster";
 import ThemeEnforcer from "@/app/components/theme-enforcer";
 import { Suspense } from "react";
+import Link from "next/link";
+import { LogOut, LayoutDashboard, Settings } from "lucide-react";
 
 // Import the dynamic marker to prevent static generation
 import { dynamic } from "@/app/utils/dynamic-routes";
 // Re-export the dynamic marker
 export { dynamic };
+
+// Import sidebar with error boundary and fallback
+const SidebarNav = dynamic(() => import("@/app/components/sidebar-nav"), {
+    ssr: false,
+    loading: () => <SimpleSidebarFallback />
+});
+
+// Fallback navigation component if sidebar fails to load
+function SimpleSidebarFallback() {
+    return (
+        <div className="md:w-64 md:flex-col md:fixed md:inset-y-0 z-50 hidden md:block">
+            <div className="flex flex-col flex-grow border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 pt-5 overflow-y-auto h-full">
+                <div className="hidden md:flex items-center justify-center h-16 flex-shrink-0 px-4">
+                    <Link href="/dashboard" className="flex items-center space-x-2">
+                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">B</div>
+                        <span className="text-xl font-bold">BrandSphere AI</span>
+                    </Link>
+                </div>
+                <div className="mt-5 flex-grow flex flex-col">
+                    <nav className="flex-1 px-2 space-y-1">
+                        <Link href="/dashboard" className="group flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800">
+                            <div className="mr-3 text-gray-900 dark:text-gray-100">
+                                <LayoutDashboard className="h-5 w-5" />
+                            </div>
+                            Dashboard
+                        </Link>
+                        <Link href="/dashboard/settings" className="group flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900">
+                            <div className="mr-3 text-gray-500 dark:text-gray-400">
+                                <Settings className="h-5 w-5" />
+                            </div>
+                            Settings
+                        </Link>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 // Translations
 const translations = {
@@ -36,7 +75,7 @@ export const metadata: Metadata = {
     description: "AI-Powered Brand Identity Management",
 };
 
-// Consistent dashboard styles with better layout
+// Simplified dashboard styles
 const dashboardStyles = `
     :root {
         --navy-blue-50: #f0f5fa;
@@ -89,12 +128,6 @@ const dashboardStyles = `
         border: 1px solid hsl(var(--border));
         background-color: hsl(var(--card));
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .card:hover {
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
     }
     
     /* Page title styling */
@@ -113,6 +146,22 @@ const dashboardStyles = `
     .content-section {
         margin-bottom: 2rem;
     }
+
+    /* Mobile Menu */
+    .mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-bottom: 1px solid hsl(var(--border));
+        background-color: hsl(var(--background));
+    }
+
+    @media (min-width: 768px) {
+        .mobile-header {
+            display: none;
+        }
+    }
 `;
 
 // Hidden script to cleanup debug elements
@@ -128,52 +177,32 @@ function CleanupScript() {
                         // Create a unique cache-busting timestamp
                         sessionStorage.setItem('cache_bust', Date.now().toString());
                         
-                        // Aggressive cleanup of any debug elements
-                        function cleanupDebugElements() {
-                            // Remove any fixed position elements that might be debug overlays
-                            const computedStyles = Array.from(document.querySelectorAll('*')).map(el => {
-                                return {
-                                    element: el,
-                                    style: window.getComputedStyle(el)
-                                };
-                            });
-                            
-                            computedStyles.forEach(({element, style}) => {
-                                // Check if it's likely a debug element
-                                if (
-                                    style.position === 'fixed' && 
-                                    (
-                                        (style.top === '0px' || style.bottom === '0px') &&
-                                        (style.zIndex > 50 || style.zIndex === 'auto')
-                                    ) &&
-                                    !element.classList.contains('toaster') && // Don't remove toast notifications
-                                    element.id !== 'radix-:r0:' // Don't remove popover elements
-                                ) {
-                                    console.log('Removing potential debug element', element);
-                                    element.style.display = 'none';
-                                    element.style.visibility = 'hidden';
-                                    // Try to remove if possible
-                                    if (element.parentNode) {
-                                        try {
-                                            element.parentNode.removeChild(element);
-                                        } catch (e) {
-                                            // Ignore errors
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                        
-                        // Run cleanup after slight delay to ensure everything is loaded
-                        setTimeout(cleanupDebugElements, 100);
-                        // Run again later in case any debug elements are added dynamically
-                        setTimeout(cleanupDebugElements, 1000);
+                        // Remove any debug elements
+                        setTimeout(() => {
+                            document.querySelectorAll('[data-debug]')
+                                .forEach(el => el.remove());
+                        }, 100);
                     } catch (e) {
                         console.warn('Dashboard cleanup error:', e);
                     }
                 `,
             }}
         />
+    );
+}
+
+// Mobile header component
+function MobileHeader() {
+    return (
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+            <Link href="/dashboard" className="flex items-center space-x-2">
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">B</div>
+                <span className="text-xl font-bold">BrandSphere AI</span>
+            </Link>
+            <Link href="/api/auth/signout" className="p-2">
+                <LogOut className="h-5 w-5" />
+            </Link>
+        </div>
     );
 }
 
@@ -187,12 +216,17 @@ export default function DashboardLayout({
             <style dangerouslySetInnerHTML={{ __html: dashboardStyles }} />
             <AuthGuard requireAuth={true}>
                 <div className="dashboard-container">
-                    <SidebarNav />
-                    <main id="dashboard-content" className="dashboard-content">
-                        <Suspense fallback={<div className="p-4 border rounded-md">Loading dashboard content...</div>}>
-                            {children}
-                        </Suspense>
-                    </main>
+                    <Suspense fallback={<SimpleSidebarFallback />}>
+                        <SidebarNav />
+                    </Suspense>
+                    <div className="flex flex-col w-full">
+                        <MobileHeader />
+                        <main id="dashboard-content" className="dashboard-content">
+                            <Suspense fallback={<div className="p-4 border rounded-md">Loading dashboard content...</div>}>
+                                {children}
+                            </Suspense>
+                        </main>
+                    </div>
                     <CleanupScript />
                     <DashboardScript />
                     <CacheBuster />
