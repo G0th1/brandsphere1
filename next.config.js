@@ -3,8 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['lh3.googleusercontent.com', 'platform-lookaside.fbsbx.com'],
-    unoptimized: true
+    domains: ['lh3.googleusercontent.com', 'platform-lookaside.fbsbx.com']
   },
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client']
@@ -21,6 +20,11 @@ const nextConfig = {
   // Skip type checking during build to speed up the process
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  // Improve performance with SWC compiler options
+  compiler: {
+    // Remove console and debugger statements in production
+    removeConsole: process.env.NODE_ENV === 'production',
   },
   // Configure security headers
   async headers() {
@@ -50,6 +54,30 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin'
+          },
+          // Add caching headers for static assets
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          }
+        ]
+      },
+      // Add specific caching for static assets
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          }
+        ]
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
           }
         ]
       }

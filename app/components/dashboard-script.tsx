@@ -36,55 +36,16 @@ export default function DashboardScript() {
             `;
             document.head.appendChild(styleEl);
 
-            // One-time cleanup of problematic elements
-            const cleanup = () => {
-                // Only remove problematic overlays, not every fixed element
-                const overlays = document.querySelectorAll('div[style*="position: fixed"][style*="opacity: 0"], div[style*="visibility: hidden"][style*="position: fixed"]');
-                overlays.forEach(overlay => {
-                    const computed = window.getComputedStyle(overlay);
-                    if (computed.width === '100%' && computed.height === '100%') {
-                        console.log("Removing blocking overlay");
-                        overlay.remove();
-                    }
-                });
+            // Ensure dashboard content is visible
+            const dashboardContent = document.getElementById('dashboard-content');
+            if (dashboardContent) {
+                dashboardContent.style.visibility = 'visible';
+                dashboardContent.style.opacity = '1';
+            }
 
-                // Make sure content is visible - use classList rather than inline styles
-                document.documentElement.classList.add('dashboard-html');
-                document.body.classList.add('dashboard-body');
-
-                // Ensure dashboard content is visible
-                const dashboardContent = document.getElementById('dashboard-content');
-                if (dashboardContent) {
-                    dashboardContent.style.visibility = 'visible';
-                    dashboardContent.style.opacity = '1';
-                }
-
-                // Ensure body scroll is enabled
-                document.body.style.overflow = '';
-            };
-
-            // Run cleanup once and then again after a short delay
-            cleanup();
-
-            // Only set a single timeout for delayed cleanup, not multiple
-            setTimeout(cleanup, 1000);
-
-            // Add a single click handler for any blocked clicks
-            const clickHandler = (e) => {
-                // Only fix click issues for specific elements that need it
-                if (e.target && e.target.tagName &&
-                    (e.target.tagName === 'BUTTON' ||
-                        e.target.tagName === 'A' ||
-                        e.target.getAttribute('role') === 'button')) {
-                    e.target.style.pointerEvents = 'auto';
-                }
-            };
-
-            document.addEventListener('click', clickHandler, { passive: true });
-
-            // Clean up event listeners when component unmounts
+            // Clean up when component unmounts
             return () => {
-                document.removeEventListener('click', clickHandler);
+                document.head.removeChild(styleEl);
                 window.__dashboardInitialized = false;
             };
         } catch (e) {

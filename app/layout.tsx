@@ -1,24 +1,14 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
 
-// Importera providers
+// Import providers
 import { ThemeProvider } from '@/components/providers/theme-provider'
-import { AuthProvider } from '@/contexts/auth-context'
-import { LanguageProvider } from '@/contexts/language-context'
-import { DemoProvider } from '@/contexts/demo-context'
-import { SubscriptionProvider } from '@/contexts/subscription-context'
+import { Providers } from '@/components/providers'
 import { Toaster } from "../components/ui/toaster"
 import { Analytics } from "@/components/analytics"
-import DbErrorBoundary from "@/app/components/db-error-boundary"
-// Import the browser compatibility notice
-import BrowserCompatibilityNotice from './components/browser-compatibility-notice'
 import { BrowserCompat } from '@/components/BrowserCompat'
-// Import the new error boundary
-import ErrorBoundary from '@/app/components/error-boundary'
-// Import button fix script
-import ButtonFixScript from '@/app/components/button-fix'
 
-// Konfigurera Inter font
+// Configure Inter font
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
@@ -63,24 +53,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <LanguageProvider>
-              <DbErrorBoundary>
-                <DemoProvider>
-                  <SubscriptionProvider>
-                    <ErrorBoundary>
-                      {children}
-                    </ErrorBoundary>
-                  </SubscriptionProvider>
-                </DemoProvider>
-              </DbErrorBoundary>
-            </LanguageProvider>
-          </AuthProvider>
+          <Providers>
+            {children}
+          </Providers>
           <Toaster />
           <Analytics />
-          <BrowserCompatibilityNotice />
           <BrowserCompat />
-          <ButtonFixScript />
         </ThemeProvider>
       </body>
     </html>
