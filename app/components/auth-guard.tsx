@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Spinner } from "@/components/ui/spinner";
 
+// Custom hook to access the authenticated user
+export function useAuthUser() {
+    const { data: session } = useSession();
+    return session?.user;
+}
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { data: session, status } = useSession();
