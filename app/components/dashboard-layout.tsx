@@ -61,6 +61,7 @@ import { SocialAccounts } from '@/app/components/account/social-accounts';
 import { InsightsDashboard } from '@/app/components/analytics/insights-dashboard';
 import { ContentCalendar } from '@/app/components/content/content-calendar';
 import { RecentActivities } from '@/app/components/activity/recent-activities';
+import { DashboardConnectionWrapper } from './dashboard-connection-wrapper';
 
 const NAVIGATION_ITEMS = [
     {
@@ -202,10 +203,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-            {/* Sidebar (desktop) */}
-            <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-20">
-                <div className="flex flex-col flex-grow border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 pt-5 overflow-y-auto">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+            <div className="flex flex-col md:flex-row">
+                {/* Sidebar */}
+                <aside className={`fixed inset-y-0 z-50 flex w-72 flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-transform duration-300 md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                     <div className="flex items-center justify-center h-16 flex-shrink-0 px-4">
                         <Link href="/dashboard" className="flex items-center space-x-2">
                             <Image
@@ -268,344 +269,264 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
+                </aside>
 
-            {/* Mobile menu */}
-            <div className={`md:hidden fixed inset-0 flex z-40 transition-all duration-300 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setIsMobileMenuOpen(false)}></div>
-                <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-gray-950">
-                    <div className="absolute top-0 right-0 -mr-12 pt-2">
-                        <button
-                            type="button"
-                            className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                            <span className="sr-only">Close sidebar</span>
-                            <X className="h-6 w-6 text-white" />
-                        </button>
-                    </div>
+                {/* Main content */}
+                <main className="flex-1 md:ml-72">
+                    {/* Top navigation */}
+                    <div className="sticky top-0 z-30 flex-shrink-0 h-16 bg-white dark:bg-gray-950 shadow dark:shadow-gray-800">
+                        <div className="flex items-center justify-between px-4 md:px-6 h-full">
+                            {/* Mobile menu button */}
+                            <div className="flex items-center md:hidden">
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 focus:outline-none"
+                                    onClick={() => setIsMobileMenuOpen(true)}
+                                >
+                                    <span className="sr-only">Open sidebar</span>
+                                    <Menu className="h-6 w-6" />
+                                </button>
 
-                    <div className="flex items-center justify-center h-16 flex-shrink-0 px-4 mt-5">
-                        <Link href="/dashboard" className="flex items-center space-x-2">
-                            <Image
-                                src="/images/image_2025-03-02_212020748 (1).png"
-                                alt="BrandSphereAI Logo"
-                                width={32}
-                                height={32}
-                                className="w-8 h-8"
-                            />
-                            <span className="text-xl font-bold text-gray-900 dark:text-gray-100">BrandSphere AI</span>
-                        </Link>
-                    </div>
+                                <h1 className="text-lg font-bold ml-3 md:hidden text-gray-900 dark:text-gray-100">
+                                    {currentPage?.title || 'Dashboard'}
+                                </h1>
+                            </div>
 
-                    <div className="mt-5 flex-1 h-0 overflow-y-auto">
-                        <nav className="px-2 space-y-1">
-                            {NAVIGATION_ITEMS.map((item) => {
-                                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={`
-                                            group flex items-center px-4 py-3 text-base font-medium rounded-md transition-colors
-                                            ${isActive
-                                                ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                                                : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900'
-                                            }
-                                        `}
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                    >
-                                        <div className={`mr-4 ${isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                                            {item.icon}
-                                        </div>
-                                        {item.title}
-                                    </Link>
-                                );
-                            })}
-                        </nav>
-                    </div>
-
-                    {isDemoActive && (
-                        <div className="px-4 py-4">
-                            <div className="rounded-lg bg-gray-100 dark:bg-gray-800 p-4">
-                                <div className="flex items-center">
-                                    <div className="flex-shrink-0">
-                                        <HelpCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                            {/* Search */}
+                            <div className="flex-1 max-w-md ml-4 md:ml-8">
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search className="h-5 w-5 text-gray-400" />
                                     </div>
-                                    <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Demo Mode Active</h3>
-                                        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                                            You're using BrandSphere in demo mode.
-                                        </div>
-                                        <div className="mt-2">
-                                            <Button variant="outline" size="sm" className="text-xs w-full">
-                                                Upgrade to Pro
-                                            </Button>
-                                        </div>
+                                    <input
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md leading-5 bg-white dark:bg-gray-900 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900 dark:text-gray-100"
+                                        placeholder="Search"
+                                        type="search"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center space-x-4">
+                                {/* Quick Create Button */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button size="sm" className="relative z-20 flex items-center gap-1">
+                                            <PlusCircle className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Create</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="z-30">
+                                        <DropdownMenuItem
+                                            className="cursor-pointer"
+                                            onClick={() => handleQuickCreate('post')}
+                                        >
+                                            <FileText className="h-4 w-4 mr-2" />
+                                            New Post
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className="cursor-pointer"
+                                            onClick={() => handleQuickCreate('account')}
+                                        >
+                                            <Users className="h-4 w-4 mr-2" />
+                                            Connect Account
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                {/* Notifications */}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setIsNotificationsOpen(true)}
+                                    className="relative z-20"
+                                >
+                                    <Bell className="h-5 w-5" />
+                                    <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                                </Button>
+
+                                {/* Theme Toggler */}
+                                <div className="relative z-20">
+                                    <ThemeToggle />
+                                </div>
+
+                                {/* User Menu */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="relative z-20 h-8 w-8 rounded-full">
+                                            <div className="h-8 w-8 rounded-full bg-gray-700 dark:bg-gray-600 flex items-center justify-center text-white">
+                                                <span className="text-sm font-medium">U</span>
+                                            </div>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="z-30">
+                                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="cursor-pointer">
+                                            <User className="h-4 w-4 mr-2" />
+                                            Profile
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="cursor-pointer">
+                                            <Settings className="h-4 w-4 mr-2" />
+                                            Settings
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="cursor-pointer">
+                                            <LogOut className="h-4 w-4 mr-2" />
+                                            Logout
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content area */}
+                    <main className="flex-1 py-6 px-6 md:px-8 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+                        <div className="w-full mx-auto">
+                            {/* Page heading */}
+                            <div className="mb-6">
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                    {currentPage?.title || 'Dashboard'}
+                                </h1>
+                            </div>
+
+                            {/* Tabbed navigation - shown only on main dashboard route */}
+                            {pathname === '/dashboard' ? (
+                                <Tabs defaultValue="dashboard" className="space-y-6">
+                                    <div className="relative z-10 border-b border-gray-200 dark:border-gray-800">
+                                        <TabsList className="flex -mb-px space-x-8">
+                                            <TabsTrigger
+                                                value="dashboard"
+                                                className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                            >
+                                                Overview
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="content"
+                                                className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                            >
+                                                Content
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="analytics"
+                                                className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                            >
+                                                Analytics
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="calendar"
+                                                className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                            >
+                                                Calendar
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="accounts"
+                                                className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                            >
+                                                Accounts
+                                            </TabsTrigger>
+                                        </TabsList>
                                     </div>
-                                </div>
-                            </div>
+
+                                    <TabsContent value="dashboard" className="relative z-10">
+                                        {getTabContent('dashboard')}
+                                    </TabsContent>
+
+                                    <TabsContent value="content" className="relative z-10">
+                                        {getTabContent('content')}
+                                    </TabsContent>
+
+                                    <TabsContent value="analytics" className="relative z-10">
+                                        {getTabContent('analytics')}
+                                    </TabsContent>
+
+                                    <TabsContent value="calendar" className="relative z-10">
+                                        {getTabContent('calendar')}
+                                    </TabsContent>
+
+                                    <TabsContent value="accounts" className="relative z-10">
+                                        {getTabContent('accounts')}
+                                    </TabsContent>
+                                </Tabs>
+                            ) : (
+                                <DashboardConnectionWrapper>
+                                    <div className="relative z-10">{children}</div>
+                                </DashboardConnectionWrapper>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </main>
             </div>
-
-            {/* Main content area */}
-            <div className="md:pl-64 flex flex-col flex-1">
-                {/* Top navigation */}
-                <div className="sticky top-0 z-30 flex-shrink-0 h-16 bg-white dark:bg-gray-950 shadow dark:shadow-gray-800">
-                    <div className="flex items-center justify-between px-4 md:px-6 h-full">
-                        {/* Mobile menu button */}
-                        <div className="flex items-center md:hidden">
-                            <button
-                                type="button"
-                                className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800 focus:outline-none"
-                                onClick={() => setIsMobileMenuOpen(true)}
-                            >
-                                <span className="sr-only">Open sidebar</span>
-                                <Menu className="h-6 w-6" />
-                            </button>
-
-                            <h1 className="text-lg font-bold ml-3 md:hidden text-gray-900 dark:text-gray-100">
-                                {currentPage?.title || 'Dashboard'}
-                            </h1>
-                        </div>
-
-                        {/* Search */}
-                        <div className="flex-1 max-w-md ml-4 md:ml-8">
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md leading-5 bg-white dark:bg-gray-900 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900 dark:text-gray-100"
-                                    placeholder="Search"
-                                    type="search"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center space-x-4">
-                            {/* Quick Create Button */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button size="sm" className="relative z-20 flex items-center gap-1">
-                                        <PlusCircle className="h-4 w-4" />
-                                        <span className="hidden sm:inline">Create</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="z-30">
-                                    <DropdownMenuItem
-                                        className="cursor-pointer"
-                                        onClick={() => handleQuickCreate('post')}
-                                    >
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        New Post
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        className="cursor-pointer"
-                                        onClick={() => handleQuickCreate('account')}
-                                    >
-                                        <Users className="h-4 w-4 mr-2" />
-                                        Connect Account
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            {/* Notifications */}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setIsNotificationsOpen(true)}
-                                className="relative z-20"
-                            >
-                                <Bell className="h-5 w-5" />
-                                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
-                            </Button>
-
-                            {/* Theme Toggler */}
-                            <div className="relative z-20">
-                                <ThemeToggle />
-                            </div>
-
-                            {/* User Menu */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="relative z-20 h-8 w-8 rounded-full">
-                                        <div className="h-8 w-8 rounded-full bg-gray-700 dark:bg-gray-600 flex items-center justify-center text-white">
-                                            <span className="text-sm font-medium">U</span>
-                                        </div>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="z-30">
-                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="cursor-pointer">
-                                        <User className="h-4 w-4 mr-2" />
-                                        Profile
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer">
-                                        <Settings className="h-4 w-4 mr-2" />
-                                        Settings
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="cursor-pointer">
-                                        <LogOut className="h-4 w-4 mr-2" />
-                                        Logout
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Content area */}
-                <main className="flex-1 py-6 px-6 md:px-8 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-                    <div className="w-full mx-auto">
-                        {/* Page heading */}
-                        <div className="mb-6">
-                            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                                {currentPage?.title || 'Dashboard'}
-                            </h1>
-                        </div>
-
-                        {/* Tabbed navigation - shown only on main dashboard route */}
-                        {pathname === '/dashboard' ? (
-                            <Tabs defaultValue="dashboard" className="space-y-6">
-                                <div className="relative z-10 border-b border-gray-200 dark:border-gray-800">
-                                    <TabsList className="flex -mb-px space-x-8">
-                                        <TabsTrigger
-                                            value="dashboard"
-                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                        >
-                                            Overview
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="content"
-                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                        >
-                                            Content
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="analytics"
-                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                        >
-                                            Analytics
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="calendar"
-                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                        >
-                                            Calendar
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="accounts"
-                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                        >
-                                            Accounts
-                                        </TabsTrigger>
-                                    </TabsList>
-                                </div>
-
-                                <TabsContent value="dashboard" className="relative z-10">
-                                    {getTabContent('dashboard')}
-                                </TabsContent>
-
-                                <TabsContent value="content" className="relative z-10">
-                                    {getTabContent('content')}
-                                </TabsContent>
-
-                                <TabsContent value="analytics" className="relative z-10">
-                                    {getTabContent('analytics')}
-                                </TabsContent>
-
-                                <TabsContent value="calendar" className="relative z-10">
-                                    {getTabContent('calendar')}
-                                </TabsContent>
-
-                                <TabsContent value="accounts" className="relative z-10">
-                                    {getTabContent('accounts')}
-                                </TabsContent>
-                            </Tabs>
-                        ) : (
-                            // Regular page content
-                            <div className="relative z-10">{children}</div>
-                        )}
-                    </div>
-                </main>
-            </div>
-
-            {/* Notifications Dialog */}
-            <Dialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
-                <DialogContent className="z-50 sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Notifications</DialogTitle>
-                        <DialogDescription>
-                            Stay updated with your recent activity
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="max-h-[60vh] overflow-y-auto">
-                        <RecentActivities />
-                    </div>
-
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsNotificationsOpen(false)}>
-                            Close
-                        </Button>
-                        <Button onClick={() => {
-                            setIsNotificationsOpen(false);
-                            setTimeout(() => {
-                                window.location.href = '/dashboard/notifications';
-                            }, 100);
-                        }}>
-                            View All
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Quick Create Dialog */}
-            <Dialog open={isQuickCreateOpen} onOpenChange={setIsQuickCreateOpen}>
-                <DialogContent className="z-50 sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Create New</DialogTitle>
-                        <DialogDescription>
-                            What would you like to create?
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="grid gap-4 py-4">
-                        <Button
-                            variant="outline"
-                            className="flex items-center gap-2 justify-start h-auto p-4 text-left cursor-pointer"
-                            onClick={() => handleQuickCreate('post')}
-                        >
-                            <FileText className="h-5 w-5" />
-                            <div>
-                                <h3 className="font-medium">New Post</h3>
-                                <p className="text-sm text-muted-foreground">Create and schedule a new social media post</p>
-                            </div>
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            className="flex items-center gap-2 justify-start h-auto p-4 text-left cursor-pointer"
-                            onClick={() => handleQuickCreate('account')}
-                        >
-                            <Users className="h-5 w-5" />
-                            <div>
-                                <h3 className="font-medium">Connect Account</h3>
-                                <p className="text-sm text-muted-foreground">Connect a new social media account</p>
-                            </div>
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
         </div>
+
+            {/* Notifications Dialog */ }
+    <Dialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
+        <DialogContent className="z-50 sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Notifications</DialogTitle>
+                <DialogDescription>
+                    Stay updated with your recent activity
+                </DialogDescription>
+            </DialogHeader>
+
+            <div className="max-h-[60vh] overflow-y-auto">
+                <RecentActivities />
+            </div>
+
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsNotificationsOpen(false)}>
+                    Close
+                </Button>
+                <Button onClick={() => {
+                    setIsNotificationsOpen(false);
+                    setTimeout(() => {
+                        window.location.href = '/dashboard/notifications';
+                    }, 100);
+                }}>
+                    View All
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    {/* Quick Create Dialog */ }
+    <Dialog open={isQuickCreateOpen} onOpenChange={setIsQuickCreateOpen}>
+        <DialogContent className="z-50 sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Create New</DialogTitle>
+                <DialogDescription>
+                    What would you like to create?
+                </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+                <Button
+                    variant="outline"
+                    className="flex items-center gap-2 justify-start h-auto p-4 text-left cursor-pointer"
+                    onClick={() => handleQuickCreate('post')}
+                >
+                    <FileText className="h-5 w-5" />
+                    <div>
+                        <h3 className="font-medium">New Post</h3>
+                        <p className="text-sm text-muted-foreground">Create and schedule a new social media post</p>
+                    </div>
+                </Button>
+
+                <Button
+                    variant="outline"
+                    className="flex items-center gap-2 justify-start h-auto p-4 text-left cursor-pointer"
+                    onClick={() => handleQuickCreate('account')}
+                >
+                    <Users className="h-5 w-5" />
+                    <div>
+                        <h3 className="font-medium">Connect Account</h3>
+                        <p className="text-sm text-muted-foreground">Connect a new social media account</p>
+                    </div>
+                </Button>
+            </div>
+        </DialogContent>
+    </Dialog>
+        </div >
     );
 }
 
