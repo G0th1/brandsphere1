@@ -5,6 +5,7 @@ import AuthGuard from "@/app/components/auth-guard";
 import DashboardClientNav from "@/app/components/dashboard-client-nav";
 import DashboardScript from "@/app/components/dashboard-script";
 import CacheBuster from "@/app/components/cache-buster";
+import ThemeEnforcer from "@/app/components/theme-enforcer";
 import { Suspense } from "react";
 
 // Import the dynamic marker to prevent static generation
@@ -35,27 +36,51 @@ export const metadata: Metadata = {
     description: "AI-Powered Brand Identity Management",
 };
 
-// Improved style block with better proportions
+// Improved style block with better layout and consistent navy-blue theme
 const dashboardStyles = `
-    .dashboard-html, .dashboard-body {
+    :root {
+        --navy-blue-50: #f0f5fa;
+        --navy-blue-100: #dae3f3;
+        --navy-blue-600: #1e3a8a;
+        --navy-blue-700: #172554;
+        --navy-blue-800: #0f172a;
+        --navy-blue-900: #0a0f1a;
+    }
+
+    body, html {
         overflow-x: hidden;
+        background-color: hsl(var(--background));
     }
     
+    /* Ensure consistent theme colors */
+    .bg-primary {
+        background-color: var(--navy-blue-600) !important;
+    }
+    
+    .text-primary {
+        color: var(--navy-blue-600) !important;
+    }
+    
+    /* Improve main container */
     .dashboard-container {
         display: flex;
         flex-direction: column;
         min-height: 100vh;
-        max-width: 1400px;
+        max-width: 1600px; /* Increased from 1400px */
         margin: 0 auto;
         width: 100%;
+        padding: 0;
     }
     
+    /* Improve content spacing */
     .dashboard-content {
         flex-grow: 1;
         padding: 1.5rem;
         width: 100%;
+        background-color: hsl(var(--background));
     }
     
+    /* Responsive padding adjustments */
     @media (min-width: 768px) {
         .dashboard-content {
             padding: 2rem;
@@ -64,8 +89,30 @@ const dashboardStyles = `
     
     @media (min-width: 1200px) {
         .dashboard-content {
-            padding: 2.5rem;
+            padding: 2.5rem 3rem;
         }
+    }
+    
+    /* Card and UI element styling for consistent navy-blue theme */
+    .card {
+        border-radius: 0.5rem;
+        border: 1px solid hsl(var(--border));
+        background-color: hsl(var(--card));
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Ensure button consistency */
+    .btn-primary, 
+    .bg-primary, 
+    button[data-state="active"] {
+        background-color: var(--navy-blue-600);
+        color: white;
+    }
+    
+    /* Override any potential conflicting styles */
+    [data-theme="light"] .bg-primary,
+    [data-theme="dark"] .bg-primary {
+        background-color: var(--navy-blue-600) !important;
     }
 `;
 
@@ -150,6 +197,7 @@ export default function DashboardLayout({
                     <CleanupScript />
                     <DashboardScript />
                     <CacheBuster />
+                    <ThemeEnforcer />
                 </div>
             </AuthGuard>
         </>
