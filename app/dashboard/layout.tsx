@@ -3,6 +3,8 @@ import "@/app/globals.css";
 import { Metadata } from "next";
 import AuthGuard from "@/app/components/auth-guard";
 import DashboardClientNav from "@/app/components/dashboard-client-nav";
+import DashboardScript from "@/app/components/dashboard-script";
+import CacheBuster from "@/app/components/cache-buster";
 import { Suspense } from "react";
 
 // Import the dynamic marker to prevent static generation
@@ -68,7 +70,7 @@ const dashboardStyles = `
 `;
 
 // Hidden script to maintain session continuity without visible elements
-function SessionMaintenanceScript() {
+function CleanupScript() {
     return (
         <script
             dangerouslySetInnerHTML={{
@@ -76,8 +78,52 @@ function SessionMaintenanceScript() {
                     try {
                         // Mark dashboard as loaded for auth continuity
                         sessionStorage.setItem('dashboard_loaded', 'true');
+                        
+                        // Create a unique cache-busting timestamp
+                        sessionStorage.setItem('cache_bust', Date.now().toString());
+                        
+                        // Aggressive cleanup of any debug elements
+                        function cleanupDebugElements() {
+                            // Remove any fixed position elements that might be debug overlays
+                            const computedStyles = Array.from(document.querySelectorAll('*')).map(el => {
+                                return {
+                                    element: el,
+                                    style: window.getComputedStyle(el)
+                                };
+                            });
+                            
+                            computedStyles.forEach(({element, style}) => {
+                                // Check if it's likely a debug element
+                                if (
+                                    style.position === 'fixed' && 
+                                    (
+                                        (style.top === '0px' || style.bottom === '0px') &&
+                                        (style.zIndex > 50 || style.zIndex === 'auto')
+                                    ) &&
+                                    !element.classList.contains('toaster') && // Don't remove toast notifications
+                                    element.id !== 'radix-:r0:' // Don't remove popover elements
+                                ) {
+                                    console.log('Removing potential debug element', element);
+                                    element.style.display = 'none';
+                                    element.style.visibility = 'hidden';
+                                    // Try to remove if possible
+                                    if (element.parentNode) {
+                                        try {
+                                            element.parentNode.removeChild(element);
+                                        } catch (e) {
+                                            // Ignore errors
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                        
+                        // Run cleanup after slight delay to ensure everything is loaded
+                        setTimeout(cleanupDebugElements, 100);
+                        // Run again later in case any debug elements are added dynamically
+                        setTimeout(cleanupDebugElements, 1000);
                     } catch (e) {
-                        console.warn('Session maintenance error:', e);
+                        console.warn('Dashboard cleanup error:', e);
                     }
                 `,
             }}
@@ -101,7 +147,9 @@ export default function DashboardLayout({
                             {children}
                         </Suspense>
                     </main>
-                    <SessionMaintenanceScript />
+                    <CleanupScript />
+                    <DashboardScript />
+                    <CacheBuster />
                 </div>
             </AuthGuard>
         </>
