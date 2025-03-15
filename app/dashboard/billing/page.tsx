@@ -12,7 +12,7 @@ import { dynamic } from "@/app/utils/dynamic-routes";
 // Re-export the dynamic marker
 export { dynamic };
 
-// Priskomponenter - du måste ersätta dessa med dina faktiska pris-ID:n från Stripe
+// Stripe price IDs
 const PRICE_IDS = {
     PRO_MONTHLY: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_MONTHLY || "price_id_pro_monthly",
     PRO_YEARLY: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_YEARLY || "price_id_pro_yearly",
@@ -28,25 +28,29 @@ const translations = {
         yearly: "Yearly (Save 20%)",
         features: {
             free: [
-                "2 social accounts",
-                "10 posts per month",
+                "3 connected social accounts",
+                "10 scheduled posts per month",
                 "Basic analytics",
-                "500MB storage"
+                "Email support"
             ],
             pro: [
-                "10 social accounts",
-                "50 posts per month",
+                "10 connected social accounts",
+                "Unlimited scheduled posts",
                 "Advanced analytics",
-                "2GB storage",
-                "Priority support"
+                "Competitor analysis",
+                "AI content generation",
+                "Priority email support"
             ],
             business: [
-                "Unlimited social accounts",
-                "Unlimited posts",
-                "Custom analytics",
-                "10GB storage",
-                "Priority support",
-                "Team collaboration"
+                "20 connected social accounts",
+                "Unlimited scheduled posts",
+                "Advanced analytics",
+                "Competitor analysis",
+                "AI content generation",
+                "Custom branding",
+                "Team collaboration",
+                "API access",
+                "24/7 priority support"
             ]
         },
         loadingSubscription: "Loading subscription data...",
@@ -64,25 +68,29 @@ const translations = {
         yearly: "Årsvis (Spara 20%)",
         features: {
             free: [
-                "2 sociala konton",
-                "10 inlägg per månad",
+                "3 anslutna sociala konton",
+                "10 schemalagda inlägg per månad",
                 "Grundläggande analys",
-                "500MB lagring"
+                "E-postsupport"
             ],
             pro: [
-                "10 sociala konton",
-                "50 inlägg per månad",
+                "10 anslutna sociala konton",
+                "Obegränsade schemalagda inlägg",
                 "Avancerad analys",
-                "2GB lagring",
-                "Prioriterad support"
+                "Konkurrentanalys",
+                "AI-innehållsgenerering",
+                "Prioriterad e-postsupport"
             ],
             business: [
-                "Obegränsade sociala konton",
-                "Obegränsade inlägg",
-                "Anpassad analys",
-                "10GB lagring",
-                "Prioriterad support",
-                "Teamsamarbete"
+                "20 anslutna sociala konton",
+                "Obegränsade schemalagda inlägg",
+                "Avancerad analys",
+                "Konkurrentanalys",
+                "AI-innehållsgenerering",
+                "Anpassad varumärkning",
+                "Teamsamarbete",
+                "API-åtkomst",
+                "Prioriterad support dygnet runt"
             ]
         },
         loadingSubscription: "Laddar prenumerationsdata...",
@@ -113,58 +121,88 @@ interface Subscription {
 export default function BillingPage() {
     const { language } = useLanguage();
     const t = translations[language as keyof typeof translations];
-    const { toast } = useToast();
-    const searchParams = useSearchParams();
-    const success = searchParams.get("success");
-    const canceled = searchParams.get("canceled");
-
+    const [interval, setInterval] = useState<"month" | "year">("month");
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [loading, setLoading] = useState(true);
-    const [interval, setInterval] = useState<"month" | "year">("month");
+    const searchParams = useSearchParams();
+    const { toast } = useToast();
 
-    // Visa meddelanden baserat på URL-parametrar
+    // Hantera statusmeddelanden från URL-frågesträngar
     useEffect(() => {
-        if (success) {
+        if (searchParams?.get('success') === 'true') {
             toast({
                 title: t.successTitle,
                 description: t.successMessage,
+                variant: "success",
             });
-        } else if (canceled) {
+        } else if (searchParams?.get('canceled') === 'true') {
             toast({
                 title: t.canceledTitle,
                 description: t.canceledMessage,
                 variant: "destructive",
             });
         }
-    }, [success, canceled, toast, t]);
+    }, [searchParams, toast, t]);
 
-    // Hämta prenumerationsinformation
+    // Hämta prenumerationsdata
     useEffect(() => {
-        const getSubscription = async () => {
+        const fetchSubscription = async () => {
             try {
-                const res = await fetch("/api/subscription", {
-                    method: "GET",
-                });
+                setLoading(true);
+                const response = await fetch('/api/subscription');
 
-                if (res.ok) {
-                    const data = await res.json();
-                    setSubscription(data);
-                } else {
-                    throw new Error("Failed to fetch subscription");
+                if (!response.ok) {
+                    throw new Error('Failed to fetch subscription data');
                 }
+
+                const data = await response.json();
+                setSubscription(data);
             } catch (error) {
-                console.error("Error fetching subscription:", error);
+                console.error('Error fetching subscription:', error);
                 toast({
                     title: "Error",
                     description: t.errorLoadingSubscription,
                     variant: "destructive",
+                });
+
+                setSubscription({
+                    id: "fallback",
+                    userId: "",
+                    stripeCustomerId: null,
+                    stripeSubscriptionId: null,
+                    stripePriceId: null,
+                    stripeCurrentPeriodEnd: null,
+                    status: "active",
+                    plan: "Free",
+                    billingCycle: "monthly",
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
                 });
             } finally {
                 setLoading(false);
             }
         };
 
-        getSubscription();
+        if (typeof window !== 'undefined' &&
+            (localStorage.getItem('universalMode') === 'true' ||
+                localStorage.getItem('offlineMode') === 'true')) {
+            setSubscription({
+                id: "universal-mode",
+                userId: "",
+                stripeCustomerId: null,
+                stripeSubscriptionId: null,
+                stripePriceId: null,
+                stripeCurrentPeriodEnd: null,
+                status: "active",
+                plan: "Free",
+                billingCycle: "monthly",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+            setLoading(false);
+        } else {
+            fetchSubscription();
+        }
     }, [toast, t]);
 
     // Sätt intervall baserat på användarens nuvarande prenumeration
@@ -219,7 +257,7 @@ export default function BillingPage() {
 
                         <PlanCard
                             plan="Pro"
-                            price="$29"
+                            price="$19"
                             features={t.features.pro}
                             interval="month"
                             priceId={PRICE_IDS.PRO_MONTHLY}
@@ -229,7 +267,7 @@ export default function BillingPage() {
 
                         <PlanCard
                             plan="Business"
-                            price="$79"
+                            price="$49"
                             features={t.features.business}
                             interval="month"
                             priceId={PRICE_IDS.BUSINESS_MONTHLY}
@@ -250,7 +288,7 @@ export default function BillingPage() {
 
                         <PlanCard
                             plan="Pro"
-                            price="$279"
+                            price="$180"
                             features={t.features.pro}
                             interval="year"
                             priceId={PRICE_IDS.PRO_YEARLY}
@@ -260,7 +298,7 @@ export default function BillingPage() {
 
                         <PlanCard
                             plan="Business"
-                            price="$759"
+                            price="$470"
                             features={t.features.business}
                             interval="year"
                             priceId={PRICE_IDS.BUSINESS_YEARLY}

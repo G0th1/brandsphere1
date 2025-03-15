@@ -54,50 +54,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  console.log(`[Middleware] Processing: ${pathname}`);
-
-  // Create response with universal mode cookies
   const response = NextResponse.next();
 
-  // Set debug cookie
-  response.cookies.set('middleware-debug', new Date().toISOString(), {
-    path: '/',
-    maxAge: 3600 // 1 hour
-  });
-
-  // DISABLE AUTH CHECKS FOR DASHBOARD ROUTES TO FIX LOGIN ISSUES
-  // SIMPLIFIED APPROACH: Let the client component handle auth instead
+  // Skip auth checks for dashboard routes (client-side auth handling)
   if (pathname.startsWith('/dashboard')) {
-    console.log(`[Middleware] Dashboard access: ${pathname} - skipping auth check`);
     return response;
   }
 
-  // Try to get token for other routes
   try {
     const token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
     });
 
-    // Set a cookie to indicate auth status
-    response.cookies.set('auth-debug', token ? 'authenticated' : 'no-token', {
-      path: '/',
-      maxAge: 3600 // 1 hour
-    });
-
     // If we're on an auth page but already authenticated, redirect to dashboard
-    if (authRoutes.some(route => pathname === route) && token) {
-      console.log(`[Middleware] Redirecting authenticated user from ${pathname} to dashboard`);
+    if (authRoutes.includes(pathname) && token) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   } catch (error) {
     console.warn('[Middleware] Error checking token:', error);
-
-    // Set error cookie for debugging
-    response.cookies.set('auth-error', String(error).substring(0, 100), {
-      path: '/',
-      maxAge: 3600 // 1 hour
-    });
   }
 
   return response;

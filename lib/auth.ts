@@ -46,21 +46,14 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
-                    console.log("No credentials provided");
                     return null;
                 }
 
                 try {
-                    console.log("Attempting database lookup for:", credentials.email);
-
-                    // SIMPLIFIED MODE: Skip database check in development 
-                    // or if development mode is set in the URL
-                    const isDev = process.env.NODE_ENV === 'development' ||
-                        (typeof window !== 'undefined' &&
-                            window.location.href.includes('dev=true'));
+                    // Allow bypass in development mode
+                    const isDev = process.env.NODE_ENV === 'development';
 
                     if (isDev) {
-                        console.log("Development mode: Using demo login");
                         return {
                             id: 'dev-user-id',
                             name: credentials.email.split('@')[0],
@@ -69,24 +62,21 @@ export const authOptions: NextAuthOptions = {
                         };
                     }
 
-                    // Regular production flow - check database
+                    // Production authentication flow
                     const user = await db.user.findUnique({
                         where: { email: credentials.email },
                     });
 
                     if (!user || !user.password) {
-                        console.log("User not found or no password set");
                         return null;
                     }
 
                     const passwordValid = await compare(credentials.password, user.password);
 
                     if (!passwordValid) {
-                        console.log("Invalid password");
                         return null;
                     }
 
-                    console.log("Login successful for:", user.email);
                     return {
                         id: user.id,
                         name: user.name,
@@ -96,10 +86,8 @@ export const authOptions: NextAuthOptions = {
                 } catch (error) {
                     console.error("Authentication error:", error);
 
-                    // Always allow login in development mode when database errors occur
+                    // Fallback for development mode
                     if (process.env.NODE_ENV === 'development') {
-                        console.log("Development mode: Using fallback authentication");
-
                         return {
                             id: 'demo-user-id',
                             name: credentials.email.split('@')[0],
@@ -130,13 +118,10 @@ export const authOptions: NextAuthOptions = {
             return token;
         },
         async redirect({ url, baseUrl }) {
-            // Simple redirect logic
+            // Handle redirects
             if (url.startsWith(baseUrl) || url.startsWith('/')) {
-                console.log("Redirecting to:", url);
                 return url;
             }
-
-            console.log("Redirecting to dashboard");
             return baseUrl + '/dashboard';
         }
     },

@@ -4,7 +4,7 @@ import './globals.css'
 // Import providers
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { Providers } from '@/components/providers'
-import { Toaster } from "../components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@/components/analytics"
 import { BrowserCompat } from '@/components/BrowserCompat'
 
@@ -15,6 +15,7 @@ const inter = Inter({
   variable: '--font-sans',
 })
 
+// Site metadata
 export const metadata = {
   title: 'BrandSphereAI - Hantera dina sociala medier smartare',
   description: 'BrandSphereAI hjälper dig att skapa, schemaläggа och analysera innehåll för sociala medier med hjälp av artificiell intelligens.',
@@ -44,8 +45,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="sv" className={`${inter.variable}`} suppressHydrationWarning>
-      <head />
+    <html lang="sv" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"

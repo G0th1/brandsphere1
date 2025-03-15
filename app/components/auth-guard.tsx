@@ -102,11 +102,8 @@ export default function AuthGuard({
                 return;
             }
 
-            // Check for session
-            if (status === "loading") {
-                logDebug("Session is loading...");
-                return; // Wait for session
-            }
+            // Wait for session to load
+            if (status === "loading") return;
 
             if (session?.user) {
                 logDebug(`User authenticated: ${session.user.email}`);
@@ -120,19 +117,32 @@ export default function AuthGuard({
                     });
                     setIsLoading(false);
 
-                    // Store session info
+                    // Store session info but only if we have window access
                     if (typeof window !== 'undefined') {
-                        localStorage.setItem('user_email', session.user.email as string);
-                        localStorage.setItem('auth_timestamp', Date.now().toString());
+                        try {
+                            localStorage.setItem('user_email', session.user.email as string);
+                            localStorage.setItem('auth_timestamp', Date.now().toString());
+                        } catch (e) {
+                            // Silently fail if localStorage is not available
+                        }
                     }
                 }
             } else {
                 logDebug("No session found, user is not authenticated");
 
                 // Check for stored credentials as fallback
-                const storedEmail = localStorage.getItem('user_email');
-                const authTimestamp = localStorage.getItem('auth_timestamp');
-                const recentAuth = authTimestamp && (Date.now() - parseInt(authTimestamp)) < 3600000; // 1 hour
+                let storedEmail = null;
+                let recentAuth = false;
+
+                if (typeof window !== 'undefined') {
+                    try {
+                        storedEmail = localStorage.getItem('user_email');
+                        const authTimestamp = localStorage.getItem('auth_timestamp');
+                        recentAuth = authTimestamp && (Date.now() - parseInt(authTimestamp)) < 3600000; // 1 hour
+                    } catch (e) {
+                        // Silently fail if localStorage is not available
+                    }
+                }
 
                 if (storedEmail && recentAuth) {
                     logDebug(`Using recent stored auth for: ${storedEmail}`);
@@ -157,7 +167,11 @@ export default function AuthGuard({
                         logDebug(`Redirecting to login page from: ${pathname}`);
                         // Store the current path for redirect after login
                         if (typeof window !== 'undefined') {
-                            sessionStorage.setItem('redirectAfterLogin', pathname);
+                            try {
+                                sessionStorage.setItem('redirectAfterLogin', pathname);
+                            } catch (e) {
+                                // Silently fail if sessionStorage is not available
+                            }
                         }
                         router.push("/auth/login");
                     }

@@ -11,14 +11,18 @@ export async function POST(req: Request) {
         const session = await getServerSession(authOptions);
 
         if (!session?.user || !session?.user.email) {
-            return new NextResponse("Ej auktoriserad", { status: 401 });
+            return NextResponse.json({
+                message: "Unauthorized access. Please log in."
+            }, { status: 401 });
         }
 
         // Hämta data från request
         const { priceId, plan, interval } = await req.json();
 
         if (!priceId || !plan || !interval) {
-            return new NextResponse("Ogiltiga data", { status: 400 });
+            return NextResponse.json({
+                message: "Missing required parameters: priceId, plan, or interval"
+            }, { status: 400 });
         }
 
         // Hitta användaren i databasen
@@ -32,7 +36,9 @@ export async function POST(req: Request) {
         });
 
         if (!user) {
-            return new NextResponse("Användare hittades inte", { status: 404 });
+            return NextResponse.json({
+                message: "User not found"
+            }, { status: 404 });
         }
 
         // Få eller skapa Stripe-kund
@@ -92,6 +98,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ url: stripeSession.url });
     } catch (error) {
         console.error("Checkout error:", error);
-        return new NextResponse("Internt serverfel", { status: 500 });
+        return NextResponse.json({
+            message: "Failed to create checkout session. Please try again."
+        }, { status: 500 });
     }
 } 

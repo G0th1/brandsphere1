@@ -2,19 +2,29 @@
 
 import { useEffect } from "react";
 
+/**
+ * Dashboard initialization script
+ * Handles session marking and cleanup of debug elements
+ */
 export default function DashboardScript() {
     useEffect(() => {
-        // Only mark the session as loaded, no UI modifications
-        if (typeof window !== 'undefined') {
+        if (typeof window === 'undefined') return;
+
+        try {
+            // Mark dashboard as loaded
             sessionStorage.setItem('dashboard_loaded', 'true');
             sessionStorage.removeItem('auth_in_progress');
 
-            // Check if we need to remove any debug elements that might have been added
-            document.querySelectorAll('[id*="debug"], [id*="indicator"], [class*="debug"]').forEach(el => {
-                if (el.parentNode) {
-                    el.parentNode.removeChild(el);
-                }
+            // Remove any debug elements
+            const debugElements = document.querySelectorAll(
+                '[id*="debug"], [id*="indicator"], [class*="debug"]'
+            );
+
+            debugElements.forEach(el => {
+                el.parentNode?.removeChild(el);
             });
+        } catch (error) {
+            // Silently fail if there are issues with DOM or sessionStorage
         }
     }, []);
 

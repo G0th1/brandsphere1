@@ -101,14 +101,14 @@ export function PlanCard({
     return (
         <Card
             className={cn(
-                "flex flex-col",
+                "flex flex-col relative",
                 popular && "border-primary shadow-md",
                 currentPlan && "border-green-500 bg-green-50 dark:bg-green-950/20"
             )}
         >
             {popular && !currentPlan && (
-                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
-                    <div className="px-3 py-1 text-sm font-medium text-white bg-primary rounded-md">
+                <div className="absolute top-0 right-0 transform translate-x-0 -translate-y-1/2">
+                    <div className="px-3 py-1 text-xs font-medium text-primary-foreground bg-primary rounded-full">
                         {language === 'en' ? 'Popular' : 'Populär'}
                     </div>
                 </div>

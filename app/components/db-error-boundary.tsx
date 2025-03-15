@@ -45,85 +45,18 @@ export default function DbErrorBoundary({ children }: DbErrorBoundaryProps) {
             }
         };
 
-        // Check if universal mode was previously enabled
-        const universalModeEnabled = localStorage.getItem('universalMode') === 'true';
-        if (universalModeEnabled) {
-            enableUniversalMode();
-            return;
-        }
+        // Always enable universal mode immediately to prevent loading screen
+        enableUniversalMode();
 
-        // Detect browser
+        // Cleanup URL params if needed
         if (typeof window !== 'undefined') {
-            const ua = window.navigator.userAgent;
-            const isChromeBrowser = ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1;
-            setIsChrome(isChromeBrowser);
-
-            // For non-Chrome browsers, automatically enable universal mode
-            if (!isChromeBrowser) {
-                console.log('Non-Chrome browser detected. Enabling universal mode.');
-                enableUniversalMode();
-                return;
-            }
-        }
-
-        // Check if offline mode was previously enabled
-        const offlineModeEnabled = localStorage.getItem('offlineMode') === 'true';
-
-        // Check URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const offlineParam = urlParams.get('offline_mode') === 'true';
-        const bypassDb = urlParams.get('bypass_db') === 'true';
-        const universalParam = urlParams.get('universal_mode') === 'true';
-
-        // If any bypass mode is enabled, use universal mode
-        if (offlineModeEnabled || offlineParam || bypassDb || universalParam) {
-            enableUniversalMode();
-
-            // Clean up URL parameters
-            if (offlineParam || bypassDb || universalParam) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasParams = urlParams.has('offline_mode') || urlParams.has('bypass_db') || urlParams.has('universal_mode');
+            if (hasParams) {
                 cleanupUrlParams();
             }
-            return;
         }
 
-        // Check if user is on demo path
-        const isDemoPath = window.location.pathname.startsWith('/demo');
-        if (isDemoPath) {
-            enableUniversalMode();
-            return;
-        }
-
-        // Otherwise check database connection with universal mode support
-        const checkDbConnection = async () => {
-            try {
-                // Always use universal mode
-                const response = await fetch(`/api/db-health-check?universal_mode=true`, {
-                    credentials: 'include',
-                    headers: {
-                        'X-Browser-Compat': 'true'
-                    }
-                });
-
-                // Always enable universal mode regardless of response
-                enableUniversalMode();
-
-                // Still parse response for logging purposes
-                try {
-                    const data = await response.json();
-                    console.log('DB health check response:', data);
-                } catch (parseError) {
-                    console.warn('Could not parse response:', parseError);
-                }
-            } catch (error) {
-                console.error('Database health check failed:', error);
-                // Even on error, enable universal mode for best user experience
-                enableUniversalMode();
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        checkDbConnection();
     }, []);
 
     // Function to clean up URL parameters

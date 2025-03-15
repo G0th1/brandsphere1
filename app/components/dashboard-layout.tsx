@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/subscription-context';
 import { ThemeToggle } from "@/app/components/theme-toggle";
+import Image from 'next/image';
 
 // Import components
 import { PostManagement } from '@/app/components/content/post-management';
@@ -73,6 +74,11 @@ const NAVIGATION_ITEMS = [
         href: '/dashboard/content',
     },
     {
+        title: 'Projects',
+        icon: <PlusCircle className="h-5 w-5" />,
+        href: '/dashboard/projects',
+    },
+    {
         title: 'Analytics',
         icon: <BarChart2 className="h-5 w-5" />,
         href: '/dashboard/analytics',
@@ -86,6 +92,11 @@ const NAVIGATION_ITEMS = [
         title: 'Accounts',
         icon: <Users className="h-5 w-5" />,
         href: '/dashboard/accounts',
+    },
+    {
+        title: 'Team',
+        icon: <Users className="h-5 w-5" />,
+        href: '/dashboard/team',
     },
     {
         title: 'Settings',
@@ -196,9 +207,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-20">
                 <div className="flex flex-col flex-grow border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 pt-5 overflow-y-auto">
                     <div className="flex items-center justify-center h-16 flex-shrink-0 px-4">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            BrandSphere AI
-                        </h1>
+                        <Link href="/dashboard" className="flex items-center space-x-2">
+                            <Image
+                                src="/images/image_2025-03-02_212020748 (1).png"
+                                alt="BrandSphereAI Logo"
+                                width={32}
+                                height={32}
+                                className="w-8 h-8"
+                            />
+                            <span className="text-xl font-bold text-gray-900 dark:text-gray-100">BrandSphere AI</span>
+                        </Link>
                     </div>
 
                     <div className="mt-5 flex-grow flex flex-col">
@@ -213,12 +231,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                         className={`
                                             group flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors
                                             ${isActive
-                                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+                                                ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
                                                 : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900'
                                             }
                                         `}
                                     >
-                                        <div className={`mr-3 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        <div className={`mr-3 ${isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
                                             {item.icon}
                                         </div>
                                         {item.title}
@@ -230,14 +248,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
                     {isDemoActive && (
                         <div className="px-4 py-4 mt-auto">
-                            <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-4">
+                            <div className="rounded-lg bg-gray-100 dark:bg-gray-800 p-4">
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
-                                        <HelpCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        <HelpCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                                     </div>
                                     <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-blue-700 dark:text-blue-400">Demo Mode Active</h3>
-                                        <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Demo Mode Active</h3>
+                                        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                                             You're using BrandSphere in demo mode.
                                         </div>
                                         <div className="mt-2">
@@ -254,7 +272,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Mobile menu */}
-            <div className={`fixed inset-0 flex z-40 md:hidden ${isMobileMenuOpen ? '' : 'hidden'}`}>
+            <div className={`md:hidden fixed inset-0 flex z-40 transition-all duration-300 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setIsMobileMenuOpen(false)}></div>
                 <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-gray-950">
                     <div className="absolute top-0 right-0 -mr-12 pt-2">
@@ -269,9 +287,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="flex items-center justify-center h-16 flex-shrink-0 px-4 mt-5">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            BrandSphere AI
-                        </h1>
+                        <Link href="/dashboard" className="flex items-center space-x-2">
+                            <Image
+                                src="/images/image_2025-03-02_212020748 (1).png"
+                                alt="BrandSphereAI Logo"
+                                width={32}
+                                height={32}
+                                className="w-8 h-8"
+                            />
+                            <span className="text-xl font-bold text-gray-900 dark:text-gray-100">BrandSphere AI</span>
+                        </Link>
                     </div>
 
                     <div className="mt-5 flex-1 h-0 overflow-y-auto">
@@ -286,13 +311,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                         className={`
                                             group flex items-center px-4 py-3 text-base font-medium rounded-md transition-colors
                                             ${isActive
-                                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+                                                ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
                                                 : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900'
                                             }
                                         `}
                                         onClick={() => setIsMobileMenuOpen(false)}
                                     >
-                                        <div className={`mr-4 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        <div className={`mr-4 ${isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
                                             {item.icon}
                                         </div>
                                         {item.title}
@@ -304,14 +329,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
                     {isDemoActive && (
                         <div className="px-4 py-4">
-                            <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-4">
+                            <div className="rounded-lg bg-gray-100 dark:bg-gray-800 p-4">
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
-                                        <HelpCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        <HelpCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                                     </div>
                                     <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-blue-700 dark:text-blue-400">Demo Mode Active</h3>
-                                        <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Demo Mode Active</h3>
+                                        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                                             You're using BrandSphere in demo mode.
                                         </div>
                                         <div className="mt-2">
@@ -410,7 +435,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="relative z-20 h-8 w-8 rounded-full">
-                                        <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                        <div className="h-8 w-8 rounded-full bg-gray-700 dark:bg-gray-600 flex items-center justify-center text-white">
                                             <span className="text-sm font-medium">U</span>
                                         </div>
                                     </Button>
@@ -438,76 +463,78 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Content area */}
-                <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
-                    {/* Page heading */}
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                            {currentPage?.title || 'Dashboard'}
-                        </h1>
+                <main className="flex-1 py-6 px-6 md:px-8 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+                    <div className="w-full mx-auto">
+                        {/* Page heading */}
+                        <div className="mb-6">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                {currentPage?.title || 'Dashboard'}
+                            </h1>
+                        </div>
+
+                        {/* Tabbed navigation - shown only on main dashboard route */}
+                        {pathname === '/dashboard' ? (
+                            <Tabs defaultValue="dashboard" className="space-y-6">
+                                <div className="relative z-10 border-b border-gray-200 dark:border-gray-800">
+                                    <TabsList className="flex -mb-px space-x-8">
+                                        <TabsTrigger
+                                            value="dashboard"
+                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                        >
+                                            Overview
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="content"
+                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                        >
+                                            Content
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="analytics"
+                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                        >
+                                            Analytics
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="calendar"
+                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                        >
+                                            Calendar
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="accounts"
+                                            className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
+                                        >
+                                            Accounts
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </div>
+
+                                <TabsContent value="dashboard" className="relative z-10">
+                                    {getTabContent('dashboard')}
+                                </TabsContent>
+
+                                <TabsContent value="content" className="relative z-10">
+                                    {getTabContent('content')}
+                                </TabsContent>
+
+                                <TabsContent value="analytics" className="relative z-10">
+                                    {getTabContent('analytics')}
+                                </TabsContent>
+
+                                <TabsContent value="calendar" className="relative z-10">
+                                    {getTabContent('calendar')}
+                                </TabsContent>
+
+                                <TabsContent value="accounts" className="relative z-10">
+                                    {getTabContent('accounts')}
+                                </TabsContent>
+                            </Tabs>
+                        ) : (
+                            // Regular page content
+                            <div className="relative z-10">{children}</div>
+                        )}
                     </div>
-
-                    {/* Tabbed navigation - shown only on main dashboard route */}
-                    {pathname === '/dashboard' ? (
-                        <Tabs defaultValue="dashboard" className="space-y-6">
-                            <div className="relative z-10 border-b border-gray-200 dark:border-gray-800">
-                                <TabsList className="flex -mb-px space-x-8">
-                                    <TabsTrigger
-                                        value="dashboard"
-                                        className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                    >
-                                        Overview
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="content"
-                                        className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                    >
-                                        Content
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="analytics"
-                                        className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                    >
-                                        Analytics
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="calendar"
-                                        className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                    >
-                                        Calendar
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="accounts"
-                                        className="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap border-transparent hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300"
-                                    >
-                                        Accounts
-                                    </TabsTrigger>
-                                </TabsList>
-                            </div>
-
-                            <TabsContent value="dashboard" className="relative z-10">
-                                {getTabContent('dashboard')}
-                            </TabsContent>
-
-                            <TabsContent value="content" className="relative z-10">
-                                {getTabContent('content')}
-                            </TabsContent>
-
-                            <TabsContent value="analytics" className="relative z-10">
-                                {getTabContent('analytics')}
-                            </TabsContent>
-
-                            <TabsContent value="calendar" className="relative z-10">
-                                {getTabContent('calendar')}
-                            </TabsContent>
-
-                            <TabsContent value="accounts" className="relative z-10">
-                                {getTabContent('accounts')}
-                            </TabsContent>
-                        </Tabs>
-                    ) : (
-                        // Regular page content
-                        <div className="relative z-10">{children}</div>
-                    )}
                 </main>
             </div>
 

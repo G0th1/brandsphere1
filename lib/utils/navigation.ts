@@ -21,24 +21,24 @@ export const safeNavigate = (url: string, router?: ReturnType<typeof useNextRout
     // Normalize URL format
     const normalizedUrl = url.startsWith('/') ? url : `/${url}`;
 
+    // Try Next.js router first if available for better SPA experience
+    if (router) {
+        try {
+            router.push(normalizedUrl);
+            console.log(`Navigation using Next.js router to: ${normalizedUrl}`);
+            return;
+        } catch (routerError) {
+            console.error('Router navigation failed:', routerError);
+        }
+    }
+
     try {
-        // First attempt: Use direct window.location for the most reliable navigation
+        // Fallback: Use direct window.location for the most reliable navigation
         window.location.href = normalizedUrl;
         console.log(`Direct navigation using window.location to: ${normalizedUrl}`);
         return;
     } catch (error) {
         console.error('Primary navigation method failed:', error);
-
-        // Try Next.js router if available
-        if (router) {
-            try {
-                router.push(normalizedUrl);
-                console.log(`Fallback navigation using Next.js router to: ${normalizedUrl}`);
-                return;
-            } catch (routerError) {
-                console.error('Router navigation failed:', routerError);
-            }
-        }
 
         // Try window.open as a fallback
         try {

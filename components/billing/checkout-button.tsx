@@ -13,6 +13,10 @@ const translations = {
         subscribing: "Processing...",
         errors: {
             checkoutError: "Failed to initiate checkout. Please try again.",
+            connectionError: "Connection error. Please check your internet connection.",
+            serverError: "Server error. Our team has been notified.",
+            authError: "Authentication error. Please login again.",
+            unexpectedError: "An unexpected error occurred. Please try again later."
         }
     },
     sv: {
@@ -20,6 +24,10 @@ const translations = {
         subscribing: "Bearbetar...",
         errors: {
             checkoutError: "Kunde inte starta kassan. Försök igen.",
+            connectionError: "Anslutningsfel. Kontrollera din internetanslutning.",
+            serverError: "Serverfel. Vårt team har meddelats.",
+            authError: "Autentiseringsfel. Logga in igen.",
+            unexpectedError: "Ett oväntat fel uppstod. Försök igen senare."
         }
     }
 };
@@ -61,23 +69,49 @@ export function CheckoutButton({
                 }),
             });
 
-            const data = await response.json();
+            // Check if response exists before trying to parse it
+            if (!response) {
+                throw new Error(t.errors.connectionError);
+            }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error("Error parsing response:", parseError);
+                throw new Error(t.errors.serverError);
+            }
 
             if (!response.ok) {
-                throw new Error(data.message || t.errors.checkoutError);
+                // Check for specific error types
+                if (response.status === 401) {
+                    throw new Error(t.errors.authError);
+                } else if (response.status >= 500) {
+                    throw new Error(t.errors.serverError);
+                }
+
+                // Use the error message from the API if available
+                const errorMessage = data?.message || t.errors.checkoutError;
+                throw new Error(errorMessage);
             }
 
-            // Redirect till checkout-sidan
+            // Redirect to checkout page
             if (data.url) {
                 window.location.href = data.url;
+            } else {
+                // Handle the case where the URL is missing
+                throw new Error("Checkout URL not provided");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Checkout error:", error);
+
+            // Show a descriptive toast error
             toast({
-                title: "Fel",
-                description: t.errors.checkoutError,
+                title: language === "en" ? "Error" : "Fel",
+                description: error.message || t.errors.unexpectedError,
                 variant: "destructive",
             });
+
             setIsLoading(false);
         }
     };
