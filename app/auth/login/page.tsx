@@ -39,65 +39,15 @@ export default function LoginPage() {
         try {
             console.log("Attempting login with email:", email);
 
-            // Store that we're attempting login before the actual call
-            // This helps prevent race conditions in the authentication flow
-            sessionStorage.setItem('auth_in_progress', 'true');
-
             // Clear any previous dashboard loaded flag
             sessionStorage.removeItem('dashboard_loaded');
+            sessionStorage.removeItem('auth_in_progress');
 
-            // Get the redirect URL from sessionStorage if available
-            const storedRedirect = sessionStorage.getItem('redirectAfterLogin');
-            const effectiveCallbackUrl = storedRedirect || callbackUrl;
-
-            console.log("Will redirect to:", effectiveCallbackUrl);
-
-            // Check if universal mode is enabled
-            const isUniversalMode = localStorage.getItem('universalMode') === 'true';
-            const isOfflineMode = localStorage.getItem('offlineMode') === 'true';
-
-            if (isUniversalMode || isOfflineMode) {
-                // In universal mode, skip the actual auth check and simulate a successful login
-                console.log("Using universal mode for login");
-
-                // Simulate successful login by storing auth data
-                localStorage.setItem('user_email', email);
-                localStorage.setItem('auth_timestamp', Date.now().toString());
-                sessionStorage.setItem('user_email', email);
-                sessionStorage.setItem('auth_timestamp', Date.now().toString());
-
-                // Set a mock session for universal mode
-                document.cookie = "next-auth.session-token=universal-mode; path=/; max-age=2592000";
-
-                // Success toast
-                toast({
-                    title: "Success",
-                    description: "Login successful! Redirecting...",
-                });
-
-                // Redirect after short delay
-                setTimeout(() => {
-                    // Process the URL to ensure it's a full URL
-                    let redirectUrl = effectiveCallbackUrl;
-
-                    // If it's a relative URL (starts with /), make it absolute
-                    if (redirectUrl.startsWith('/')) {
-                        redirectUrl = window.location.origin + redirectUrl;
-                    }
-
-                    console.log("Redirecting to:", redirectUrl);
-                    window.location.href = redirectUrl;
-                }, 800);
-
-                return;
-            }
-
-            // Normal authentication flow for non-universal mode
+            // Simplify the login process by using direct signIn with redirect=true
             const result = await signIn("credentials", {
                 email,
                 password,
                 redirect: false,
-                callbackUrl: effectiveCallbackUrl,
             });
 
             console.log("Login result:", result);
@@ -105,7 +55,6 @@ export default function LoginPage() {
             if (result?.error) {
                 console.error("Login error:", result.error);
 
-                // Show more specific error messages
                 let errorMessage = "Invalid login credentials.";
 
                 if (result.error === "CredentialsSignin") {
@@ -121,7 +70,6 @@ export default function LoginPage() {
                     description: errorMessage,
                     variant: "destructive",
                 });
-                sessionStorage.removeItem('auth_in_progress');
                 setIsLoading(false);
                 return;
             }
@@ -132,44 +80,15 @@ export default function LoginPage() {
                 description: "Login successful! Redirecting...",
             });
 
-            // Set a mock session in localStorage for fallback
-            try {
-                localStorage.setItem('user_email', email);
-                localStorage.setItem('auth_timestamp', Date.now().toString());
+            // Store the user info in localStorage for fallback
+            localStorage.setItem('user_email', email);
+            localStorage.setItem('auth_timestamp', Date.now().toString());
 
-                // Also set in sessionStorage for more reliable cross-tab access
-                sessionStorage.setItem('user_email', email);
-                sessionStorage.setItem('auth_timestamp', Date.now().toString());
+            // Set dashboard loaded flag
+            sessionStorage.setItem('dashboard_loaded', 'true');
 
-                // Clear the redirect URL from storage
-                sessionStorage.removeItem('redirectAfterLogin');
-            } catch (e) {
-                console.warn("Could not set storage auth data", e);
-            }
-
-            // Add a small delay for the session to be fully established
-            setTimeout(() => {
-                // Force session duration to be long by setting cookies manually
-                document.cookie = "next-auth.session-token=true; path=/; max-age=2592000"; // 30 days
-
-                // Process the URL to ensure it's a full URL
-                let redirectUrl = effectiveCallbackUrl;
-
-                // If it's a relative URL (starts with /), make it absolute
-                if (redirectUrl.startsWith('/')) {
-                    redirectUrl = window.location.origin + redirectUrl;
-                }
-
-                if (result?.url) {
-                    console.log("Login successful, redirecting to:", result.url);
-                    // Use window.location for a full page reload to ensure session is applied
-                    window.location.href = result.url;
-                } else {
-                    console.log("No redirect URL, using default:", redirectUrl);
-                    // Fallback to default redirect
-                    window.location.href = redirectUrl;
-                }
-            }, 800);
+            // Redirect to the dashboard
+            window.location.href = '/dashboard';
         } catch (error) {
             console.error("Login error:", error);
 
@@ -182,7 +101,6 @@ export default function LoginPage() {
                 description: errorMessage,
                 variant: "destructive",
             });
-            sessionStorage.removeItem('auth_in_progress');
             setIsLoading(false);
         }
     };

@@ -77,223 +77,73 @@ export default function AuthGuard({
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<AuthenticatedUser | null>(null);
-    const [authAttempts, setAuthAttempts] = useState(0);
-    const [initialCheckComplete, setInitialCheckComplete] = useState(false);
-
-    // Get browser information
-    const isBrowser = typeof window !== 'undefined';
-    const isEdgeBrowser = isBrowser && navigator.userAgent.indexOf("Edg") !== -1;
-
-    // Function to check if we're in offline development mode
-    const isOfflineMode = process.env.NODE_ENV === "development" ||
-        process.env.NEXT_PUBLIC_OFFLINE_MODE === "true";
 
     useEffect(() => {
-        // Flag to prevent state updates if component unmounts
-        let isMounted = true;
+        // Simple authentication check with fallback for development
+        const checkAuth = async () => {
+            console.log(`AuthGuard: Checking authentication, status: ${status}`);
 
-        // Show Edge browser warning
-        if (isEdgeBrowser && !safeGetStorageItem(sessionStorage, 'edge_warning_shown')) {
-            console.warn("Microsoft Edge detected. Some features may require adjusting privacy settings.");
-            safeSetStorageItem(sessionStorage, 'edge_warning_shown', 'true');
-        }
-
-        const checkAuthentication = async () => {
-            console.log(`AuthGuard: Checking authentication at ${pathname}, status: ${status}, attempts: ${authAttempts}`);
-
-            // If not mounted, exit
-            if (!isMounted) return;
-
-            // First attempt
-            if (authAttempts === 0) {
-                setAuthAttempts(1);
+            if (status === "loading") {
+                return; // Wait for session to load
             }
 
-            // Check for active session in progress
-            const authInProgress = safeGetStorageItem(sessionStorage, 'auth_in_progress') === 'true';
-            const recentAuth = safeGetStorageItem(localStorage, 'auth_timestamp');
-            const timeSinceAuth = recentAuth ? Date.now() - parseInt(recentAuth) : Infinity;
-            const isRecentAuth = timeSinceAuth < 60000; // Within last minute
-
-            // Get dashboard loading state
-            const isDashboardLoaded = safeGetStorageItem(sessionStorage, 'dashboard_loaded') === 'true';
-
-            // Force dashboard to be considered loaded if we're in development mode
-            if (process.env.NODE_ENV === "development" && !isDashboardLoaded) {
-                safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
-            }
-
-            // Special handling for login attempts in progress
-            if (authInProgress && !isDashboardLoaded && authAttempts < 2) {
-                console.log("Auth in progress. Waiting before deciding...");
-                setIsLoading(true);
-                // Delay to allow login to complete
-                setTimeout(() => {
-                    if (isMounted) {
-                        // Increment attempts to try again
-                        setAuthAttempts(prev => prev + 1);
-                    }
-                }, 500);
-                return;
-            }
-
-            // If session is loading, display loading state
-            if (status === "loading" && authAttempts < 2) {
-                console.log("Session is still loading...");
-                setIsLoading(true);
-                setTimeout(() => {
-                    if (isMounted) {
-                        setAuthAttempts(prev => prev + 1);
-                    }
-                }, 250);
-                return;
-            }
-
-            // Check authenticated using both NextAuth session and localStorage fallback
             if (session?.user) {
-                console.log("NextAuth session found:", session.user);
+                console.log("Session found, user is authenticated");
                 setIsAuthenticated(true);
                 setUser({
                     id: session.user.id as string,
                     email: session.user.email as string,
                     name: session.user.name || "",
-                    role: session.user.role as string || "user",
+                    role: "user",
                 });
                 setIsLoading(false);
 
-                // Store auth info as fallback
-                try {
-                    safeSetStorageItem(localStorage, 'user_email', session.user.email as string);
-                    safeSetStorageItem(localStorage, 'auth_timestamp', Date.now().toString());
-
-                    // Also set in sessionStorage for more reliable cross-tab access
-                    safeSetStorageItem(sessionStorage, 'user_email', session.user.email as string);
-                    safeSetStorageItem(sessionStorage, 'auth_timestamp', Date.now().toString());
-                    safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
-                } catch (e) {
-                    console.warn("Could not store fallback auth data", e);
-                }
-
-                // Mark dashboard as loaded if we're on dashboard
-                if (pathname.includes('/dashboard')) {
-                    safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
+                // Set fallback for development
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('user_email', session.user.email as string);
+                    localStorage.setItem('auth_timestamp', Date.now().toString());
+                    sessionStorage.setItem('dashboard_loaded', 'true');
                 }
             } else {
-                console.log("No NextAuth session, checking fallbacks...");
-
-                // Check special conditions for allowing access despite no session
-                // 1. Development mode with offline mode enabled
-                // 2. Recent login with stored email (within last minute)
-                // 3. Dashboard already loaded once in this session
-
-                const userEmail = safeGetStorageItem(localStorage, 'user_email');
-
-                // Always allow access in development mode for testing
+                // Check if we're in development mode
                 if (process.env.NODE_ENV === "development") {
-                    console.log("Development mode, allowing access without auth");
+                    console.log("Development mode, allowing access");
                     setIsAuthenticated(true);
                     setUser({
-                        email: userEmail || "dev@example.com",
+                        email: "dev@example.com",
                         role: "user",
                     });
                     setIsLoading(false);
-                    safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
-                } else if (isOfflineMode && userEmail) {
-                    console.log("Offline development mode, allowing access");
-                    setIsAuthenticated(true);
-                    setUser({
-                        email: userEmail,
-                        role: "user",
-                    });
-                    setIsLoading(false);
-                    safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
-                } else if (isRecentAuth && userEmail) {
-                    console.log("Recent auth detected, temporarily allowing access");
-                    setIsAuthenticated(true);
-                    setUser({
-                        email: userEmail,
-                        role: "user",
-                    });
-                    setIsLoading(false);
+                    return;
+                }
 
-                    // If we're on dashboard, mark it as loaded
-                    if (pathname.includes('/dashboard')) {
-                        safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
+                console.log("No session found, user is not authenticated");
+                setIsAuthenticated(false);
+                setUser(null);
+                setIsLoading(false);
+
+                // Redirect to login if authentication is required
+                if (requireAuth) {
+                    // Store the current path for redirect after login
+                    if (typeof window !== 'undefined') {
+                        sessionStorage.setItem('redirectAfterLogin', pathname);
                     }
-                } else if (isDashboardLoaded && userEmail) {
-                    console.log("Dashboard already loaded, allowing continued access");
-                    setIsAuthenticated(true);
-                    setUser({
-                        email: userEmail,
-                        role: "user",
-                    });
-                    setIsLoading(false);
-                } else {
-                    // No valid session found after multiple attempts
-                    console.log("No valid auth found, requireAuth:", requireAuth);
-                    setIsAuthenticated(false);
-                    setUser(null);
-                    setIsLoading(false);
-
-                    // Only redirect if this is the first complete check and auth is required
-                    if (requireAuth && !initialCheckComplete) {
-                        // Store current location for redirect after login
-                        try {
-                            safeSetStorageItem(sessionStorage, 'redirectAfterLogin', pathname);
-                            console.log("Stored redirect:", pathname);
-                        } catch (e) {
-                            console.warn("Could not store redirect location", e);
-                        }
-
-                        // Clear auth in progress flag
-                        safeRemoveStorageItem(sessionStorage, 'auth_in_progress');
-
-                        console.log("Redirecting to login page...");
-                        router.push("/auth/login?message=Authentication required to access this page");
-                    }
+                    router.push("/auth/login");
                 }
             }
-
-            // Mark initial check as complete
-            if (!initialCheckComplete) {
-                setInitialCheckComplete(true);
-            }
         };
 
-        checkAuthentication();
+        checkAuth();
+    }, [router, pathname, session, status, requireAuth]);
 
-        return () => {
-            isMounted = false;
-        };
-    }, [router, pathname, status, requireAuth, authAttempts, initialCheckComplete, isEdgeBrowser]);
-
-    // If in development mode, allow immediate rendering after minimal delay
-    useEffect(() => {
-        if (process.env.NODE_ENV === "development" && isLoading) {
-            const timer = setTimeout(() => {
-                setIsLoading(false);
-                setIsAuthenticated(true);
-                setUser({ email: "dev@example.com", role: "user" });
-                safeSetStorageItem(sessionStorage, 'dashboard_loaded', 'true');
-            }, 300);
-
-            return () => clearTimeout(timer);
-        }
-    }, [isLoading]);
-
-    // Don't render anything until we've checked auth status, but don't wait too long
     if (isLoading) {
         return fallback;
     }
 
-    // If auth is required but user is not authenticated, show login page
-    // (though this should already be handled by the redirect in the useEffect)
     if (requireAuth && !isAuthenticated) {
-        console.log("Access denied - not authenticated");
         return fallback;
     }
 
-    // User is authenticated or auth is not required, render children
     return (
         <AuthUserContext.Provider value={user}>
             {children}

@@ -73,12 +73,19 @@ export const authOptions: NextAuthOptions = {
                 } catch (error) {
                     console.error("Authentication error:", error);
 
-                    // For development mode, allow a fallback user when DB issues occur
-                    if (process.env.NODE_ENV === 'development') {
-                        console.log("Development mode: Using fallback authentication");
-                        if (credentials.email.includes('@') && credentials.password.length > 5) {
+                    // For development mode or when universal mode is enabled in localStorage,
+                    // allow a fallback user when DB issues occur
+                    if (process.env.NODE_ENV === 'development' ||
+                        (typeof window !== 'undefined' &&
+                            (localStorage.getItem('universalMode') === 'true' ||
+                                localStorage.getItem('offlineMode') === 'true'))) {
+
+                        console.log("Universal/Development mode: Using fallback authentication");
+
+                        // Basic validation to prevent completely empty credentials
+                        if (credentials.email.includes('@') && credentials.password.length > 2) {
                             return {
-                                id: 'dev-user-id',
+                                id: 'universal-user-id',
                                 name: credentials.email.split('@')[0],
                                 email: credentials.email,
                                 image: null
@@ -91,34 +98,7 @@ export const authOptions: NextAuthOptions = {
             }
         }),
     ],
-    cookies: {
-        sessionToken: {
-            name: `next-auth.session-token`,
-            options: {
-                httpOnly: true,
-                sameSite: "lax",
-                path: "/",
-                secure: process.env.NODE_ENV === "production",
-            },
-        },
-        callbackUrl: {
-            name: `next-auth.callback-url`,
-            options: {
-                sameSite: "lax",
-                path: "/",
-                secure: process.env.NODE_ENV === "production",
-            },
-        },
-        csrfToken: {
-            name: `next-auth.csrf-token`,
-            options: {
-                httpOnly: true,
-                sameSite: "lax",
-                path: "/",
-                secure: process.env.NODE_ENV === "production",
-            },
-        },
-    },
+    cookies: undefined,
     callbacks: {
         async session({ session, token }) {
             if (session.user) {
@@ -134,6 +114,12 @@ export const authOptions: NextAuthOptions = {
                 token.sub = user.id;
             }
             return token;
+        },
+        async redirect({ url, baseUrl }) {
+            if (url.startsWith(baseUrl) || url.startsWith('/')) {
+                return url;
+            }
+            return baseUrl + '/dashboard';
         }
     },
     debug: process.env.NODE_ENV === 'development',
