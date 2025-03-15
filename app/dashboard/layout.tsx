@@ -33,8 +33,8 @@ export const metadata: Metadata = {
     description: "AI-Powered Brand Identity Management",
 };
 
-// Simplified style block for better performance
-const fixedStyle = `
+// Improved style block with better proportions
+const dashboardStyles = `
     .dashboard-html, .dashboard-body {
         overflow-x: hidden;
     }
@@ -43,11 +43,15 @@ const fixedStyle = `
         display: flex;
         flex-direction: column;
         min-height: 100vh;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
     }
     
     .dashboard-content {
         flex-grow: 1;
-        padding: 1rem;
+        padding: 1.5rem;
+        width: 100%;
     }
     
     @media (min-width: 768px) {
@@ -55,41 +59,29 @@ const fixedStyle = `
             padding: 2rem;
         }
     }
+    
+    @media (min-width: 1200px) {
+        .dashboard-content {
+            padding: 2.5rem;
+        }
+    }
 `;
 
-// Simplified dashboard indicator component
-function DashboardStatusBar() {
+// Hidden script to maintain session continuity without visible elements
+function SessionMaintenanceScript() {
     return (
-        <div
-            className="fixed bottom-0 left-0 right-0 bg-primary text-white text-xs p-1 z-50 text-center"
-            id="dashboard-indicator"
-            suppressHydrationWarning
-        >
-            Dashboard Loaded • <span id="dashboard-time">{new Date().toLocaleTimeString()}</span>
-            <script
-                dangerouslySetInnerHTML={{
-                    __html: `
-                        try {
-                            // Mark dashboard as loaded for auth continuity
-                            sessionStorage.setItem('dashboard_loaded', 'true');
-                            
-                            // Update time every second
-                            setInterval(() => {
-                                document.getElementById('dashboard-time').textContent = new Date().toLocaleTimeString();
-                            }, 1000);
-                            
-                            // Add user info if available
-                            const email = localStorage.getItem('user_email');
-                            if (email) {
-                                document.getElementById('dashboard-indicator').textContent += ' • User: ' + email;
-                            }
-                        } catch (e) {
-                            console.warn('Dashboard indicator error:', e);
-                        }
-                    `,
-                }}
-            />
-        </div>
+        <script
+            dangerouslySetInnerHTML={{
+                __html: `
+                    try {
+                        // Mark dashboard as loaded for auth continuity
+                        sessionStorage.setItem('dashboard_loaded', 'true');
+                    } catch (e) {
+                        console.warn('Session maintenance error:', e);
+                    }
+                `,
+            }}
+        />
     );
 }
 
@@ -100,16 +92,16 @@ export default function DashboardLayout({
 }) {
     return (
         <>
-            <style dangerouslySetInnerHTML={{ __html: fixedStyle }} />
+            <style dangerouslySetInnerHTML={{ __html: dashboardStyles }} />
             <AuthGuard requireAuth={true}>
-                <div className="dashboard-container container mx-auto">
+                <div className="dashboard-container">
                     <DashboardClientNav />
-                    <main id="dashboard-content" className="dashboard-content p-4 md:p-6 pb-8">
+                    <main id="dashboard-content" className="dashboard-content">
                         <Suspense fallback={<div className="p-4 border rounded-md">Loading dashboard content...</div>}>
                             {children}
                         </Suspense>
                     </main>
-                    <DashboardStatusBar />
+                    <SessionMaintenanceScript />
                 </div>
             </AuthGuard>
         </>

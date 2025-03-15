@@ -78,15 +78,10 @@ export default function AuthGuard({
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<AuthenticatedUser | null>(null);
 
-    // Add visible debugging messages
-    const showDebug = (message: string) => {
-        if (typeof document !== 'undefined') {
+    // Use console.log for debugging, but don't show UI elements
+    const logDebug = (message: string) => {
+        if (process.env.NODE_ENV === "development") {
             console.log("[AuthGuard]", message);
-            const debugBox = document.createElement('div');
-            debugBox.style.cssText = 'position:fixed;bottom:0;right:0;background:rgba(0,0,0,0.8);color:white;padding:10px;z-index:9999;max-width:80%;font-size:12px;';
-            debugBox.textContent = `[AuthGuard] ${message}`;
-            document.body.appendChild(debugBox);
-            setTimeout(() => document.body.removeChild(debugBox), 5000);
         }
     };
 
@@ -94,11 +89,11 @@ export default function AuthGuard({
         let isMounted = true;
 
         const checkAuth = async () => {
-            showDebug(`Checking authentication, status: ${status}, path: ${pathname}`);
+            logDebug(`Checking authentication, status: ${status}, path: ${pathname}`);
 
             // Always allow access in development mode
             if (process.env.NODE_ENV === "development") {
-                showDebug("Development mode - allowing access");
+                logDebug("Development mode - allowing access");
                 if (isMounted) {
                     setIsAuthenticated(true);
                     setUser({ email: "dev@example.com", role: "user" });
@@ -109,12 +104,12 @@ export default function AuthGuard({
 
             // Check for session
             if (status === "loading") {
-                showDebug("Session is loading...");
+                logDebug("Session is loading...");
                 return; // Wait for session
             }
 
             if (session?.user) {
-                showDebug(`User authenticated: ${session.user.email}`);
+                logDebug(`User authenticated: ${session.user.email}`);
                 if (isMounted) {
                     setIsAuthenticated(true);
                     setUser({
@@ -132,7 +127,7 @@ export default function AuthGuard({
                     }
                 }
             } else {
-                showDebug("No session found, user is not authenticated");
+                logDebug("No session found, user is not authenticated");
 
                 // Check for stored credentials as fallback
                 const storedEmail = localStorage.getItem('user_email');
@@ -140,7 +135,7 @@ export default function AuthGuard({
                 const recentAuth = authTimestamp && (Date.now() - parseInt(authTimestamp)) < 3600000; // 1 hour
 
                 if (storedEmail && recentAuth) {
-                    showDebug(`Using recent stored auth for: ${storedEmail}`);
+                    logDebug(`Using recent stored auth for: ${storedEmail}`);
                     if (isMounted) {
                         setIsAuthenticated(true);
                         setUser({
@@ -159,7 +154,7 @@ export default function AuthGuard({
 
                     // Redirect if auth is required
                     if (requireAuth) {
-                        showDebug(`Redirecting to login page from: ${pathname}`);
+                        logDebug(`Redirecting to login page from: ${pathname}`);
                         // Store the current path for redirect after login
                         if (typeof window !== 'undefined') {
                             sessionStorage.setItem('redirectAfterLogin', pathname);
@@ -177,21 +172,7 @@ export default function AuthGuard({
         };
     }, [router, pathname, session, status, requireAuth]);
 
-    // Add visible feedback
-    useEffect(() => {
-        if (typeof document !== 'undefined') {
-            const status = document.createElement('div');
-            status.style.cssText = 'position:fixed;top:0;right:0;background:rgba(0,0,0,0.8);color:white;padding:5px 10px;z-index:9999;font-size:12px;';
-            status.textContent = isAuthenticated
-                ? `✅ Authenticated as: ${user?.email}`
-                : (isLoading ? "⏳ Loading auth..." : "❌ Not authenticated");
-            document.body.appendChild(status);
-
-            return () => {
-                document.body.removeChild(status);
-            };
-        }
-    }, [isAuthenticated, isLoading, user]);
+    // Remove visible feedback effect
 
     if (isLoading) {
         return fallback;
