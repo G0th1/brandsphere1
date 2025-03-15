@@ -1,7 +1,8 @@
 "use client"
 
-import DashboardNav from "./dashboard-nav";
+import React from 'react';
+import SidebarNav from './sidebar-nav';
 
 export default function DashboardClientNav() {
-    return <DashboardNav />;
+    return <SidebarNav />;
 } 

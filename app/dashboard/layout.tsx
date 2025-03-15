@@ -2,7 +2,7 @@
 import "@/app/globals.css";
 import { Metadata } from "next";
 import AuthGuard from "@/app/components/auth-guard";
-import DashboardClientNav from "@/app/components/dashboard-client-nav";
+import SidebarNav from "@/app/components/sidebar-nav";
 import DashboardScript from "@/app/components/dashboard-script";
 import CacheBuster from "@/app/components/cache-buster";
 import ThemeEnforcer from "@/app/components/theme-enforcer";
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     description: "AI-Powered Brand Identity Management",
 };
 
-// Improved style block with better layout and consistent navy-blue theme
+// Consistent dashboard styles with better layout
 const dashboardStyles = `
     :root {
         --navy-blue-50: #f0f5fa;
@@ -52,37 +52,27 @@ const dashboardStyles = `
         background-color: hsl(var(--background));
     }
     
-    /* Ensure consistent theme colors */
-    .bg-primary {
-        background-color: var(--navy-blue-600) !important;
-    }
-    
-    .text-primary {
-        color: var(--navy-blue-600) !important;
-    }
-    
-    /* Improve main container */
+    /* Dashboard layout with sidebar */
     .dashboard-container {
         display: flex;
-        flex-direction: column;
         min-height: 100vh;
-        max-width: 1600px; /* Increased from 1400px */
-        margin: 0 auto;
         width: 100%;
-        padding: 0;
     }
     
-    /* Improve content spacing */
+    /* Content area styling */
     .dashboard-content {
         flex-grow: 1;
-        padding: 1.5rem;
         width: 100%;
-        background-color: hsl(var(--background));
+        padding: 1.5rem;
+        margin-left: 0;
+        transition: margin-left 0.3s ease;
     }
     
-    /* Responsive padding adjustments */
+    /* Sidebar space on desktop */
     @media (min-width: 768px) {
         .dashboard-content {
+            margin-left: 256px; /* Width of sidebar */
+            width: calc(100% - 256px);
             padding: 2rem;
         }
     }
@@ -93,30 +83,39 @@ const dashboardStyles = `
         }
     }
     
-    /* Card and UI element styling for consistent navy-blue theme */
+    /* Consistent card styling */
     .card {
         border-radius: 0.5rem;
         border: 1px solid hsl(var(--border));
         background-color: hsl(var(--card));
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     
-    /* Ensure button consistency */
-    .btn-primary, 
-    .bg-primary, 
-    button[data-state="active"] {
-        background-color: var(--navy-blue-600);
-        color: white;
+    .card:hover {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
     }
     
-    /* Override any potential conflicting styles */
-    [data-theme="light"] .bg-primary,
-    [data-theme="dark"] .bg-primary {
-        background-color: var(--navy-blue-600) !important;
+    /* Page title styling */
+    .page-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    
+    .page-description {
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Consistent spacing */
+    .content-section {
+        margin-bottom: 2rem;
     }
 `;
 
-// Hidden script to maintain session continuity without visible elements
+// Hidden script to cleanup debug elements
 function CleanupScript() {
     return (
         <script
@@ -188,7 +187,7 @@ export default function DashboardLayout({
             <style dangerouslySetInnerHTML={{ __html: dashboardStyles }} />
             <AuthGuard requireAuth={true}>
                 <div className="dashboard-container">
-                    <DashboardClientNav />
+                    <SidebarNav />
                     <main id="dashboard-content" className="dashboard-content">
                         <Suspense fallback={<div className="p-4 border rounded-md">Loading dashboard content...</div>}>
                             {children}
