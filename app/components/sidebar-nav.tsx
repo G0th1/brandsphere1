@@ -19,15 +19,6 @@ import {
     X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ThemeToggle } from "./theme-toggle";
 
 // Define navigation items
 const NAVIGATION_ITEMS = [
@@ -82,6 +73,7 @@ export default function SidebarNav() {
         await signOut({ callbackUrl: "/auth/login" });
     };
 
+    // Simplified return without complex UI components
     return (
         <>
             {/* Mobile header with menu toggle */}
@@ -146,7 +138,7 @@ export default function SidebarNav() {
                         </nav>
                     </div>
 
-                    {/* User section */}
+                    {/* Simplified user section without dropdowns */}
                     <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-800">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
@@ -163,29 +155,15 @@ export default function SidebarNav() {
                                 </div>
                             </div>
 
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <span className="sr-only">Open user menu</span>
-                                        <Settings className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Account</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => window.location.href = '/dashboard/settings'}>
-                                        Settings
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
-                                        <ThemeToggle />
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={handleSignOut}>
-                                        <LogOut className="h-4 w-4 mr-2" />
-                                        Sign out
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleSignOut}
+                                className="h-8 px-2"
+                            >
+                                <LogOut className="h-4 w-4 mr-1" />
+                                <span className="text-xs">Sign out</span>
+                            </Button>
                         </div>
                     </div>
                 </div>
