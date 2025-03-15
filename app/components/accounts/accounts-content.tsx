@@ -38,9 +38,9 @@ const MOCK_ACCOUNTS: SocialAccount[] = [
         status: 'connected',
         lastSync: new Date(Date.now() - 3600000 * 2), // 2 hours ago
         metrics: {
-            followers: 4320,
+            followers: 12540,
             engagement: 3.2,
-            posts: 127
+            posts: 342
         }
     },
     {
@@ -49,93 +49,70 @@ const MOCK_ACCOUNTS: SocialAccount[] = [
         username: 'yourbrand',
         profileUrl: 'https://twitter.com/yourbrand',
         avatarUrl: '/images/mock/twitter-avatar.jpg',
-        status: 'expired',
-        lastSync: new Date(Date.now() - 3600000 * 24 * 3), // 3 days ago
+        status: 'connected',
+        lastSync: new Date(Date.now() - 3600000 * 5), // 5 hours ago
         metrics: {
-            followers: 2150,
-            engagement: 1.8,
-            posts: 352
+            followers: 8750,
+            engagement: 2.1,
+            posts: 1205
         }
     },
     {
         id: '3',
-        platform: 'LinkedIn',
-        username: 'Your Brand Inc.',
+        platform: 'Facebook',
+        username: 'yourbrand',
+        profileUrl: 'https://facebook.com/yourbrand',
+        avatarUrl: '/images/mock/facebook-avatar.jpg',
+        status: 'expired',
+        lastSync: new Date(Date.now() - 3600000 * 72), // 3 days ago
+        metrics: {
+            followers: 24680,
+            engagement: 1.8,
+            posts: 520
+        }
+    },
+    {
+        id: '4',
+        platform: 'Linkedin',
+        username: 'yourbrand',
         profileUrl: 'https://linkedin.com/company/yourbrand',
         avatarUrl: '/images/mock/linkedin-avatar.jpg',
-        status: 'connected',
-        lastSync: new Date(Date.now() - 3600000 * 6), // 6 hours ago
+        status: 'error',
+        lastSync: new Date(Date.now() - 3600000 * 12), // 12 hours ago
         metrics: {
-            followers: 980,
-            engagement: 2.4,
-            posts: 42
+            followers: 5430,
+            engagement: 1.2,
+            posts: 187
         }
     }
 ];
 
-// Available platforms for connecting
-const AVAILABLE_PLATFORMS = [
-    {
-        id: 'instagram',
-        name: 'Instagram',
-        icon: <Instagram className="h-5 w-5" />,
-        color: 'bg-gradient-to-r from-purple-500 to-pink-500',
-        textColor: 'text-pink-600',
-        description: 'Connect your Instagram Business account to publish and analyze content.'
-    },
-    {
-        id: 'facebook',
-        name: 'Facebook',
-        icon: <Facebook className="h-5 w-5" />,
-        color: 'bg-blue-600',
-        textColor: 'text-blue-600',
-        description: 'Connect your Facebook Page to schedule posts and view analytics.'
-    },
-    {
-        id: 'twitter',
-        name: 'Twitter',
-        icon: <Twitter className="h-5 w-5" />,
-        color: 'bg-sky-500',
-        textColor: 'text-sky-500',
-        description: 'Connect your Twitter account to schedule tweets and track engagement.'
-    },
-    {
-        id: 'linkedin',
-        name: 'LinkedIn',
-        icon: <Linkedin className="h-5 w-5" />,
-        color: 'bg-blue-700',
-        textColor: 'text-blue-700',
-        description: 'Connect your LinkedIn Company Page to publish and analyze content.'
-    }
-];
-
-// Helper to format relative time
+// Format relative time
 const formatRelativeTime = (date: Date) => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
+    const diffHrs = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHrs / 24);
 
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHrs < 24) return `${diffHrs} hour${diffHrs === 1 ? '' : 's'} ago`;
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
 };
 
-// Helper to get platform icon
+// Get platform icon
 const getPlatformIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
         case 'instagram':
-            return <Instagram className="h-4 w-4" />;
-        case 'facebook':
-            return <Facebook className="h-4 w-4" />;
+            return <Instagram className="h-5 w-5" />;
         case 'twitter':
-            return <Twitter className="h-4 w-4" />;
+            return <Twitter className="h-5 w-5" />;
+        case 'facebook':
+            return <Facebook className="h-5 w-5" />;
         case 'linkedin':
-            return <Linkedin className="h-4 w-4" />;
+            return <Linkedin className="h-5 w-5" />;
         default:
-            return <LinkIcon className="h-4 w-4" />;
+            return <LinkIcon className="h-5 w-5" />;
     }
 };
 
@@ -150,452 +127,114 @@ export default function AccountsContent() {
     const [showConnectDialog, setShowConnectDialog] = useState(false);
 
     useEffect(() => {
-        fetchAccounts();
+        // Simple data loading to prevent issues
+        setAccounts(MOCK_ACCOUNTS);
+        setIsLoading(false);
     }, []);
 
-    const fetchAccounts = async () => {
-        setIsLoading(true);
-        // Simulate API call delay
-        setTimeout(() => {
-            setAccounts(MOCK_ACCOUNTS);
-            setIsLoading(false);
-        }, 1000);
-    };
-
-    const handleConnectRequest = () => {
-        setShowConnectDialog(true);
-    };
-
-    const handleReconnect = (account: SocialAccount) => {
-        toast({
-            title: "Reconnection Initiated",
-            description: `We're reconnecting to your ${account.platform} account.`,
-        });
-
-        // Simulate reconnection delay
-        setTimeout(() => {
-            const updatedAccounts = accounts.map(a =>
-                a.id === account.id ? { ...a, status: 'connected', lastSync: new Date() } : a
-            );
-            setAccounts(updatedAccounts);
-            toast({
-                title: "Account Reconnected",
-                description: `Your ${account.platform} account has been successfully reconnected.`,
-            });
-        }, 2000);
-    };
-
-    const handleDisconnectRequest = (account: SocialAccount) => {
-        setAccountToDisconnect(account);
-        setShowDisconnectConfirm(true);
-    };
-
-    const handleDisconnect = () => {
-        if (!accountToDisconnect) return;
-
-        toast({
-            title: "Account Disconnected",
-            description: `Your ${accountToDisconnect.platform} account has been disconnected.`,
-        });
-
-        // Remove the account from the list
-        const updatedAccounts = accounts.filter(a => a.id !== accountToDisconnect.id);
-        setAccounts(updatedAccounts);
-
-        // Close the dialog and reset state
-        setShowDisconnectConfirm(false);
-        setAccountToDisconnect(null);
-    };
-
-    const handlePlatformSelect = (platformId: string) => {
-        setSelectedPlatform(platformId);
-        setIsConnecting(true);
-
-        // Simulate connection process
-        setTimeout(() => {
-            const platform = AVAILABLE_PLATFORMS.find(p => p.id === platformId);
-            if (!platform) return;
-
-            // Check if account already exists
-            const existingAccount = accounts.find(a => a.platform.toLowerCase() === platformId);
-            if (existingAccount) {
-                toast({
-                    title: "Account Already Connected",
-                    description: `Your ${platform.name} account is already connected.`,
-                    variant: "destructive",
-                });
-                setIsConnecting(false);
-                return;
-            }
-
-            // Create new mock account
-            const newAccount: SocialAccount = {
-                id: `new-${Date.now()}`,
-                platform: platform.name,
-                username: `yourbrand_${platformId}`,
-                profileUrl: `https://${platformId}.com/yourbrand`,
-                avatarUrl: `/images/mock/${platformId}-avatar.jpg`,
-                status: 'connected',
-                lastSync: new Date(),
-                metrics: {
-                    followers: Math.floor(Math.random() * 5000),
-                    engagement: +(Math.random() * 5).toFixed(1),
-                    posts: Math.floor(Math.random() * 200)
-                }
-            };
-
-            setAccounts([...accounts, newAccount]);
-            setIsConnecting(false);
-            setShowConnectDialog(false);
-
-            toast({
-                title: "Account Connected",
-                description: `Your ${platform.name} account has been connected successfully.`,
-            });
-        }, 2000);
-    };
-
-    const handleSync = (account: SocialAccount) => {
-        toast({
-            title: "Sync Started",
-            description: `Syncing data from your ${account.platform} account.`,
-        });
-
-        // Simulate sync delay
-        setTimeout(() => {
-            const updatedAccounts = accounts.map(a =>
-                a.id === account.id
-                    ? {
-                        ...a,
-                        lastSync: new Date(),
-                        metrics: {
-                            ...a.metrics,
-                            followers: a.metrics.followers + Math.floor(Math.random() * 10),
-                            engagement: +(a.metrics.engagement + Math.random() * 0.3).toFixed(1)
-                        }
-                    }
-                    : a
-            );
-            setAccounts(updatedAccounts);
-            toast({
-                title: "Sync Complete",
-                description: `Successfully synced data from your ${account.platform} account.`,
-            });
-        }, 2000);
-    };
-
+    // Simplified UI to ensure it renders properly
     return (
-        <div className="flex flex-col space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Connected Accounts</h1>
-                    <p className="text-muted-foreground">
-                        Manage your connected social media accounts and integrations
-                    </p>
-                </div>
-                <Button onClick={handleConnectRequest} className="flex gap-2">
-                    <Plus className="h-4 w-4" />
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-semibold">Connected Accounts</h1>
+                <Button onClick={() => setShowConnectDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
                     Connect Account
                 </Button>
             </div>
 
             {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
             ) : (
-                <Tabs defaultValue="all" className="space-y-6">
-                    <TabsList>
-                        <TabsTrigger value="all">All Accounts</TabsTrigger>
-                        <TabsTrigger value="active">Active</TabsTrigger>
-                        <TabsTrigger value="issues">Issues</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="all" className="space-y-6">
-                        {accounts.length === 0 ? (
-                            <Card>
-                                <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-                                    <div className="bg-muted p-3 rounded-full">
-                                        <LinkIcon className="h-8 w-8 text-muted-foreground" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {accounts.map((account) => (
+                        <Card key={account.id} className="overflow-hidden">
+                            <CardHeader className="pb-2">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src={account.avatarUrl} alt={account.platform} />
+                                            <AvatarFallback>{account.platform.substring(0, 2)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <CardTitle className="text-base">{account.platform}</CardTitle>
+                                            <CardDescription>@{account.username}</CardDescription>
+                                        </div>
                                     </div>
-                                    <h3 className="text-xl font-medium">No Connected Accounts</h3>
-                                    <p className="text-center text-muted-foreground max-w-md">
-                                        Connect your social media accounts to schedule posts, view analytics, and manage all your content from one place.
-                                    </p>
-                                    <Button onClick={handleConnectRequest} className="mt-2">
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Connect Your First Account
+                                    <Badge variant={
+                                        account.status === 'connected' ? 'success' :
+                                            account.status === 'expired' ? 'warning' : 'destructive'
+                                    }>
+                                        {account.status}
+                                    </Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="pb-2">
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Followers</p>
+                                        <p className="text-lg font-medium">{account.metrics.followers.toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Engagement</p>
+                                        <p className="text-lg font-medium">{account.metrics.engagement}%</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Posts</p>
+                                        <p className="text-lg font-medium">{account.metrics.posts}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-between pt-2">
+                                <Button variant="ghost" size="sm" asChild>
+                                    <a href={account.profileUrl} target="_blank" rel="noopener noreferrer">
+                                        View Profile
+                                        <ArrowUpRight className="h-3 w-3 ml-1" />
+                                    </a>
+                                </Button>
+                                <div className="flex gap-1">
+                                    <Button variant="ghost" size="sm" className="text-xs">
+                                        <RefreshCw className="h-3 w-3 mr-1" />
+                                        Sync
                                     </Button>
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {accounts.map((account) => (
-                                    <Card key={account.id}>
-                                        <CardHeader className="pb-2">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Avatar>
-                                                        <AvatarImage src={account.avatarUrl} />
-                                                        <AvatarFallback>{getPlatformIcon(account.platform)}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div>
-                                                        <CardTitle className="text-lg">{account.platform}</CardTitle>
-                                                        <CardDescription>@{account.username}</CardDescription>
-                                                    </div>
-                                                </div>
-                                                <Badge
-                                                    variant={account.status === 'connected' ? 'default' : 'destructive'}
-                                                    className="capitalize"
-                                                >
-                                                    {account.status}
-                                                </Badge>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="pb-2">
-                                            <div className="grid grid-cols-3 gap-2 py-2">
-                                                <div className="flex flex-col items-center p-2 bg-muted rounded-lg">
-                                                    <span className="text-lg font-semibold">{account.metrics.followers.toLocaleString()}</span>
-                                                    <span className="text-xs text-muted-foreground">Followers</span>
-                                                </div>
-                                                <div className="flex flex-col items-center p-2 bg-muted rounded-lg">
-                                                    <span className="text-lg font-semibold">{account.metrics.engagement}%</span>
-                                                    <span className="text-xs text-muted-foreground">Engagement</span>
-                                                </div>
-                                                <div className="flex flex-col items-center p-2 bg-muted rounded-lg">
-                                                    <span className="text-lg font-semibold">{account.metrics.posts}</span>
-                                                    <span className="text-xs text-muted-foreground">Posts</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-4">
-                                                <RefreshCw className="h-3 w-3" />
-                                                <span>Last synced {formatRelativeTime(account.lastSync)}</span>
-                                            </div>
-                                        </CardContent>
-                                        <CardFooter className="flex items-center justify-between pt-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleSync(account)}
-                                            >
-                                                <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                                                Sync
-                                            </Button>
-                                            <div className="flex gap-2">
-                                                {account.status === 'expired' && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleReconnect(account)}
-                                                    >
-                                                        Reconnect
-                                                    </Button>
-                                                )}
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleDisconnectRequest(account)}
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                                    Disconnect
-                                                </Button>
-                                            </div>
-                                        </CardFooter>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="active" className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {accounts.filter(a => a.status === 'connected').map((account) => (
-                                <Card key={account.id}>
-                                    <CardHeader className="pb-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar>
-                                                    <AvatarImage src={account.avatarUrl} />
-                                                    <AvatarFallback>{getPlatformIcon(account.platform)}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <CardTitle className="text-lg">{account.platform}</CardTitle>
-                                                    <CardDescription>@{account.username}</CardDescription>
-                                                </div>
-                                            </div>
-                                            <Badge variant="default" className="capitalize">
-                                                {account.status}
-                                            </Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="pb-2">
-                                        <div className="grid grid-cols-3 gap-2 py-2">
-                                            <div className="flex flex-col items-center p-2 bg-muted rounded-lg">
-                                                <span className="text-lg font-semibold">{account.metrics.followers.toLocaleString()}</span>
-                                                <span className="text-xs text-muted-foreground">Followers</span>
-                                            </div>
-                                            <div className="flex flex-col items-center p-2 bg-muted rounded-lg">
-                                                <span className="text-lg font-semibold">{account.metrics.engagement}%</span>
-                                                <span className="text-xs text-muted-foreground">Engagement</span>
-                                            </div>
-                                            <div className="flex flex-col items-center p-2 bg-muted rounded-lg">
-                                                <span className="text-lg font-semibold">{account.metrics.posts}</span>
-                                                <span className="text-xs text-muted-foreground">Posts</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-4">
-                                            <RefreshCw className="h-3 w-3" />
-                                            <span>Last synced {formatRelativeTime(account.lastSync)}</span>
-                                        </div>
-                                    </CardContent>
-                                    <CardFooter className="flex items-center justify-between pt-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleSync(account)}
-                                        >
-                                            <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                                            Sync
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleDisconnectRequest(account)}
-                                        >
-                                            <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                            Disconnect
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            ))}
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="issues" className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {accounts.filter(a => a.status !== 'connected').map((account) => (
-                                <Card key={account.id}>
-                                    <CardHeader className="pb-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar>
-                                                    <AvatarImage src={account.avatarUrl} />
-                                                    <AvatarFallback>{getPlatformIcon(account.platform)}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <CardTitle className="text-lg">{account.platform}</CardTitle>
-                                                    <CardDescription>@{account.username}</CardDescription>
-                                                </div>
-                                            </div>
-                                            <Badge variant="destructive" className="capitalize">
-                                                {account.status}
-                                            </Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <Alert className="mt-2" variant="destructive">
-                                            <AlertCircle className="h-4 w-4" />
-                                            <AlertTitle>Authorization Required</AlertTitle>
-                                            <AlertDescription>
-                                                Your account connection has expired. Please reconnect to continue using this account.
-                                            </AlertDescription>
-                                        </Alert>
-                                    </CardContent>
-                                    <CardFooter className="flex justify-end pt-2">
-                                        <Button
-                                            variant="default"
-                                            size="sm"
-                                            onClick={() => handleReconnect(account)}
-                                        >
-                                            Reconnect Account
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            ))}
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                                </div>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </div>
             )}
 
-            {/* Connect Account Dialog */}
+            {/* Connect Dialog */}
             <Dialog open={showConnectDialog} onOpenChange={setShowConnectDialog}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Connect Account</DialogTitle>
+                        <DialogTitle>Connect a Social Media Account</DialogTitle>
                         <DialogDescription>
-                            Select a platform to connect to your BrandSphere account
+                            Choose a platform to connect your social media account.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        {AVAILABLE_PLATFORMS.map((platform) => (
-                            <div
-                                key={platform.id}
-                                className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
-                                onClick={() => !isConnecting && handlePlatformSelect(platform.id)}
+                    <div className="grid grid-cols-2 gap-4 py-4">
+                        {['Instagram', 'Twitter', 'Facebook', 'Linkedin'].map((platform) => (
+                            <Button
+                                key={platform}
+                                variant="outline"
+                                className="flex items-center justify-center gap-2 h-14"
+                                onClick={() => {
+                                    setSelectedPlatform(platform);
+                                    setShowConnectDialog(false);
+                                    toast({
+                                        title: "Connection Started",
+                                        description: `Redirecting to ${platform} authorization...`,
+                                    });
+                                }}
                             >
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${platform.color}`}>
-                                    {platform.icon}
-                                </div>
-                                <div className="flex-grow">
-                                    <h3 className={`font-medium ${platform.textColor}`}>
-                                        {platform.name}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">{platform.description}</p>
-                                </div>
-                                {isConnecting && selectedPlatform === platform.id ? (
-                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                                ) : (
-                                    <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-                                )}
-                            </div>
+                                {getPlatformIcon(platform)}
+                                {platform}
+                            </Button>
                         ))}
                     </div>
-                    <DialogFooter className="sm:justify-start">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setShowConnectDialog(false)}
-                            disabled={isConnecting}
-                        >
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Disconnect Confirmation Dialog */}
-            <Dialog open={showDisconnectConfirm} onOpenChange={setShowDisconnectConfirm}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Disconnect Account</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to disconnect your {accountToDisconnect?.platform} account?
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-2 py-4">
-                        <p>This will remove the account from BrandSphere AI. You'll need to reconnect it if you want to use it again.</p>
-                        <Alert>
-                            <Info className="h-4 w-4" />
-                            <AlertTitle>Important</AlertTitle>
-                            <AlertDescription>
-                                This won't revoke BrandSphere AI's permissions on {accountToDisconnect?.platform}.
-                                Visit your {accountToDisconnect?.platform} settings to fully revoke access.
-                            </AlertDescription>
-                        </Alert>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setShowDisconnectConfirm(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={handleDisconnect}
-                        >
-                            Disconnect
-                        </Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>
