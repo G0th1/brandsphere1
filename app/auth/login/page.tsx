@@ -52,6 +52,47 @@ export default function LoginPage() {
 
             console.log("Will redirect to:", effectiveCallbackUrl);
 
+            // Check if universal mode is enabled
+            const isUniversalMode = localStorage.getItem('universalMode') === 'true';
+            const isOfflineMode = localStorage.getItem('offlineMode') === 'true';
+
+            if (isUniversalMode || isOfflineMode) {
+                // In universal mode, skip the actual auth check and simulate a successful login
+                console.log("Using universal mode for login");
+
+                // Simulate successful login by storing auth data
+                localStorage.setItem('user_email', email);
+                localStorage.setItem('auth_timestamp', Date.now().toString());
+                sessionStorage.setItem('user_email', email);
+                sessionStorage.setItem('auth_timestamp', Date.now().toString());
+
+                // Set a mock session for universal mode
+                document.cookie = "next-auth.session-token=universal-mode; path=/; max-age=2592000";
+
+                // Success toast
+                toast({
+                    title: "Success",
+                    description: "Login successful! Redirecting...",
+                });
+
+                // Redirect after short delay
+                setTimeout(() => {
+                    // Process the URL to ensure it's a full URL
+                    let redirectUrl = effectiveCallbackUrl;
+
+                    // If it's a relative URL (starts with /), make it absolute
+                    if (redirectUrl.startsWith('/')) {
+                        redirectUrl = window.location.origin + redirectUrl;
+                    }
+
+                    console.log("Redirecting to:", redirectUrl);
+                    window.location.href = redirectUrl;
+                }, 800);
+
+                return;
+            }
+
+            // Normal authentication flow for non-universal mode
             const result = await signIn("credentials", {
                 email,
                 password,
@@ -111,14 +152,22 @@ export default function LoginPage() {
                 // Force session duration to be long by setting cookies manually
                 document.cookie = "next-auth.session-token=true; path=/; max-age=2592000"; // 30 days
 
+                // Process the URL to ensure it's a full URL
+                let redirectUrl = effectiveCallbackUrl;
+
+                // If it's a relative URL (starts with /), make it absolute
+                if (redirectUrl.startsWith('/')) {
+                    redirectUrl = window.location.origin + redirectUrl;
+                }
+
                 if (result?.url) {
                     console.log("Login successful, redirecting to:", result.url);
                     // Use window.location for a full page reload to ensure session is applied
                     window.location.href = result.url;
                 } else {
-                    console.log("No redirect URL, using default");
+                    console.log("No redirect URL, using default:", redirectUrl);
                     // Fallback to default redirect
-                    window.location.href = effectiveCallbackUrl;
+                    window.location.href = redirectUrl;
                 }
             }, 800);
         } catch (error) {
@@ -140,7 +189,7 @@ export default function LoginPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <main className="flex-1 flex items-center justify-center p-4">
+            <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
                 <Card className="max-w-md w-full">
                     <CardHeader>
                         <CardTitle className="text-2xl">Sign in to your account</CardTitle>
@@ -157,6 +206,8 @@ export default function LoginPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                     disabled={isLoading}
+                                    className="w-full"
+                                    autoComplete="email"
                                 />
                             </div>
 
@@ -169,12 +220,14 @@ export default function LoginPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     disabled={isLoading}
+                                    className="w-full"
+                                    autoComplete="current-password"
                                 />
                             </div>
 
                             <Button
                                 type="submit"
-                                className="w-full"
+                                className="w-full mt-6"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
@@ -206,12 +259,14 @@ export default function LoginPage() {
                             <div className="text-sm text-center mb-2">
                                 Skip the database setup and try our fully-featured demo
                             </div>
-                            <Link href="/demo/login" className="w-full">
-                                <Button variant="outline" className="w-full flex gap-2 items-center justify-center">
-                                    <Zap className="h-4 w-4 text-yellow-500" />
-                                    Use Demo Mode Instead
-                                </Button>
-                            </Link>
+                            <Button
+                                variant="outline"
+                                className="w-full flex gap-2 items-center justify-center"
+                                onClick={() => router.push('/demo/login')}
+                            >
+                                <Zap className="h-4 w-4 text-yellow-500" />
+                                Use Demo Mode Instead
+                            </Button>
                         </div>
                     </CardFooter>
                 </Card>

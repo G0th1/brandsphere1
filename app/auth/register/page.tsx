@@ -93,7 +93,7 @@ export default function RegisterPage() {
                 description: "Account created! Redirecting to login...",
             });
 
-            // Redirect after brief delay
+            // Always redirect to login page
             setTimeout(() => {
                 console.log("Redirecting to login page");
                 router.push("/auth/login");
@@ -113,7 +113,7 @@ export default function RegisterPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <main className="flex-1 flex items-center justify-center p-4">
+            <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
                 <Card className="max-w-md w-full">
                     <CardHeader>
                         <CardTitle className="text-2xl">Create an account</CardTitle>
@@ -135,6 +135,8 @@ export default function RegisterPage() {
                                     onChange={(e) => setName(e.target.value)}
                                     required
                                     disabled={isLoading}
+                                    className="w-full"
+                                    autoComplete="name"
                                 />
                             </div>
 
@@ -147,6 +149,8 @@ export default function RegisterPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                     disabled={isLoading}
+                                    className="w-full"
+                                    autoComplete="email"
                                 />
                             </div>
 
@@ -159,6 +163,8 @@ export default function RegisterPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     disabled={isLoading}
+                                    className="w-full"
+                                    autoComplete="new-password"
                                 />
                             </div>
 
@@ -171,12 +177,14 @@ export default function RegisterPage() {
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
                                     disabled={isLoading}
+                                    className="w-full"
+                                    autoComplete="new-password"
                                 />
                             </div>
 
                             <Button
                                 type="submit"
-                                className="w-full"
+                                className="w-full mt-6"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (

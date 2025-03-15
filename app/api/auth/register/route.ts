@@ -53,13 +53,16 @@ export async function POST(req: Request) {
                     }
                 },
             });
-            console.log("API: User created successfully");
 
-            // Return success response
-            return NextResponse.json(
-                { success: true, message: "User created successfully" },
-                { status: 201 }
-            );
+            console.log(`API: User created successfully, id: ${user.id}`);
+
+            // Return success with the new user ID for redirection to dashboard directly
+            return NextResponse.json({
+                success: true,
+                message: "Registration successful",
+                userId: user.id,
+                redirectToOnboarding: false
+            });
         } catch (dbError) {
             console.error("API: Database error:", dbError);
             return NextResponse.json(
