@@ -35,7 +35,8 @@ export default function UpgradePage() {
 
 function UpgradePageContent() {
   const [processingPayment, setProcessingPayment] = useState(false)
-  const { user, loading } = useAuthUser()
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
   const handleUpgrade = async () => {

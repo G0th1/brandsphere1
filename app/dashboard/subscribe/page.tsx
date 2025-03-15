@@ -27,7 +27,10 @@ function SubscribePageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createSafeSupabaseClient();
-  const user = useAuthUser();
+
+  // Remove useAuthUser reference if it's not available
+  // const user = useAuthUser();
+  const [user, setUser] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);

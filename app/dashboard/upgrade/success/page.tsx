@@ -22,7 +22,7 @@ export default function UpgradeSuccessPage() {
 
 function UpgradeSuccessPageContent() {
     const router = useRouter();
-    const user = useAuthUser();
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

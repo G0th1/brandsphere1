@@ -1,4 +1,4 @@
-// Server Component
+// This is a Server Component
 import "@/app/globals.css";
 import { Metadata } from "next";
 import { Suspense } from "react";
@@ -58,9 +58,10 @@ export const metadata: Metadata = {
     description: "AI-Powered Brand Identity Management",
 };
 
-// Dashboard styles - embedded in a style tag for better performance
+// Dashboard styles as a regular component instead of styled-jsx
 const DashboardStyles = () => (
-    <style jsx global>{`
+    <style dangerouslySetInnerHTML={{
+        __html: `
         :root {
             --navy-blue-50: #f0f5fa;
             --navy-blue-100: #dae3f3;
@@ -104,8 +105,11 @@ const DashboardStyles = () => (
                 padding-left: 16rem;
             }
         }
-    `}</style>
+    ` }} />
 );
+
+// Client component wrapper for dashboard layout
+import { DashboardClient } from '@/app/components/dashboard-client';
 
 /**
  * Dashboard layout component
@@ -117,23 +121,25 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <AuthGuard>
-            <div className="dashboard-container">
-                <DashboardStyles />
-                <DashboardScript />
-                <ThemeEnforcer defaultTheme="dark" />
-                <CacheBuster />
+        <>
+            <DashboardStyles />
+            <DashboardClient>
+                <div className="dashboard-container">
+                    <DashboardScript />
+                    <ThemeEnforcer defaultTheme="dark" />
+                    <CacheBuster />
 
-                {/* Sidebar navigation */}
-                <Suspense fallback={<SimpleSidebarFallback />}>
-                    <SidebarNav />
-                </Suspense>
+                    {/* Sidebar navigation */}
+                    <Suspense fallback={<SimpleSidebarFallback />}>
+                        <SidebarNav />
+                    </Suspense>
 
-                {/* Main content area */}
-                <main className="dashboard-content p-4 md:p-8">
-                    {children}
-                </main>
-            </div>
-        </AuthGuard>
+                    {/* Main content area */}
+                    <main className="dashboard-content p-4 md:p-8">
+                        {children}
+                    </main>
+                </div>
+            </DashboardClient>
+        </>
     );
 } 
