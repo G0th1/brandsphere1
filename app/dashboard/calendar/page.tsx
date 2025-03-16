@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from 'react';
-import { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Filter } from 'lucide-react';
@@ -18,11 +17,6 @@ import { PostEditor } from '@/app/components/content/post-editor';
 import { SocialMediaPost } from '@/services/social-media';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-
-export const metadata: Metadata = {
-    title: 'Content Calendar | BrandSphereAI',
-    description: 'Plan and schedule your social media content calendar',
-};
 
 // Sample calendar data
 const days = Array.from({ length: 31 }, (_, i) => i + 1);
