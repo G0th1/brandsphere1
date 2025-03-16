@@ -1,7 +1,4 @@
-export const metadata = {
-    title: "Authentication - BrandSphere",
-    description: "Sign in or create an account",
-};
+"use client";
 
 export default function AuthLayout({
     children,

@@ -62,6 +62,10 @@ export default function LoginPage() {
                     errorMessage = "The email or password you entered is incorrect.";
                 } else if (result.error.includes("fetch")) {
                     errorMessage = "Network error. Please check your connection and try again.";
+                } else if (result.error.includes("JSON")) {
+                    errorMessage = "Server error. The authentication service is not responding correctly.";
+                } else if (result.error.includes("Database")) {
+                    errorMessage = "Database connection error. Please try again later.";
                 } else {
                     errorMessage = `Error: ${result.error}`;
                 }
@@ -156,37 +160,20 @@ export default function LoginPage() {
                             </Button>
                         </form>
 
-                        {/* New: Direct access button */}
-                        <div className="mt-4 pt-4 border-t">
+                        {/* Demo Mode Section */}
+                        <div className="mt-6 pt-4 border-t">
                             <div className="text-center mb-2">
-                                <span className="text-xs text-muted-foreground">DIRECT ACCESS OPTION</span>
+                                <span className="bg-background px-2 text-xs text-muted-foreground">HAVING DATABASE ISSUES?</span>
                             </div>
-                            <Button
-                                variant="secondary"
-                                className="w-full"
-                                onClick={() => {
-                                    // Store minimal auth info
-                                    localStorage.setItem('user_email', email || 'demo@example.com');
-                                    localStorage.setItem('auth_timestamp', Date.now().toString());
-                                    sessionStorage.setItem('dashboard_loaded', 'true');
-
-                                    // Force direct navigation
-                                    toast({
-                                        title: "Direct Access",
-                                        description: "Bypassing normal auth flow...",
-                                    });
-
-                                    // Add delay for toast to show
-                                    setTimeout(() => {
-                                        window.location.href = '/dashboard?direct=true';
-                                    }, 500);
-                                }}
-                            >
-                                Direct Dashboard Access
-                            </Button>
-                            <p className="text-xs text-muted-foreground mt-2 text-center">
-                                Use this option if you're having trouble with the normal login.
-                            </p>
+                            <div className="text-sm text-center mb-2">
+                                Skip the hassle of authentication and database setup
+                            </div>
+                            <Link href="/demo/login" className="w-full">
+                                <Button variant="outline" className="w-full flex gap-2 items-center justify-center">
+                                    <Zap className="h-4 w-4 text-yellow-500" />
+                                    Use Demo Mode Instead
+                                </Button>
+                            </Link>
                         </div>
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-4">

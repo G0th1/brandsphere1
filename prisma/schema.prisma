@@ -8,89 +8,59 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String?
-  image         String?
-  bio           String?
-  company       String?
-  position      String?
-  website       String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  sessions      Session[]
-  subscription  Subscription?
-  securitySettings SecuritySetting?
-  socialConnections SocialConnection[]
+  id            String         @id @default(uuid()) @db.Uuid
+  email         String         @unique
+  password_hash String
+  role          String
+  created_at    DateTime       @default(now()) @db.Timestamptz
+  businesses    Business[]
+  subscriptions Subscription[]
+  usageLogs     UsageLog[]
+
+  @@map("Users")
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+model Business {
+  id            String               @id @default(uuid()) @db.Uuid
+  user_id       String               @db.Uuid
+  name          String
+  industry      String
+  created_at    DateTime             @default(now()) @db.Timestamptz
+  user          User                 @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  aiContents    AIGeneratedContent[]
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("Businesses")
 }
 
 model Subscription {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  status       String    @default("active") 
-  plan         String    @default("Free") 
-  billingCycle String    @default("monthly")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  plan       String
+  status     String
+  start_date DateTime @db.Date
+  end_date   DateTime @db.Date
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("Subscriptions")
 }
 
-// Security settings for user accounts
-model SecuritySetting {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  twoFactorEnabled  Boolean  @default(false)
-  loginNotifications Boolean @default(false)
-  sessionTimeout    Int      @default(60) // Minutes until session expires
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model AIGeneratedContent {
+  id           String   @id @default(uuid()) @db.Uuid
+  business_id  String   @db.Uuid
+  content_type String
+  content      String
+  created_at   DateTime @default(now()) @db.Timestamptz
+  business     Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@map("AI_Generated_Content")
 }
 
-// Social media connections for users
-model SocialConnection {
-  id           String   @id @default(cuid())
-  userId       String
-  platform     String   // twitter, facebook, instagram, linkedin, tiktok
-  profileId    String
-  username     String
-  accessToken  String?
-  refreshToken String?
-  expiry       String?
-  profileUrl   String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model UsageLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  tokens_used  Int
+  timestamp    DateTime @default(now()) @db.Timestamptz
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@unique([userId, platform])
-  @@index([userId])
+  @@map("Usage_Logs")
 } 

@@ -112,7 +112,7 @@ const NAVIGATION_ITEMS = [
     },
 ];
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { toast } = useToast();
     const pathname = usePathname();
     const { isDemoActive } = useSubscription();
@@ -262,6 +262,4 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </div>
         </div>
     );
-}
-
-export default DashboardLayout; 
+} 

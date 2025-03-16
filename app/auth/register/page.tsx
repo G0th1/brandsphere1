@@ -123,6 +123,11 @@ export default function RegisterPage() {
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
                                 {error}
+                                {error.includes("database") && (
+                                    <div className="mt-2 text-sm">
+                                        <strong>Database connection issue detected.</strong> You can try using Demo Mode below to bypass database issues.
+                                    </div>
+                                )}
                             </div>
                         )}
 

@@ -7,7 +7,7 @@ import { Providers } from '@/components/providers'
 import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@/components/analytics"
 import { BrowserCompat } from '@/components/BrowserCompat'
-import SiteHeader from '@/components/site-header'
+import SiteHeader from '@/app/components/site-header'
 
 // Configure Inter font
 const inter = Inter({

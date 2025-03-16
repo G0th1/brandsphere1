@@ -1,12 +1,10 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlanCard } from "@/components/billing/plan-card";
-import { useToast } from "@/components/ui/use-toast";
-import { useSearchParams } from "next/navigation";
+// import { useState, useEffect } from "react";
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// import { PlanCard } from "@/components/billing/plan-card";
+// import { useToast } from "@/components/ui/use-toast";
+// import { useSearchParams } from "next/navigation";
 import { formatDate } from "@/lib/utils";
-import { useLanguage } from "@/contexts/language-context";
+// import { useLanguage } from "@/contexts/language-context";
 import { dynamic } from "@/app/utils/dynamic-routes";
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
@@ -121,7 +119,7 @@ const translations = {
     }
 };
 
-// Typer för prenumerationsobjektet
+// Types for the subscription object
 interface Subscription {
     id: string;
     userId: string;

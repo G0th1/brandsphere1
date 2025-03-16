@@ -1,10 +1,8 @@
+"use client";
+
 import { DemoGuard } from "@/components/demo/demo-guard";
 
-export const metadata = {
-    title: "Demo - BrandSphere",
-    description: "Try out BrandSphere features in demo mode",
-};
-
+// Metadata should be defined in a separate file for client components
 export default function DemoLayout({
     children,
 }: {

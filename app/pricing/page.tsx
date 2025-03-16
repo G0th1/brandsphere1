@@ -1,22 +1,4 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { useRouter, redirect } from "next/navigation"
-import { Check, X } from "lucide-react"
-import { useLanguage } from "@/contexts/language-context"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { useSession } from "next-auth/react"
-import { useToast } from "@/components/ui/use-toast"
+// This is now a Server Component
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -385,35 +367,88 @@ export default async function PricingPage() {
     });
   }
 
-  // Format plan features for the component
-  const plans = Object.entries(PLAN_FEATURES).map(([key, plan]) => ({
-    id: key,
-    name: plan.name,
-    description: getPlanDescription(key as keyof typeof PLAN_FEATURES),
-    price: {
-      monthly: plan.price.monthly,
-      annually: plan.price.annually,
+  // Determine if the user has an active subscription
+  const hasActive = subscription &&
+    subscription.status === 'active' &&
+    subscription.stripeCurrentPeriodEnd &&
+    new Date(subscription.stripeCurrentPeriodEnd) > new Date();
+
+  // Create pricing plan objects
+  const pricingPlans = [
+    {
+      id: 'FREE',
+      name: 'Free',
+      description: getPlanDescription('FREE'),
+      price: { monthly: 0, annually: 0 },
+      features: [
+        '1 social media account',
+        '5 scheduled posts per month',
+        '7-day analytics retention',
+        'Community support',
+        '20 AI credits per month',
+      ],
+      highlighted: false,
+      currentPlan: !hasActive,
     },
-    features: [
-      `${plan.socialAccounts} social media accounts`,
-      `${plan.scheduledPosts} scheduled posts per month`,
-      `${plan.aiCreditsPerMonth} AI credits per month`,
-      `${plan.contentSuggestions} content suggestions per month`,
-      `${plan.analyticsRetentionDays}-day analytics retention`,
-      `${plan.teamMembers} team members`,
-      plan.customBranding ? 'Custom branding' : null,
-      getSupportDescription(plan.supportLevel as string),
-    ].filter(Boolean) as string[],
-    highlighted: key === 'PRO', // Highlight the Pro plan
-    currentPlan: session?.user && subscription?.plan?.toUpperCase() === key
-  }));
+    {
+      id: 'BASIC',
+      name: 'Basic',
+      description: getPlanDescription('BASIC'),
+      price: { monthly: 19, annually: 190 },
+      features: [
+        '3 social media accounts',
+        '30 scheduled posts per month',
+        '30-day analytics retention',
+        'Email support',
+        '100 AI credits per month',
+        '1 team member',
+      ],
+      highlighted: false,
+      currentPlan: hasActive && subscription!.plan.toUpperCase() === 'BASIC',
+    },
+    {
+      id: 'PRO',
+      name: 'Pro',
+      description: getPlanDescription('PRO'),
+      price: { monthly: 49, annually: 490 },
+      features: [
+        '5 social media accounts',
+        'Unlimited scheduled posts',
+        '90-day analytics retention',
+        'Priority support',
+        '500 AI credits per month',
+        'Custom branding',
+        '3 team members',
+      ],
+      highlighted: true,
+      currentPlan: hasActive && subscription!.plan.toUpperCase() === 'PRO',
+    },
+    {
+      id: 'BUSINESS',
+      name: 'Business',
+      description: getPlanDescription('BUSINESS'),
+      price: { monthly: 99, annually: 990 },
+      features: [
+        '10 social media accounts',
+        'Unlimited scheduled posts',
+        '365-day analytics retention',
+        'Dedicated support',
+        '2000 AI credits per month',
+        'Custom branding',
+        '10 team members',
+        'API access',
+      ],
+      highlighted: false,
+      currentPlan: hasActive && subscription!.plan.toUpperCase() === 'BUSINESS',
+    },
+  ];
 
   return (
-    <div className="container max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
+    <div className="container py-16 max-w-7xl">
       <PricingHeader />
 
       <PricingCards
-        plans={plans}
+        plans={pricingPlans}
         userId={session?.user?.id}
         userEmail={session?.user?.email}
       />
@@ -425,7 +460,7 @@ export default async function PricingPage() {
   );
 }
 
-// Helper functions for plan descriptions
+// Helper functions
 function getPlanDescription(planKey: keyof typeof PLAN_FEATURES): string {
   switch (planKey) {
     case 'FREE':
