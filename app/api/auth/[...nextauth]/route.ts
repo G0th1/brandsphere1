@@ -7,7 +7,26 @@ const handler = async (req: Request, context: { params: { nextauth: string[] } }
 
     try {
         console.log(`🔐 NextAuth API route: ${req.method} ${context.params.nextauth.join('/')}`);
-        return await authHandler(req, context);
+
+        // Wrap the handler in try/catch to ensure proper JSON response
+        try {
+            return await authHandler(req, context);
+        } catch (handlerError: any) {
+            console.error(`⛔ NextAuth handler error:`, handlerError);
+
+            // Return a proper JSON response
+            return new Response(
+                JSON.stringify({
+                    error: "AuthHandlerError",
+                    message: "Authentication handler error",
+                    details: process.env.NODE_ENV === 'development' ? handlerError.message : undefined
+                }),
+                {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+        }
     } catch (error: any) {
         console.error(`⛔ NextAuth API error: ${error.message}`, error);
         // Logga detaljer för bättre felsökning

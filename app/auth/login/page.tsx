@@ -43,55 +43,80 @@ export default function LoginPage() {
             sessionStorage.removeItem('dashboard_loaded');
             sessionStorage.removeItem('auth_in_progress');
 
-            // Use the simplest possible login approach
-            const result = await signIn("credentials", {
-                email,
-                password,
-                redirect: false,
-            });
+            try {
+                // Use the simplest possible login approach
+                const result = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: false,
+                });
 
-            // Log result but don't show debug overlay
-            console.log("Login result:", result);
+                // Log result but don't show debug overlay
+                console.log("Login result:", result);
 
-            if (result?.error) {
-                console.error("Login error:", result.error);
+                if (result?.error) {
+                    console.error("Login error:", result.error);
 
-                let errorMessage = "Invalid login credentials.";
+                    let errorMessage = "Invalid login credentials.";
 
-                if (result.error === "CredentialsSignin") {
-                    errorMessage = "The email or password you entered is incorrect.";
-                } else if (result.error.includes("fetch")) {
-                    errorMessage = "Network error. Please check your connection and try again.";
-                } else if (result.error.includes("JSON")) {
-                    errorMessage = "Server error. The authentication service is not responding correctly.";
-                } else if (result.error.includes("Database")) {
-                    errorMessage = "Database connection error. Please try again later.";
-                } else {
-                    errorMessage = `Error: ${result.error}`;
+                    if (result.error === "CredentialsSignin") {
+                        errorMessage = "The email or password you entered is incorrect.";
+                    } else if (result.error.includes("fetch")) {
+                        errorMessage = "Network error. Please check your connection and try again.";
+                    } else if (result.error.includes("JSON")) {
+                        errorMessage = "Server error. The authentication service is not responding correctly.";
+                    } else if (result.error.includes("Database")) {
+                        errorMessage = "Database connection error. Please try again later.";
+                    } else {
+                        errorMessage = `Error: ${result.error}`;
+                    }
+
+                    toast({
+                        title: "Authentication Error",
+                        description: errorMessage,
+                        variant: "destructive",
+                    });
+                    setIsLoading(false);
+                    return;
                 }
 
+                // Success - show toast
                 toast({
-                    title: "Authentication Error",
-                    description: errorMessage,
-                    variant: "destructive",
+                    title: "Success",
+                    description: "Login successful! Redirecting...",
                 });
+
+                // Save login info in storage
+                localStorage.setItem('user_email', email);
+                localStorage.setItem('auth_timestamp', Date.now().toString());
+                sessionStorage.setItem('dashboard_loaded', 'true');
+
+                // Redirect to dashboard
+                window.location.href = '/dashboard';
+            } catch (signInError) {
+                console.error("SignIn function error:", signInError);
+
+                // Detailed error for JSON parsing issues
+                if (signInError instanceof SyntaxError && signInError.message.includes('JSON')) {
+                    console.error("JSON parsing error details:", {
+                        message: signInError.message,
+                        stack: signInError.stack
+                    });
+
+                    toast({
+                        title: "Server Error",
+                        description: "The authentication server returned an invalid response. Please try again or contact support.",
+                        variant: "destructive",
+                    });
+                } else {
+                    toast({
+                        title: "Login Error",
+                        description: signInError instanceof Error ? signInError.message : "An unexpected error occurred",
+                        variant: "destructive",
+                    });
+                }
                 setIsLoading(false);
-                return;
             }
-
-            // Success - show toast
-            toast({
-                title: "Success",
-                description: "Login successful! Redirecting...",
-            });
-
-            // Save login info in storage
-            localStorage.setItem('user_email', email);
-            localStorage.setItem('auth_timestamp', Date.now().toString());
-            sessionStorage.setItem('dashboard_loaded', 'true');
-
-            // Redirect to dashboard
-            window.location.href = '/dashboard';
         } catch (error) {
             console.error("Login error:", error);
 
