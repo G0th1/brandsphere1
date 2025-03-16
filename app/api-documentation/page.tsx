@@ -7,6 +7,15 @@ import Link from "next/link"
 import { useLanguage } from "@/contexts/language-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
+import { Metadata } from 'next';
+import {
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 // Översättningar
 const translations = {
@@ -312,6 +321,11 @@ const translations = {
             }
         ]
     }
+};
+
+export const metadata: Metadata = {
+    title: 'API Documentation | BrandSphereAI',
+    description: 'Learn how to integrate with BrandSphereAI\'s social media APIs',
 };
 
 export default function ApiDocumentationPage() {

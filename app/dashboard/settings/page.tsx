@@ -21,6 +21,13 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/app/components/theme-toggle';
 import { Separator } from '@/components/ui/separator';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 export const metadata: Metadata = {
     title: 'Settings | BrandSphereAI',
@@ -196,41 +203,119 @@ export default function SettingsPage() {
                     <TabsContent value="notifications" className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Notification Preferences</CardTitle>
+                                <CardTitle>Notifications</CardTitle>
                                 <CardDescription>
-                                    Choose what notifications you want to receive.
+                                    Configure how and when you receive notifications.
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="email-notifications">Email notifications</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Receive notifications via email
-                                        </p>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-medium">Post Engagement</h3>
+                                    <div className="grid gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="post-published">Post Published</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Receive notifications when your scheduled posts are published.
+                                                </p>
+                                            </div>
+                                            <Switch id="post-published" defaultChecked />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="engagement-reminder">Engagement Reminders</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Get reminders to engage with comments shortly after posts are published.
+                                                </p>
+                                            </div>
+                                            <Switch id="engagement-reminder" defaultChecked />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="engagement-time">Engagement Time</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    How long after publishing should we remind you to engage?
+                                                </p>
+                                            </div>
+                                            <Select defaultValue="30">
+                                                <SelectTrigger className="w-[120px]">
+                                                    <SelectValue placeholder="Select time" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="15">15 minutes</SelectItem>
+                                                    <SelectItem value="30">30 minutes</SelectItem>
+                                                    <SelectItem value="60">1 hour</SelectItem>
+                                                    <SelectItem value="120">2 hours</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
-                                    <Switch id="email-notifications" defaultChecked />
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="push-notifications">Push notifications</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Receive notifications in your browser
-                                        </p>
+
+                                <Separator />
+
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-medium">Analytics & Insights</h3>
+                                    <div className="grid gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="weekly-summary">Weekly Summary</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Receive a weekly summary of your social media performance.
+                                                </p>
+                                            </div>
+                                            <Switch id="weekly-summary" defaultChecked />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="trending-content">Trending Content</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Get notifications about trending topics for your audience.
+                                                </p>
+                                            </div>
+                                            <Switch id="trending-content" defaultChecked />
+                                        </div>
                                     </div>
-                                    <Switch id="push-notifications" defaultChecked />
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="marketing-emails">Marketing emails</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Receive emails about new features and offers
-                                        </p>
+
+                                <Separator />
+
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-medium">Delivery Preferences</h3>
+                                    <div className="grid gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="email-notifications">Email Notifications</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Receive notifications via email.
+                                                </p>
+                                            </div>
+                                            <Switch id="email-notifications" defaultChecked />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="browser-notifications">Browser Notifications</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Receive notifications in your browser.
+                                                </p>
+                                            </div>
+                                            <Switch id="browser-notifications" />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="mobile-notifications">Mobile Notifications</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Receive notifications on your mobile device.
+                                                </p>
+                                            </div>
+                                            <Switch id="mobile-notifications" />
+                                        </div>
                                     </div>
-                                    <Switch id="marketing-emails" />
                                 </div>
-                                <Button>Save Notification Preferences</Button>
                             </CardContent>
+                            <CardFooter>
+                                <Button>Save Changes</Button>
+                            </CardFooter>
                         </Card>
                     </TabsContent>
 

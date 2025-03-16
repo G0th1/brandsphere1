@@ -45,6 +45,7 @@ import {
     Link as LinkIcon
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/subscription-context';
+import { socialMediaService, SocialMediaAccount } from '@/services/social-media';
 
 // Types
 interface SocialAccount {
@@ -179,142 +180,151 @@ export function SocialAccounts() {
     const { isDemoActive } = useSubscription();
     const [accounts, setAccounts] = useState<SocialAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+    const [selectedPlatform, setSelectedPlatform] = useState<string>('');
+    const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
     const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
-    const [selectedAccount, setSelectedAccount] = useState<SocialAccount | null>(null);
-    const [selectedPlatform, setSelectedPlatform] = useState('');
+    const [accountToDisconnect, setAccountToDisconnect] = useState<SocialAccount | null>(null);
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-    // Fetch accounts (using mock data for demo)
+    // Fetch accounts on component mount
     useEffect(() => {
-        const fetchAccounts = async () => {
-            try {
-                // In a real app, this would be an API call
-                setIsLoading(true);
-                // Simulate API delay
-                setTimeout(() => {
-                    setAccounts(MOCK_ACCOUNTS);
-                    setIsLoading(false);
-                }, 800);
-            } catch (error) {
-                console.error('Error fetching social accounts:', error);
-                toast({
-                    title: 'Error',
-                    description: 'Failed to load social accounts',
-                    variant: 'destructive',
-                });
-                setIsLoading(false);
-            }
-        };
-
         fetchAccounts();
-    }, [toast]);
+    }, []);
 
-    // Handle account reconnection
-    const handleReconnect = (account: SocialAccount) => {
-        if (isDemoActive) {
-            // In demo mode, just show a success message
-            toast({
-                title: 'Account Reconnected',
-                description: `Your ${account.platform} account has been reconnected successfully.`,
-            });
-
-            // Update account status in UI
-            const updatedAccounts = accounts.map(a =>
-                a.id === account.id ? { ...a, status: 'connected', lastSync: new Date() } : a
-            );
-            setAccounts(updatedAccounts);
-            return;
-        }
-
-        // In a real app, this would redirect to OAuth flow
-        window.open(`/api/auth/${account.platform.toLowerCase()}`, '_blank');
-    };
-
-    // Open disconnect dialog
-    const handleDisconnectRequest = (account: SocialAccount) => {
-        setSelectedAccount(account);
-        setIsDisconnectDialogOpen(true);
-    };
-
-    // Handle account disconnection
-    const handleDisconnect = () => {
-        if (!selectedAccount) return;
-
-        if (isDemoActive) {
-            // In demo mode, just show a success message
-            toast({
-                title: 'Account Disconnected',
-                description: `Your ${selectedAccount.platform} account has been disconnected.`,
-            });
-
-            // Remove account from UI
-            const updatedAccounts = accounts.filter(a => a.id !== selectedAccount.id);
-            setAccounts(updatedAccounts);
-            setIsDisconnectDialogOpen(false);
-            return;
-        }
-
-        // In a real app, this would be an API call
+    // Fetch social accounts from the API
+    const fetchAccounts = async () => {
         try {
-            // Remove account
-            const updatedAccounts = accounts.filter(a => a.id !== selectedAccount.id);
-            setAccounts(updatedAccounts);
-            toast({
-                title: 'Account Disconnected',
-                description: `Your ${selectedAccount.platform} account has been disconnected.`,
-            });
-            setIsDisconnectDialogOpen(false);
+            setIsLoading(true);
+            const accounts = await socialMediaService.getAccounts();
+            setAccounts(accounts as SocialAccount[]);
         } catch (error) {
-            console.error('Error disconnecting account:', error);
+            console.error('Error fetching social accounts:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to disconnect account',
+                description: 'Failed to load your social media accounts.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Handle reconnecting an expired account
+    const handleReconnect = async (account: SocialAccount) => {
+        try {
+            setIsAuthenticating(true);
+            // In a real implementation, this would redirect to the OAuth flow
+            // For demo, we'll just simulate a successful reconnection
+            setTimeout(() => {
+                const updatedAccounts = accounts.map(acc => {
+                    if (acc.id === account.id) {
+                        return { ...acc, status: 'connected', lastSync: new Date() };
+                    }
+                    return acc;
+                });
+                setAccounts(updatedAccounts);
+                setIsAuthenticating(false);
+                toast({
+                    title: 'Account Reconnected',
+                    description: `Your ${account.platform} account has been reconnected.`,
+                });
+            }, 1500);
+        } catch (error) {
+            setIsAuthenticating(false);
+            toast({
+                title: 'Reconnection Failed',
+                description: `Failed to reconnect your ${account.platform} account.`,
                 variant: 'destructive',
             });
         }
     };
 
-    // Open connect modal
-    const handleConnectRequest = () => {
-        setIsConnectModalOpen(true);
+    // Show disconnect confirmation dialog
+    const handleDisconnectRequest = (account: SocialAccount) => {
+        setAccountToDisconnect(account);
+        setIsDisconnectDialogOpen(true);
     };
 
-    // Handle platform selection for connection
+    // Handle disconnecting an account
+    const handleDisconnect = async () => {
+        if (!accountToDisconnect) return;
+
+        try {
+            const success = await socialMediaService.disconnect(accountToDisconnect.id);
+
+            if (success) {
+                // Remove the account from the list
+                setAccounts(accounts.filter(acc => acc.id !== accountToDisconnect.id));
+
+                toast({
+                    title: 'Account Disconnected',
+                    description: `Your ${accountToDisconnect.platform} account has been disconnected.`,
+                });
+            } else {
+                throw new Error('Failed to disconnect account');
+            }
+        } catch (error) {
+            console.error('Error disconnecting account:', error);
+            toast({
+                title: 'Error',
+                description: `Failed to disconnect your ${accountToDisconnect.platform} account.`,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDisconnectDialogOpen(false);
+            setAccountToDisconnect(null);
+        }
+    };
+
+    // Show connect dialog
+    const handleConnectRequest = () => {
+        setSelectedPlatform('');
+        setIsConnectDialogOpen(true);
+    };
+
+    // Handle platform selection for new connection
     const handlePlatformSelect = (platformId: string) => {
         setSelectedPlatform(platformId);
+    };
 
-        if (isDemoActive) {
-            // In demo mode, just show a success message
-            const platform = AVAILABLE_PLATFORMS.find(p => p.id === platformId);
-
+    // Handle connecting a new account
+    const handleConnect = async () => {
+        if (!selectedPlatform) {
             toast({
-                title: 'Account Connected',
-                description: `Your ${platform?.name} account has been connected successfully.`,
+                title: 'Selection Required',
+                description: 'Please select a platform to connect.',
+                variant: 'destructive',
             });
-
-            // Add a mock account
-            const newAccount: SocialAccount = {
-                id: Date.now().toString(),
-                platform: platform?.name || '',
-                username: 'newaccount',
-                profileUrl: `https://${platformId}.com/newaccount`,
-                avatarUrl: `/images/mock/${platformId}-avatar.jpg`,
-                status: 'connected',
-                lastSync: new Date(),
-                metrics: {
-                    followers: 0,
-                    engagement: 0,
-                    posts: 0
-                }
-            };
-
-            setAccounts([...accounts, newAccount]);
-            setIsConnectModalOpen(false);
             return;
         }
 
-        // In a real app, this would redirect to OAuth flow
-        window.open(`/api/auth/${platformId}`, '_blank');
+        try {
+            setIsAuthenticating(true);
+
+            // In a real implementation, this would redirect to the platform's OAuth flow
+            // For demo purposes, we'll simulate a successful connection
+            setTimeout(async () => {
+                const newAccount = await socialMediaService.connect(selectedPlatform, 'mock-auth-code');
+
+                if (newAccount) {
+                    setAccounts([...accounts, newAccount as SocialAccount]);
+                    setIsConnectDialogOpen(false);
+                    toast({
+                        title: 'Account Connected',
+                        description: `Your ${selectedPlatform} account has been successfully connected.`,
+                    });
+                }
+
+                setIsAuthenticating(false);
+            }, 1500);
+        } catch (error) {
+            setIsAuthenticating(false);
+            toast({
+                title: 'Connection Failed',
+                description: `Failed to connect your ${selectedPlatform} account.`,
+                variant: 'destructive',
+            });
+        }
     };
 
     return (
@@ -458,7 +468,7 @@ export function SocialAccounts() {
             )}
 
             {/* Connect Account Modal */}
-            <Dialog open={isConnectModalOpen} onOpenChange={setIsConnectModalOpen}>
+            <Dialog open={isConnectDialogOpen} onOpenChange={setIsConnectDialogOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>Connect Social Media Account</DialogTitle>
@@ -488,8 +498,11 @@ export function SocialAccounts() {
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsConnectModalOpen(false)}>
+                        <Button variant="outline" onClick={() => setIsConnectDialogOpen(false)}>
                             Cancel
+                        </Button>
+                        <Button variant="default" onClick={handleConnect}>
+                            Connect
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -501,9 +514,9 @@ export function SocialAccounts() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Disconnect Account</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {selectedAccount && (
+                            {accountToDisconnect && (
                                 <>
-                                    Are you sure you want to disconnect your {selectedAccount.platform} account ({selectedAccount.username})?
+                                    Are you sure you want to disconnect your {accountToDisconnect.platform} account ({accountToDisconnect.username})?
                                     <br />
                                     You'll need to reconnect it to schedule posts and view analytics.
                                 </>

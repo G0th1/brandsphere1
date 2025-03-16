@@ -1,105 +1,100 @@
-# BrandSphereAI
+# BrandSphereAI - Social Media Management Platform
 
-BrandSphereAI är en plattform för hantering av sociala medier som hjälper företag att optimera sin online-närvaro genom AI-driven innehållshantering och analys.
+BrandSphereAI is a comprehensive social media management platform designed to help businesses and entrepreneurs streamline their social media presence. It combines AI-powered content creation, post scheduling, and analytics in one intuitive platform.
 
-## Funktioner
+## Features
 
-- **Prenumerationshantering:** Hantera prenumerationer med stöd för månatliga och årliga betalningar
-- **Flerspråksstöd:** Stöd för engelska och svenska
-- **Användningsstatistik:** Översikt över resursanvändning som sociala konton, inlägg och lagring
-- **Responsiv design:** Fungerar på alla enheter från mobil till desktop
-- **Tillgängligt gränssnitt:** Följer WCAG-riktlinjer för bästa tillgänglighet
+### Social Media Account Management
+- Connect Instagram, Twitter, Facebook, LinkedIn, and TikTok accounts
+- Manage all your social media profiles in one place
+- Monitor account health and connection status
 
-## Teknisk stack
+### Content Planning & Scheduling
+- Visual content calendar for planning posts across platforms
+- Schedule posts with optimal posting time recommendations
+- Draft content with AI assistance and hashtag suggestions
+- Media upload and management
 
-- **Frontend:** Next.js 14, React 18, Tailwind CSS
-- **Backend:** Next.js API-routes
-- **Databas:** PostgreSQL med Prisma ORM
-- **Autentisering:** NextAuth
-- **Betalningshantering:** Stripe
-- **Deployment:** Vercel/Netlify
+### Analytics & Insights
+- Track follower growth and engagement metrics
+- Identify top-performing content
+- Monitor audience demographics and behavior
+- Receive trend detection and content recommendations
 
-## Kom igång
+### Automations
+- Automatic post publishing based on schedule
+- Engagement reminders for new posts
+- Weekly performance reports
+- Content recommendations based on trending topics
 
-### Förutsättningar
+### Team Collaboration
+- Invite team members with custom permission levels
+- Collaborative workflow for content approval
+- Activity tracking for team coordination
 
-- Node.js 18+ 
-- PostgreSQL-databas
-- Stripe-konto (för betalningstjänster)
+## Getting Started
+
+### Prerequisites
+- Node.js 18.0.0 or higher
+- Yarn or npm
 
 ### Installation
 
-1. Klona repot
-   ```
-   git clone https://github.com/ditt-username/brandsphereai.git
-   cd brandsphereai
-   ```
-
-2. Installera beroenden
-   ```
-   npm install
-   ```
-
-3. Ställ in miljövariabler
-   ```
-   cp .env.example .env.local
-   ```
-   Redigera .env.local för att konfigurera dina egna API-nycklar och inställningar.
-
-4. Ställ in databasen
-   ```
-   npx prisma migrate dev
-   ```
-
-5. Starta utvecklingsservern
-   ```
-   npm run dev
-   ```
-
-## Deployment
-
-### Förbered för produktion
-
-```
-npm run build
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/brandsphereai.git
+cd brandsphereai
 ```
 
-### Databasemigrering i produktion
-
+2. Install dependencies
+```bash
+npm install
+# or
+yarn
 ```
-npx prisma migrate deploy
+
+3. Set up environment variables
+```bash
+cp .env.example .env.local
+```
+Edit `.env.local` with your configuration values.
+
+4. Run the development server
+```bash
+npm run dev
+# or
+yarn dev
 ```
 
-### Deploy till Vercel
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-1. Skapa ett konto på [Vercel](https://vercel.com) om du inte redan har ett
-2. Koppla ditt GitHub/GitLab/Bitbucket-repo till Vercel
-3. Konfigurera följande miljövariabler i Vercel-projektet:
-   - `NEXTAUTH_URL`: Din produktionsdomän (t.ex. https://brandsphereai.vercel.app)
-   - `NEXTAUTH_SECRET`: Ett långt slumpmässigt lösenord för säker autentisering
-   - `DATABASE_URL`: Connection-string till din PostgreSQL-databas
-   - `STRIPE_SECRET_KEY`: Din Stripe hemliga nyckel
-   - `STRIPE_WEBHOOK_SECRET`: Din Stripe webhook-secret
-   - `STRIPE_PRICE_ID_MONTHLY`: Produkt-ID för månatlig prenumeration
-   - `STRIPE_PRICE_ID_YEARLY`: Produkt-ID för årlig prenumeration
-   - `EMAIL_SERVER_USER`: Användarnamn för SMTP-server
-   - `EMAIL_SERVER_PASSWORD`: Lösenord för SMTP-server
-   - `EMAIL_SERVER_HOST`: SMTP-server (t.ex. smtp.gmail.com)
-   - `EMAIL_SERVER_PORT`: SMTP-port (vanligtvis 587)
-   - `EMAIL_FROM`: Avsändaradress för systemmail
-   - `NEXT_PUBLIC_SITE_URL`: URL till din produktionsapp
-4. Klicka på "Deploy" och låt Vercel bygga och deploya din app
-5. När deployen är klar, kan du komma åt din app på den tilldelade Vercel-domänen
+## Technologies
 
-För kontinuerlig deployment, kan du konfigurera Vercel att automatiskt deploya vid varje push till din huvud-branch.
+BrandSphereAI is built with a modern tech stack:
 
-## Underhåll och support
+- **Next.js** - React framework for server-rendered applications
+- **React** - Frontend library for building user interfaces
+- **Tailwind CSS** - Utility-first CSS framework
+- **NextAuth.js** - Authentication for Next.js applications
+- **Neon** - PostgreSQL database
+- **Upstash Redis** - Redis for caching and real-time features
+- **Vercel** - Deployment platform
 
-För support, vänligen öppna ett issue i detta repository eller kontakta oss via vår supportsida på [support@brandsphereai.com](mailto:support@brandsphereai.com).
+## API
 
-## Licens
+BrandSphereAI offers a comprehensive REST API for integrating with your applications. Check our [API Documentation](/api-documentation) for details.
 
-Detta projekt är licensierat under [MIT-licensen](LICENSE).
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more information.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+If you have any questions or feedback, please contact us at support@brandsphereai.com.
 
 ## Stripe-integration
 
