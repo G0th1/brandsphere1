@@ -13,11 +13,17 @@ model User {
   email         String    @unique
   password      String?
   image         String?
+  bio           String?
+  company       String?
+  position      String?
+  website       String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
   subscription  Subscription?
+  securitySettings SecuritySetting?
+  socialConnections SocialConnection[]
 }
 
 model Account {
@@ -56,4 +62,35 @@ model Subscription {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Security settings for user accounts
+model SecuritySetting {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  twoFactorEnabled  Boolean  @default(false)
+  loginNotifications Boolean @default(false)
+  sessionTimeout    Int      @default(60) // Minutes until session expires
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Social media connections for users
+model SocialConnection {
+  id           String   @id @default(cuid())
+  userId       String
+  platform     String   // twitter, facebook, instagram, linkedin, tiktok
+  profileId    String
+  username     String
+  accessToken  String?
+  refreshToken String?
+  expiry       String?
+  profileUrl   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@index([userId])
 } 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Home, Settings, CreditCard, BarChart3, Activity, Users, FileText } from "lucide-react";
+import { LogOut, Home, Settings, CreditCard, BarChart3, Activity, Users, FileText, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
 import { useAuthUser } from "./auth-guard";
@@ -22,6 +22,7 @@ export default function DashboardNav() {
         { name: "Projects", href: "/dashboard/projects", icon: FileText },
         { name: "Activity", href: "/dashboard/activity", icon: Activity },
         { name: "Team", href: "/dashboard/team", icon: Users },
+        { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
         { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
         { name: "Settings", href: "/dashboard/settings", icon: Settings },
     ];
@@ -45,8 +46,8 @@ export default function DashboardNav() {
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-2 text-sm transition-colors hover:text-white/80 ${isActive
-                                        ? "text-white font-medium"
-                                        : "text-white/70"
+                                    ? "text-white font-medium"
+                                    : "text-white/70"
                                     }`}
                             >
                                 <item.icon className="h-4 w-4" />
