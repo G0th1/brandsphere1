@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { openRouterAI } from "@/lib/ai";
+import { v4 as uuidv4 } from "uuid";
 
 // Define the request schema
 const contentRequestSchema = z.object({
     topic: z.string().min(1, "Topic is required"),
     industry: z.string().min(1, "Industry is required"),
     platform: z.enum(["instagram", "facebook", "twitter", "linkedin", "tiktok"]),
-    tone: z.string().optional().default("professional"),
+    tone: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -35,42 +37,66 @@ export async function POST(req: NextRequest) {
 
         const { topic, industry, platform, tone } = validationResult.data;
 
-        // In a real implementation, you would:
-        // 1. Check user's AI usage quota
-        // 2. Call an AI service (OpenAI, etc.)
-        // 3. Log the usage
-        // 4. Return the generated content
+        // Initialize the OpenRouter AI client
+        if (!openRouterAI.initialize()) {
+            return NextResponse.json(
+                { error: "AI Service not properly configured" },
+                { status: 500 }
+            );
+        }
 
-        // For now, we'll return mock data
-        const mockSuggestions = [
-            {
-                id: "1",
-                platform,
-                content: `✨ Elevate your ${topic} game with these 5 ${industry} expert tips:\n\n1️⃣ Start with the basics\n2️⃣ Practice consistently\n3️⃣ Learn from the pros\n4️⃣ Invest in quality tools\n5️⃣ Share your journey\n\n#${topic.replace(/\s+/g, '')} #${industry.replace(/\s+/g, '')}Tips #GrowthMindset`,
-                hashtags: [`${topic}`, `${industry}Tips`, `GrowthMindset`],
-                bestPostingTime: "9:00 AM"
-            },
-            {
-                id: "2",
-                platform,
-                content: `🔍 The ultimate ${tone} guide to ${topic} in the ${industry} industry!\n\nWhether you're a beginner or pro, our latest blog post covers everything you need to know.\n\nTap the link in bio to read more! 👆\n\n#${topic.replace(/\s+/g, '')} #${industry.replace(/\s+/g, '')}Guide #LearnWithUs`,
-                hashtags: [`${topic}`, `${industry}Guide`, `LearnWithUs`],
-                bestPostingTime: "3:00 PM"
-            },
-            {
-                id: "3",
-                platform,
-                content: `Question for my ${industry} community: What's your biggest challenge when it comes to ${topic}?\n\nShare below 👇 and let's solve it together!\n\n#${industry.replace(/\s+/g, '')}Community #${topic.replace(/\s+/g, '')}Problems #Solutions`,
-                hashtags: [`${industry}Community`, `${topic}Problems`, `Solutions`],
-                bestPostingTime: "6:00 PM"
-            }
+        // Generate content using OpenRouter AI
+        const contentType = tone || "engaging";
+        const systemPrompt = `
+        You are a social media expert who creates ${contentType} content for ${platform}.
+        Generate 3 high-quality post ideas about ${topic} in the ${industry} industry.
+        Each post should include:
+        1. Engaging main content
+        2. 3-5 relevant hashtags
+        3. A recommended posting time
+        Make the content authentic, creative, and optimized for ${platform}.
+        `;
+
+        const messages = [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Create ${contentType} post ideas about ${topic} in the ${industry} industry for ${platform}` }
         ];
+
+        const completion = await openRouterAI.generateCompletion({ messages });
+
+        // Process the response to extract structured content
+        const posts = completion
+            .split(/\n{2,}|\d+\.\s+/)
+            .map(item => item.trim())
+            .filter(item => item.length > 20)
+            .map(content => {
+                // Extract hashtags if present
+                const hashtagRegex = /#[a-zA-Z0-9]+/g;
+                const hashtags = (content.match(hashtagRegex) || [])
+                    .map(tag => tag.replace('#', ''));
+
+                // Remove hashtags from content if we extracted them
+                let cleanContent = content;
+                if (hashtags.length > 0) {
+                    // Remove the hashtag section if it exists
+                    cleanContent = content.replace(/(?:Hashtags|Tags):\s*.*$/i, '').trim();
+                }
+
+                return {
+                    id: uuidv4(),
+                    platform,
+                    content: cleanContent,
+                    hashtags: hashtags.length ? hashtags : generateDefaultHashtags(topic, industry),
+                    bestPostingTime: getDefaultPostingTime(platform)
+                };
+            })
+            .slice(0, 3); // Ensure we return at most 3 suggestions
 
         // Update user's AI usage in the database (mock)
         // In a real implementation, you would update the user's usage in the database
 
         return NextResponse.json({
-            suggestions: mockSuggestions,
+            suggestions: posts,
             usage: {
                 current: 9,
                 limit: 20
@@ -84,4 +110,27 @@ export async function POST(req: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+// Helper function to generate default hashtags if extraction fails
+function generateDefaultHashtags(topic: string, industry: string): string[] {
+    return [
+        topic.replace(/\s+/g, ''),
+        `${topic.replace(/\s+/g, '')}Tips`,
+        industry.replace(/\s+/g, ''),
+        'SocialMedia',
+        'Tips'
+    ];
+}
+
+// Helper function to get default posting times
+function getDefaultPostingTime(platform: string): string {
+    const times = {
+        instagram: "11:00 AM",
+        facebook: "1:00 PM",
+        twitter: "9:00 AM",
+        linkedin: "10:00 AM",
+        tiktok: "7:00 PM"
+    };
+    return times[platform as keyof typeof times] || "12:00 PM";
 } 

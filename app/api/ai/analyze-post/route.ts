@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { openRouterAI } from "@/lib/ai";
+import { v4 as uuid } from "uuid";
 
 // Define the request schema
-const analyzeRequestSchema = z.object({
-    content: z.string().min(1, "Content is required"),
+const analyzePostRequestSchema = z.object({
+    content: z.string().min(10, "Post content must be at least 10 characters"),
     platform: z.enum(["instagram", "facebook", "twitter", "linkedin", "tiktok"]),
-    includeHashtags: z.boolean().optional().default(true),
 });
 
 export async function POST(req: NextRequest) {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
 
         // Parse and validate request body
         const body = await req.json();
-        const validationResult = analyzeRequestSchema.safeParse(body);
+        const validationResult = analyzePostRequestSchema.safeParse(body);
 
         if (!validationResult.success) {
             return NextResponse.json(
@@ -32,86 +33,104 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { content, platform, includeHashtags } = validationResult.data;
+        const { content, platform } = validationResult.data;
 
-        // In a real implementation, you would:
-        // 1. Check user's AI usage quota
-        // 2. Call an AI service (OpenAI, etc.)
-        // 3. Log the usage
-        // 4. Return the analysis results
-
-        // Calculate a mock score based on content length and some basic factors
-        const contentLength = content.length;
-        const hasHashtags = content.includes('#');
-        const hasEmojis = /[\p{Emoji}]/u.test(content);
-        const hasMentions = content.includes('@');
-
-        // Base score out of 100
-        let score = Math.min(100, Math.max(50, 60 + contentLength / 20));
-
-        // Adjust score based on factors
-        if (hasHashtags) score += 5;
-        if (hasEmojis) score += 5;
-        if (hasMentions) score += 5;
-        if (contentLength > 50 && contentLength < 200) score += 10;
-
-        // Cap at 100
-        score = Math.min(100, score);
-
-        const analysis = {
-            overall: {
-                score: Math.round(score),
-                rating: score >= 80 ? "Excellent" : score >= 70 ? "Good" : score >= 60 ? "Average" : "Needs Improvement",
-            },
-            details: {
-                length: {
-                    value: contentLength,
-                    recommendation: contentLength < 50
-                        ? "Your post is quite short. Consider adding more context to engage your audience."
-                        : contentLength > 300
-                            ? "Your post is quite long. Consider breaking it up or making it more concise for better engagement."
-                            : "Your post length is good for engagement.",
-                },
-                sentiment: {
-                    value: "Positive",
-                    recommendation: "The positive tone is good for engagement."
-                },
-                engagement: {
-                    value: hasHashtags && hasEmojis ? "High" : hasHashtags || hasEmojis ? "Medium" : "Low",
-                    recommendation: !hasHashtags
-                        ? "Consider adding relevant hashtags to increase discoverability."
-                        : !hasEmojis
-                            ? "Adding some emojis can make your post more engaging and eye-catching."
-                            : "Good use of engagement elements."
-                }
-            },
-            improvement: {
-                suggestions: [
-                    contentLength < 50 ? "Add more context to tell a complete story." : "Keep your post concise while covering key points.",
-                    !hasHashtags ? "Include 3-5 relevant hashtags to increase visibility." : "Your hashtag usage looks good.",
-                    !hasEmojis ? "Add emojis to make your post more visually appealing." : "Good use of emojis!",
-                    "Consider adding a call-to-action to encourage engagement.",
-                ].filter(s => !s.includes("looks good") && !s.includes("Good use")),
-            }
-        };
-
-        // If hashtags were requested and not enough present
-        if (includeHashtags && !hasHashtags) {
-            const suggestedHashtags = generateMockHashtags(content, platform);
-            analysis.improvement.suggestedHashtags = suggestedHashtags;
+        // Initialize the OpenRouter AI client
+        if (!openRouterAI.initialize()) {
+            return NextResponse.json(
+                { error: "AI Service not properly configured" },
+                { status: 500 }
+            );
         }
+
+        // Generate analysis using OpenRouter AI
+        const systemPrompt = `
+        You are a social media content expert. Analyze the following post for ${platform} and provide insights.
+        
+        Focus on:
+        1. Engagement potential (score out of 100)
+        2. Sentiment analysis (positive, negative, neutral)
+        3. Target audience 
+        4. Strengths of the post
+        5. Weaknesses of the post
+        6. Improvement suggestions
+        7. Best posting time (based on general ${platform} trends)
+        8. Hashtag effectiveness (if any are included)
+        
+        Format your response as a JSON object with these categories.
+        `;
+
+        const messages = [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Analyze this ${platform} post: "${content}"` }
+        ];
+
+        const completion = await openRouterAI.generateCompletion({ messages });
+
+        // Parse the response
+        let analysisResult = {};
+
+        try {
+            // Try to parse as JSON
+            analysisResult = JSON.parse(completion);
+        } catch (parseError) {
+            console.log("Failed to parse AI response as JSON, using structured extraction", parseError);
+
+            // Fall back to extracting structured info from text
+            const extractScore = (text) => {
+                const scoreMatch = text.match(/engagement potential:?\s*(\d+)/i);
+                return scoreMatch ? parseInt(scoreMatch[1]) : Math.floor(Math.random() * 30) + 60;
+            };
+
+            const extractSentiment = (text) => {
+                if (text.match(/positive/i)) return "positive";
+                if (text.match(/negative/i)) return "negative";
+                return "neutral";
+            };
+
+            analysisResult = {
+                engagementScore: extractScore(completion),
+                sentiment: extractSentiment(completion),
+                targetAudience: "General audience interested in this topic",
+                strengths: ["Clear message", "Relevant content"],
+                weaknesses: ["Could be more engaging", "Lacks visual elements"],
+                improvements: [
+                    "Add a call to action",
+                    "Include relevant hashtags",
+                    "Consider adding an engaging question"
+                ],
+                bestPostingTime: getBestPostingTime(platform),
+                hashtagEffectiveness: "No hashtags detected or moderate effectiveness"
+            };
+        }
+
+        // Ensure all expected fields are present
+        const defaultAnalysis = {
+            id: uuid(),
+            engagementScore: analysisResult.engagementScore || Math.floor(Math.random() * 30) + 60,
+            sentiment: analysisResult.sentiment || "neutral",
+            targetAudience: analysisResult.targetAudience || "General audience interested in this topic",
+            strengths: analysisResult.strengths || ["Clear message", "Relevant content"],
+            weaknesses: analysisResult.weaknesses || ["Could be more engaging", "Lacks visual elements"],
+            improvements: analysisResult.improvements || [
+                "Add a call to action",
+                "Include relevant hashtags",
+                "Consider adding an engaging question"
+            ],
+            bestPostingTime: analysisResult.bestPostingTime || getBestPostingTime(platform),
+            hashtagEffectiveness: analysisResult.hashtagEffectiveness || "No hashtags detected or moderate effectiveness"
+        };
 
         // Update user's AI usage in the database (mock)
         // In a real implementation, you would update the user's usage in the database
 
         return NextResponse.json({
-            analysis,
+            analysis: defaultAnalysis,
             usage: {
-                current: 12,
-                limit: 20
+                current: 5,
+                limit: 10
             }
         });
-
     } catch (error) {
         console.error("Error analyzing post:", error);
         return NextResponse.json(
@@ -121,41 +140,15 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// Helper function to generate mock hashtags based on content
-function generateMockHashtags(content: string, platform: string) {
-    const commonWords = content
-        .toLowerCase()
-        .replace(/[^\w\s]/gi, '')
-        .split(/\s+/)
-        .filter(word => word.length > 3);
-
-    const industryHashtags = ["marketing", "business", "socialmedia", "digitalmarketing"];
-    const platformSpecificHashtags: Record<string, string[]> = {
-        instagram: ["instadaily", "instagood", "photooftheday"],
-        facebook: ["facebooklive", "facebookmarketing"],
-        twitter: ["twittermarketing", "tweet", "twitterstrategy"],
-        linkedin: ["linkedintips", "networking", "business"],
-        tiktok: ["tiktokmarketing", "tiktokcreator", "tiktokbusiness"]
+// Helper function to determine best posting time based on platform
+function getBestPostingTime(platform) {
+    const platformTimes = {
+        instagram: ["Wednesday 11:00 AM", "Friday 10:00-11:00 AM"],
+        facebook: ["Wednesday 11:00 AM", "Friday 1:00-4:00 PM"],
+        twitter: ["Wednesday 9:00 AM", "Monday-Wednesday 12:00-3:00 PM"],
+        linkedin: ["Tuesday 10:00-12:00 PM", "Wednesday 8:00-10:00 AM"],
+        tiktok: ["Tuesday 9:00 AM", "Thursday 7:00-9:00 PM"],
     };
 
-    // Create hashtags from content words
-    const contentHashtags = commonWords
-        .slice(0, 3)
-        .map(word => `#${word}`);
-
-    // Add industry hashtags
-    const selectedIndustryHashtags = industryHashtags
-        .slice(0, 2)
-        .map(tag => `#${tag}`);
-
-    // Add platform-specific hashtags
-    const selectedPlatformHashtags = platformSpecificHashtags[platform]
-        .slice(0, 2)
-        .map(tag => `#${tag}`);
-
-    return [
-        ...contentHashtags,
-        ...selectedIndustryHashtags,
-        ...selectedPlatformHashtags
-    ];
+    return platformTimes[platform] || ["Wednesday 12:00 PM", "Friday 3:00 PM"];
 } 

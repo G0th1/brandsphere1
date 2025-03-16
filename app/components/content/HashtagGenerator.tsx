@@ -22,10 +22,11 @@ export function HashtagGenerator() {
         niche: Hashtag[];
         trending: Hashtag[];
     } | null>(null);
-    const [allHashtags, setAllHashtags] = useState<Hashtag[]>([]);
+    const [allHashtags, setAllHashtags] = useState<string[]>([]);
     const [activeFilter, setActiveFilter] = useState<string>("all");
     const [copied, setCopied] = useState(false);
     const [usageInfo, setUsageInfo] = useState<{ current: number; limit: number } | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const handleGenerate = async () => {
         if (!topic) {
@@ -39,6 +40,7 @@ export function HashtagGenerator() {
 
         setIsGenerating(true);
         setActiveFilter("all");
+        setError(null);
 
         try {
             const result = await AIService.generateHashtags({
@@ -59,12 +61,14 @@ export function HashtagGenerator() {
             console.error("Error generating hashtags:", error);
 
             if (error instanceof Error && error.message.includes("Monthly limit exceeded")) {
+                setError("You've reached your monthly limit for hashtag suggestions. Upgrade to Pro for more.");
                 toast({
                     variant: "destructive",
                     title: "Usage limit reached",
-                    description: "You've reached your monthly limit for hashtag suggestions. Upgrade to Pro for more."
+                    description: "You've reached your monthly limit for hashtag suggestions"
                 });
             } else {
+                setError("There was an error generating hashtags. Please try again later.");
                 toast({
                     variant: "destructive",
                     title: "Failed to generate hashtags",
@@ -77,7 +81,7 @@ export function HashtagGenerator() {
     };
 
     const copyAllHashtags = () => {
-        const hashtagsText = getFilteredHashtags().map(h => h.name).join(' ');
+        const hashtagsText = getFilteredHashtags().map(h => typeof h === 'string' ? `#${h}` : `#${h.name}`).join(' ');
         navigator.clipboard.writeText(hashtagsText);
         setCopied(true);
 
@@ -87,6 +91,12 @@ export function HashtagGenerator() {
         });
 
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const resetGenerator = () => {
+        setHashtagCategories(null);
+        setAllHashtags([]);
+        setError(null);
     };
 
     const getFilteredHashtags = () => {
@@ -102,6 +112,28 @@ export function HashtagGenerator() {
             default:
                 return allHashtags;
         }
+    };
+
+    // Helper to handle hashtag display
+    const displayHashtag = (hashtag: Hashtag | string, index: number) => {
+        if (typeof hashtag === 'string') {
+            return (
+                <Badge key={index} variant="outline" className="px-2.5 py-1.5 text-sm">
+                    #{hashtag}
+                </Badge>
+            );
+        }
+
+        return (
+            <Badge key={index} variant="outline" className="px-2.5 py-1.5 text-sm flex flex-col min-w-20">
+                <span>#{hashtag.name}</span>
+                {hashtag.posts && (
+                    <span className="text-xs text-muted-foreground">
+                        {hashtag.posts}
+                    </span>
+                )}
+            </Badge>
+        );
     };
 
     return (
@@ -165,13 +197,18 @@ export function HashtagGenerator() {
                 <CardFooter>
                     <Button
                         className="w-full"
-                        onClick={handleGenerate}
-                        disabled={isGenerating || !topic}
+                        onClick={hashtagCategories ? resetGenerator : handleGenerate}
+                        disabled={isGenerating || (!hashtagCategories && !topic)}
                     >
                         {isGenerating ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Generating...
+                            </>
+                        ) : hashtagCategories ? (
+                            <>
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Generate New Hashtags
                             </>
                         ) : (
                             <>
@@ -208,9 +245,28 @@ export function HashtagGenerator() {
                                 This may take a few moments
                             </p>
                         </div>
+                    ) : error ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <div className="h-12 w-12 text-destructive mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-circle">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                            </div>
+                            <p className="text-center text-lg font-medium text-destructive">Generation Failed</p>
+                            <p className="text-center text-sm mt-2 max-w-md">{error}</p>
+                            <Button
+                                variant="outline"
+                                className="mt-4"
+                                onClick={resetGenerator}
+                            >
+                                Try Again
+                            </Button>
+                        </div>
                     ) : allHashtags.length > 0 ? (
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 mb-4">
+                            <div className="flex items-center gap-2 mb-4 flex-wrap">
                                 <Button
                                     variant={activeFilter === "all" ? "default" : "outline"}
                                     size="sm"
@@ -252,38 +308,28 @@ export function HashtagGenerator() {
 
                             <div className="flex flex-wrap gap-2">
                                 {getFilteredHashtags().map((hashtag, index) => (
-                                    <div key={index} className="relative group">
-                                        <Badge
-                                            variant="outline"
-                                            className="px-3 py-1.5 text-sm hover:bg-secondary cursor-pointer"
-                                        >
-                                            {hashtag.name}
-                                            <span className="ml-2 text-xs text-muted-foreground">
-                                                {hashtag.popularity}
-                                            </span>
-                                        </Badge>
-                                    </div>
+                                    displayHashtag(hashtag, index)
                                 ))}
                             </div>
+
+                            {activeFilter !== "all" && hashtagCategories && (
+                                <div className="pt-2 text-sm text-muted-foreground">
+                                    {activeFilter === "popular" && "Popular hashtags have high visibility but more competition."}
+                                    {activeFilter === "niche" && "Niche hashtags target specific audiences with less competition."}
+                                    {activeFilter === "trending" && "Trending hashtags can temporarily increase visibility."}
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <Hash className="h-12 w-12 text-muted-foreground mb-4" />
-                            <p className="text-lg font-medium">No hashtag suggestions yet</p>
+                            <p className="text-lg font-medium">No hashtags generated yet</p>
                             <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                                Fill in the form on the left and click "Generate Hashtags" to get AI-powered hashtag suggestions for your social media.
+                                Enter a topic on the left and click "Generate Hashtags" to get AI-powered hashtag suggestions.
                             </p>
                         </div>
                     )}
                 </CardContent>
-                {allHashtags.length > 0 && (
-                    <CardFooter className="justify-center">
-                        <Button variant="outline" onClick={handleGenerate} disabled={isGenerating}>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Generate More Hashtags
-                        </Button>
-                    </CardFooter>
-                )}
             </Card>
         </div>
     );

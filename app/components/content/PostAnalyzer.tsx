@@ -6,23 +6,36 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Search, CheckCircle, XCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, FileSparkles, AlertTriangle, ThumbsUp, BadgeCheck, SparkleIcon } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
-import AIService, { PostAnalysis } from "@/services/ai-service";
+import AIService from "@/services/ai-service";
+
+// Interface for the updated analysis format from OpenRouter
+interface PostAnalysisResult {
+    id: string;
+    engagementScore: number;
+    sentiment: string;
+    targetAudience: string;
+    strengths: string[];
+    weaknesses: string[];
+    improvements: string[];
+    bestPostingTime: string[];
+    hashtagEffectiveness: string;
+}
 
 export function PostAnalyzer() {
-    const [content, setContent] = useState("");
+    const [postContent, setPostContent] = useState("");
     const [platform, setPlatform] = useState("instagram");
-    const [includeHashtags, setIncludeHashtags] = useState(true);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [analysis, setAnalysis] = useState<PostAnalysis | null>(null);
+    const [analysis, setAnalysis] = useState<PostAnalysisResult | null>(null);
     const [usageInfo, setUsageInfo] = useState<{ current: number; limit: number } | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const handleAnalyze = async () => {
-        if (!content) {
+        if (!postContent) {
             toast({
                 variant: "destructive",
                 title: "Missing content",
@@ -32,35 +45,38 @@ export function PostAnalyzer() {
         }
 
         setIsAnalyzing(true);
+        setError(null);
 
         try {
             const result = await AIService.analyzePost({
-                content,
-                platform: platform as any,
-                includeHashtags
+                content: postContent,
+                platform: platform as any
             });
 
+            // Handle the new analysis format
             setAnalysis(result.analysis);
             setUsageInfo(result.usage);
 
             toast({
                 title: "Analysis complete",
-                description: `Your post has been analyzed with a score of ${result.analysis.overall.score}/100`
+                description: "Your post has been analyzed successfully"
             });
         } catch (error) {
             console.error("Error analyzing post:", error);
 
             if (error instanceof Error && error.message.includes("Monthly limit exceeded")) {
+                setError("You've reached your monthly limit for post analysis. Upgrade to Pro for more.");
                 toast({
                     variant: "destructive",
                     title: "Usage limit reached",
-                    description: "You've reached your monthly limit for post analyses. Upgrade to Pro for more."
+                    description: "You've reached your monthly limit for post analysis"
                 });
             } else {
+                setError("There was an error analyzing your post. Please try again later.");
                 toast({
                     variant: "destructive",
-                    title: "Failed to analyze post",
-                    description: "There was an error analyzing your post. Please try again later."
+                    title: "Analysis failed",
+                    description: "There was an error analyzing your post"
                 });
             }
         } finally {
@@ -68,36 +84,43 @@ export function PostAnalyzer() {
         }
     };
 
-    const getScoreColor = (score: number) => {
-        if (score >= 80) return "text-green-500";
-        if (score >= 60) return "text-amber-500";
-        return "text-red-500";
+    const resetAnalysis = () => {
+        setAnalysis(null);
+        setError(null);
     };
 
-    const getProgressColor = (score: number) => {
+    // Helper function to get color based on score
+    const getScoreColor = (score: number) => {
         if (score >= 80) return "bg-green-500";
-        if (score >= 60) return "bg-amber-500";
+        if (score >= 60) return "bg-yellow-500";
         return "bg-red-500";
     };
 
+    // Helper function to get color based on sentiment
+    const getSentimentColor = (sentiment: string) => {
+        if (sentiment.toLowerCase() === "positive") return "bg-green-500/20 text-green-700";
+        if (sentiment.toLowerCase() === "negative") return "bg-red-500/20 text-red-700";
+        return "bg-blue-500/20 text-blue-700";
+    };
+
     return (
-        <div className="grid gap-4 md:grid-cols-2">
-            <Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="md:col-span-1 lg:col-span-1">
                 <CardHeader>
                     <CardTitle className="text-xl">Analyze Your Post</CardTitle>
                     <CardDescription>
-                        Get AI-powered insights to improve your content's performance
+                        Get AI-powered insights on your social media content
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="content">Post Content</Label>
+                        <Label htmlFor="post-content">Post Content</Label>
                         <Textarea
-                            id="content"
-                            placeholder="Paste your social media post here to analyze it..."
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            className="min-h-[200px]"
+                            id="post-content"
+                            placeholder="Enter your post content here..."
+                            value={postContent}
+                            onChange={(e) => setPostContent(e.target.value)}
+                            rows={6}
                         />
                     </div>
 
@@ -119,36 +142,26 @@ export function PostAnalyzer() {
                             </SelectContent>
                         </Select>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="include-hashtags"
-                            checked={includeHashtags}
-                            onCheckedChange={(checked) => setIncludeHashtags(checked as boolean)}
-                        />
-                        <Label htmlFor="include-hashtags">Include hashtag suggestions if needed</Label>
-                    </div>
-
-                    {usageInfo && (
-                        <div className="text-sm text-muted-foreground">
-                            Usage: {usageInfo.current}/{usageInfo.limit}
-                        </div>
-                    )}
                 </CardContent>
                 <CardFooter>
                     <Button
                         className="w-full"
-                        onClick={handleAnalyze}
-                        disabled={isAnalyzing || !content}
+                        onClick={analysis ? resetAnalysis : handleAnalyze}
+                        disabled={isAnalyzing || (!analysis && !postContent)}
                     >
                         {isAnalyzing ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Analyzing...
                             </>
+                        ) : analysis ? (
+                            <>
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Analyze New Post
+                            </>
                         ) : (
                             <>
-                                <FileSparkles className="mr-2 h-4 w-4" />
+                                <Search className="mr-2 h-4 w-4" />
                                 Analyze Post
                             </>
                         )}
@@ -156,11 +169,20 @@ export function PostAnalyzer() {
                 </CardFooter>
             </Card>
 
-            <Card>
+            <Card className="md:col-span-1 lg:col-span-2">
                 <CardHeader>
-                    <CardTitle className="text-xl">Analysis Results</CardTitle>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl">Post Analysis Results</CardTitle>
+                        {usageInfo && (
+                            <div className="text-sm text-muted-foreground">
+                                Usage: {usageInfo.current}/{usageInfo.limit}
+                            </div>
+                        )}
+                    </div>
                     <CardDescription>
-                        {analysis ? "Insights and recommendations for your post" : "Your analysis results will appear here"}
+                        {analysis
+                            ? `Analysis results for your ${platform} post`
+                            : "Your AI-powered post analysis will appear here"}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -172,95 +194,135 @@ export function PostAnalyzer() {
                                 This may take a few moments
                             </p>
                         </div>
+                    ) : error ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                            <p className="text-center text-lg font-medium text-destructive">Analysis Failed</p>
+                            <p className="text-center text-sm mt-2 max-w-md">
+                                {error}
+                            </p>
+                            <Button
+                                variant="outline"
+                                className="mt-4"
+                                onClick={resetAnalysis}
+                            >
+                                Try Again
+                            </Button>
+                        </div>
                     ) : analysis ? (
                         <div className="space-y-6">
-                            <div className="text-center">
-                                <div className="text-4xl font-bold mb-1">
-                                    <span className={getScoreColor(analysis.overall.score)}>
-                                        {analysis.overall.score}
-                                    </span>
-                                    <span className="text-2xl text-muted-foreground">/100</span>
+                            {/* Engagement Score */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-base font-medium">Engagement Potential</h3>
+                                    <span className="text-lg font-bold">{analysis.engagementScore}/100</span>
                                 </div>
-                                <div className="text-lg font-medium mb-2">{analysis.overall.rating}</div>
                                 <Progress
-                                    value={analysis.overall.score}
-                                    className="h-2 w-full max-w-md mx-auto"
-                                    indicatorClassName={getProgressColor(analysis.overall.score)}
+                                    value={analysis.engagementScore}
+                                    className="h-2"
+                                    indicatorClassName={getScoreColor(analysis.engagementScore)}
                                 />
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="text-lg font-medium">Detailed Analysis</div>
-
-                                <div className="grid gap-3">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <div className="font-medium">Length</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {analysis.details.length.recommendation}
-                                            </div>
-                                        </div>
-                                        <Badge variant="outline">
-                                            {analysis.details.length.value} characters
-                                        </Badge>
-                                    </div>
-
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <div className="font-medium">Sentiment</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {analysis.details.sentiment.recommendation}
-                                            </div>
-                                        </div>
-                                        <Badge variant="outline">
-                                            {analysis.details.sentiment.value}
-                                        </Badge>
-                                    </div>
-
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <div className="font-medium">Engagement Potential</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {analysis.details.engagement.recommendation}
-                                            </div>
-                                        </div>
-                                        <Badge variant={analysis.details.engagement.value === "High" ? "default" : "outline"}>
-                                            {analysis.details.engagement.value}
-                                        </Badge>
-                                    </div>
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Low</span>
+                                    <span>Medium</span>
+                                    <span>High</span>
                                 </div>
                             </div>
 
-                            {analysis.improvement.suggestions && analysis.improvement.suggestions.length > 0 && (
-                                <div>
-                                    <div className="text-lg font-medium mb-2">Improvement Suggestions</div>
-                                    <ul className="space-y-2">
-                                        {analysis.improvement.suggestions.map((suggestion, index) => (
-                                            <li key={index} className="flex items-start">
-                                                <SparkleIcon className="h-5 w-5 text-primary shrink-0 mr-2 mt-0.5" />
-                                                <span>{suggestion}</span>
-                                            </li>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Sentiment */}
+                                <div className="space-y-2">
+                                    <h3 className="text-base font-medium">Sentiment</h3>
+                                    <Badge className={`rounded-md px-3 py-1 capitalize ${getSentimentColor(analysis.sentiment)}`}>
+                                        {analysis.sentiment}
+                                    </Badge>
+                                </div>
+
+                                {/* Target Audience */}
+                                <div className="space-y-2">
+                                    <h3 className="text-base font-medium">Target Audience</h3>
+                                    <p className="text-sm">{analysis.targetAudience}</p>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* Strengths and Weaknesses */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <h3 className="text-base font-medium flex items-center">
+                                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                                        Strengths
+                                    </h3>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        {analysis.strengths.map((strength, index) => (
+                                            <li key={index} className="text-sm">{strength}</li>
                                         ))}
                                     </ul>
                                 </div>
-                            )}
 
-                            {analysis.improvement.suggestedHashtags && (
-                                <div>
-                                    <div className="text-lg font-medium mb-2">Suggested Hashtags</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {analysis.improvement.suggestedHashtags.map((hashtag, index) => (
-                                            <Badge key={index} variant="outline" className="px-2.5 py-1">
-                                                {hashtag}
-                                            </Badge>
+                                <div className="space-y-2">
+                                    <h3 className="text-base font-medium flex items-center">
+                                        <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                                        Weaknesses
+                                    </h3>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        {analysis.weaknesses.map((weakness, index) => (
+                                            <li key={index} className="text-sm">{weakness}</li>
                                         ))}
-                                    </div>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* Improvement Suggestions */}
+                            <div className="space-y-3">
+                                <h3 className="text-base font-medium">Improvement Suggestions</h3>
+                                <ul className="list-disc pl-5 space-y-2">
+                                    {analysis.improvements.map((suggestion, index) => (
+                                        <li key={index} className="text-sm">{suggestion}</li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Best Posting Times */}
+                            <div className="space-y-3">
+                                <h3 className="text-base font-medium">Best Posting Times</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {Array.isArray(analysis.bestPostingTime) ? (
+                                        analysis.bestPostingTime.map((time, index) => (
+                                            <Badge key={index} variant="outline" className="flex items-center gap-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-clock">
+                                                    <circle cx="12" cy="12" r="10" />
+                                                    <polyline points="12 6 12 12 16 14" />
+                                                </svg>
+                                                {time}
+                                            </Badge>
+                                        ))
+                                    ) : (
+                                        <Badge variant="outline" className="flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-clock">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <polyline points="12 6 12 12 16 14" />
+                                            </svg>
+                                            {analysis.bestPostingTime}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Hashtag Effectiveness */}
+                            {analysis.hashtagEffectiveness && (
+                                <div className="space-y-2">
+                                    <h3 className="text-base font-medium">Hashtag Effectiveness</h3>
+                                    <p className="text-sm">{analysis.hashtagEffectiveness}</p>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <FileSparkles className="h-12 w-12 text-muted-foreground mb-4" />
+                            <Search className="h-12 w-12 text-muted-foreground mb-4" />
                             <p className="text-lg font-medium">No analysis yet</p>
                             <p className="text-sm text-muted-foreground mt-1 max-w-md">
                                 Enter your post content on the left and click "Analyze Post" to get AI-powered insights.

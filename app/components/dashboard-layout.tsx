@@ -192,10 +192,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Account</DropdownMenuLabel>
-                                <DropdownMenuItem>Profile</DropdownMenuItem>
-                                <DropdownMenuItem>Settings</DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <Link href="/dashboard/profile">Profile</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <Link href="/dashboard/settings">Settings</Link>
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem>Logout</DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <Link href="/auth/logout">Logout</Link>
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

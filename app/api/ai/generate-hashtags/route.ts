@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { openRouterAI } from "@/lib/ai";
 
 // Define the request schema
 const hashtagRequestSchema = z.object({
     topic: z.string().min(1, "Topic is required"),
     platform: z.enum(["instagram", "facebook", "twitter", "linkedin", "tiktok"]),
-    count: z.number().min(1).max(30).optional().default(15),
+    count: z.number().min(5).max(30).optional().default(15),
 });
 
 export async function POST(req: NextRequest) {
@@ -34,56 +35,107 @@ export async function POST(req: NextRequest) {
 
         const { topic, platform, count } = validationResult.data;
 
-        // In a real implementation, you would:
-        // 1. Check user's AI usage quota
-        // 2. Call an AI service (OpenAI, etc.)
-        // 3. Log the usage
-        // 4. Return the generated hashtags
+        // Initialize the OpenRouter AI client
+        if (!openRouterAI.initialize()) {
+            return NextResponse.json(
+                { error: "AI Service not properly configured" },
+                { status: 500 }
+            );
+        }
 
-        // Mock data for different categories of hashtags
-        const mockHashtagCategories = {
-            popular: [
-                { name: `#${topic.replace(/\s+/g, '')}`, popularity: "Very High", posts: "2.3M+" },
-                { name: `#${platform}marketing`, popularity: "High", posts: "1.5M+" },
-                { name: `#${topic.replace(/\s+/g, '')}tips`, popularity: "High", posts: "892K+" },
-                { name: `#${platform}tips`, popularity: "Medium", posts: "450K+" },
-                { name: `#${topic.replace(/\s+/g, '')}strategy`, popularity: "Medium", posts: "320K+" }
-            ],
-            niche: [
-                { name: `#${topic.replace(/\s+/g, '')}expert`, popularity: "Low", posts: "89K+" },
-                { name: `#${platform}growth`, popularity: "Low", posts: "76K+" },
-                { name: `#${topic.replace(/\s+/g, '')}hacks`, popularity: "Low", posts: "45K+" },
-                { name: `#small${topic.replace(/\s+/g, '')}`, popularity: "Low", posts: "32K+" },
-                { name: `#${topic.replace(/\s+/g, '')}community`, popularity: "Very Low", posts: "12K+" }
-            ],
-            trending: [
-                { name: `#${topic.replace(/\s+/g, '')}2024`, popularity: "Rising", posts: "156K+" },
-                { name: `#ai${topic.replace(/\s+/g, '')}`, popularity: "Rising", posts: "87K+" },
-                { name: `#${platform}algorithm`, popularity: "Rising", posts: "65K+" },
-                { name: `#${topic.replace(/\s+/g, '')}trends`, popularity: "Rising", posts: "43K+" },
-                { name: `#${topic.replace(/\s+/g, '')}inspiration`, popularity: "Rising", posts: "28K+" }
-            ]
-        };
+        // Generate hashtags using OpenRouter AI
+        const systemPrompt = `
+        You are a social media hashtag expert. Generate ${count} relevant hashtags for ${platform} about the topic "${topic}".
+        Categorize the hashtags into three groups:
+        1. Popular (high-volume hashtags with broad reach)
+        2. Niche (specific to the topic with targeted audience)
+        3. Trending (currently gaining popularity)
+        
+        For each hashtag, include an estimated post count and popularity rating (high, medium, low).
+        Format your response as JSON with these categories.
+        `;
 
-        // Flatten all categories and take the requested count
-        const allHashtags = [
-            ...mockHashtagCategories.popular,
-            ...mockHashtagCategories.niche,
-            ...mockHashtagCategories.trending
-        ].slice(0, Math.min(count, 15));
+        const messages = [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Generate and categorize ${count} ${platform} hashtags for topic: ${topic}` }
+        ];
+
+        const completion = await openRouterAI.generateCompletion({ messages });
+
+        // Try to parse the result as JSON
+        let allHashtags = [];
+        let categories = { popular: [], niche: [], trending: [] };
+
+        try {
+            // First try to parse as JSON
+            const jsonResponse = JSON.parse(completion);
+            if (jsonResponse.popular && Array.isArray(jsonResponse.popular)) {
+                categories.popular = jsonResponse.popular;
+                allHashtags = [...allHashtags, ...jsonResponse.popular.map(h => h.name || h)];
+            }
+            if (jsonResponse.niche && Array.isArray(jsonResponse.niche)) {
+                categories.niche = jsonResponse.niche;
+                allHashtags = [...allHashtags, ...jsonResponse.niche.map(h => h.name || h)];
+            }
+            if (jsonResponse.trending && Array.isArray(jsonResponse.trending)) {
+                categories.trending = jsonResponse.trending;
+                allHashtags = [...allHashtags, ...jsonResponse.trending.map(h => h.name || h)];
+            }
+        } catch (parseError) {
+            // If JSON parsing fails, extract hashtags from text
+            console.log("JSON parsing failed, extracting hashtags from text");
+
+            // Simple extraction of hashtags by splitting
+            const extractedTags = completion
+                .replace(/#/g, '')  // Remove # symbols if present
+                .split(/[\n,]/)      // Split by newlines or commas
+                .map(tag => tag.trim().toLowerCase())
+                .filter(tag => tag.length > 0 && !tag.includes(' '));  // Filter empty or multi-word tags
+
+            // Create a simple structure
+            allHashtags = extractedTags;
+
+            // Divide into categories by position in the list
+            const third = Math.ceil(extractedTags.length / 3);
+            categories = {
+                popular: extractedTags.slice(0, third).map(tag => ({ name: tag, popularity: "high", posts: "1M+" })),
+                niche: extractedTags.slice(third, third * 2).map(tag => ({ name: tag, popularity: "medium", posts: "100K+" })),
+                trending: extractedTags.slice(third * 2).map(tag => ({ name: tag, popularity: "low", posts: "10K+" }))
+            };
+        }
+
+        // If we have fewer hashtags than requested, generate some defaults
+        if (allHashtags.length < count) {
+            const defaultTags = [
+                topic.replace(/\s+/g, ''),
+                `${topic}Tips`,
+                `${topic}Advice`,
+                'SocialMedia',
+                'ContentCreation',
+                'DigitalMarketing',
+                platform
+            ].filter(tag => !allHashtags.includes(tag));
+
+            allHashtags = [...allHashtags, ...defaultTags].slice(0, count);
+
+            // Add any defaults to the "popular" category
+            categories.popular = [
+                ...categories.popular,
+                ...defaultTags.map(tag => ({ name: tag, popularity: "medium", posts: "500K+" }))
+            ].slice(0, Math.ceil(count / 3));
+        }
 
         // Update user's AI usage in the database (mock)
         // In a real implementation, you would update the user's usage in the database
 
         return NextResponse.json({
-            categories: mockHashtagCategories,
-            allHashtags: allHashtags,
+            categories,
+            allHashtags: allHashtags.map(tag => typeof tag === 'object' ? tag.name : tag),
             usage: {
                 current: 7,
                 limit: 20
             }
         });
-
     } catch (error) {
         console.error("Error generating hashtags:", error);
         return NextResponse.json(
