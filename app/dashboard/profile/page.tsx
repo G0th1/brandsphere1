@@ -1,43 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { Metadata } from 'next';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { redirect } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { ProfileForm } from '@/app/components/profile/profile-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { SocialConnections } from '@/app/components/profile/social-connections';
 import { SecuritySettings } from '@/app/components/profile/security-settings';
-import { ProfileHeader } from '@/app/components/profile/profile-header';
-import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 import { DashboardHeader } from '@/app/components/dashboard/dashboard-header';
 import { DashboardShell } from '@/app/components/dashboard/dashboard-shell';
 
-export const metadata: Metadata = {
-    title: 'Profile | BrandSphereAI',
-    description: 'Manage your profile information and account settings',
-};
-
 async function getUserProfile(userId: string) {
     try {
-        return await db.user.findUnique({
-            where: { id: userId },
-            include: {
-                subscription: true,
-                accounts: {
-                    select: {
-                        provider: true,
-                        providerAccountId: true,
-                    },
-                },
-            },
-        });
+        // This function is not used in the client component anymore
+        // but keeping it here as it might be useful for server components
+        return null;
     } catch (error) {
         console.error("Error fetching user profile:", error);
         return null;
