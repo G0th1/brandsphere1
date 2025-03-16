@@ -3,18 +3,14 @@ import { db } from '@/lib/db';
 
 export async function GET() {
     try {
-        // Simple query to test connection
-        const result = await db.execute('SELECT NOW() as timestamp');
+        // Use Prisma's $queryRaw instead of execute method
+        const result = await db.$queryRaw`SELECT NOW() as timestamp`;
 
-        if (result && result.rows && result.rows.length > 0) {
-            return NextResponse.json({
-                status: 'connected',
-                message: 'Database connection successful',
-                timestamp: result.rows[0].timestamp,
-            });
-        } else {
-            throw new Error('Could not verify database connection');
-        }
+        return NextResponse.json({
+            status: 'connected',
+            message: 'Database connection successful',
+            timestamp: result[0].timestamp,
+        });
     } catch (error) {
         console.error('Database connection error:', error);
 
