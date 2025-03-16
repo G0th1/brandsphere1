@@ -8,6 +8,24 @@ import { useSearchParams } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
 import { dynamic } from "@/app/utils/dynamic-routes";
+import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { hasActiveSubscription, PLAN_FEATURES } from '@/lib/stripe';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { CalendarIcon, CreditCardIcon, InfoIcon, AlertTriangleIcon, CheckCircleIcon } from 'lucide-react';
+import BillingPortalButton from '@/components/billing/billing-portal-button';
+import SubscriptionStatusBadge from '@/components/billing/subscription-status-badge';
+
+export const metadata: Metadata = {
+    title: 'Billing - BrandSphere',
+    description: 'Manage your subscription and billing information',
+};
 
 // Re-export the dynamic marker
 export { dynamic };
@@ -118,195 +136,202 @@ interface Subscription {
     updatedAt: string;
 }
 
-export default function BillingPage() {
-    const { language } = useLanguage();
-    const t = translations[language as keyof typeof translations];
-    const [interval, setInterval] = useState<"month" | "year">("month");
-    const [subscription, setSubscription] = useState<Subscription | null>(null);
-    const [loading, setLoading] = useState(true);
-    const searchParams = useSearchParams();
-    const { toast } = useToast();
+export default async function BillingPage() {
+    const session = await getServerSession(authOptions);
 
-    // Hantera statusmeddelanden från URL-frågesträngar
-    useEffect(() => {
-        if (searchParams?.get('success') === 'true') {
-            toast({
-                title: t.successTitle,
-                description: t.successMessage,
-                variant: "success",
-            });
-        } else if (searchParams?.get('canceled') === 'true') {
-            toast({
-                title: t.canceledTitle,
-                description: t.canceledMessage,
-                variant: "destructive",
-            });
-        }
-    }, [searchParams, toast, t]);
-
-    // Hämta prenumerationsdata
-    useEffect(() => {
-        const fetchSubscription = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch('/api/subscription');
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch subscription data');
-                }
-
-                const data = await response.json();
-                setSubscription(data);
-            } catch (error) {
-                console.error('Error fetching subscription:', error);
-                toast({
-                    title: "Error",
-                    description: t.errorLoadingSubscription,
-                    variant: "destructive",
-                });
-
-                setSubscription({
-                    id: "fallback",
-                    userId: "",
-                    stripeCustomerId: null,
-                    stripeSubscriptionId: null,
-                    stripePriceId: null,
-                    stripeCurrentPeriodEnd: null,
-                    status: "active",
-                    plan: "Free",
-                    billingCycle: "monthly",
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (typeof window !== 'undefined' &&
-            (localStorage.getItem('universalMode') === 'true' ||
-                localStorage.getItem('offlineMode') === 'true')) {
-            setSubscription({
-                id: "universal-mode",
-                userId: "",
-                stripeCustomerId: null,
-                stripeSubscriptionId: null,
-                stripePriceId: null,
-                stripeCurrentPeriodEnd: null,
-                status: "active",
-                plan: "Free",
-                billingCycle: "monthly",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            });
-            setLoading(false);
-        } else {
-            fetchSubscription();
-        }
-    }, [toast, t]);
-
-    // Sätt intervall baserat på användarens nuvarande prenumeration
-    useEffect(() => {
-        if (subscription) {
-            setInterval(subscription.billingCycle === "annually" ? "year" : "month");
-        }
-    }, [subscription]);
-
-    if (loading) {
-        return (
-            <div className="container max-w-6xl py-8">
-                <p className="text-center text-muted-foreground">{t.loadingSubscription}</p>
-            </div>
-        );
+    if (!session?.user) {
+        redirect('/login?callbackUrl=/dashboard/billing');
     }
 
-    return (
-        <div className="container max-w-6xl py-8 space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
-                <p className="text-muted-foreground">{t.description}</p>
+    // Get user subscription
+    const subscription = await db.subscription.findUnique({
+        where: { userId: session.user.id },
+    });
 
-                {subscription?.status === "canceled" && subscription.stripeCurrentPeriodEnd && (
-                    <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                        <p className="text-amber-800 dark:text-amber-400">
-                            {t.subscriptionEndingOn} {formatDate(subscription.stripeCurrentPeriodEnd)}
-                        </p>
-                    </div>
-                )}
+    // Get user's current plan features
+    const planKey = subscription?.plan?.toUpperCase() as keyof typeof PLAN_FEATURES || 'FREE';
+    const planFeatures = PLAN_FEATURES[planKey];
+
+    // Format dates
+    const currentPeriodEnd = subscription?.stripeCurrentPeriodEnd
+        ? new Date(subscription.stripeCurrentPeriodEnd).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        })
+        : null;
+
+    const createdAt = subscription?.createdAt
+        ? new Date(subscription.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        })
+        : null;
+
+    return (
+        <div className="container max-w-5xl py-8">
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold tracking-tight">Billing & Subscription</h1>
+                <p className="text-muted-foreground mt-2">
+                    Manage your subscription, payment methods, and billing information
+                </p>
             </div>
 
-            <Tabs
-                defaultValue={interval}
-                className="w-full"
-                onValueChange={(value) => setInterval(value as "month" | "year")}
-            >
-                <TabsList className="grid w-full max-w-xs grid-cols-2 mb-8">
-                    <TabsTrigger value="month">{t.monthly}</TabsTrigger>
-                    <TabsTrigger value="year">{t.yearly}</TabsTrigger>
-                </TabsList>
+            <div className="grid gap-8 md:grid-cols-2">
+                {/* Current Plan */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            <span>Current Plan</span>
+                            {subscription && (
+                                <SubscriptionStatusBadge status={subscription.status} />
+                            )}
+                        </CardTitle>
+                        <CardDescription>
+                            Your current subscription plan and status
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <h3 className="text-2xl font-bold">{planFeatures.name}</h3>
+                            {subscription && subscription.billingCycle && (
+                                <p className="text-muted-foreground">
+                                    {subscription.billingCycle === 'monthly'
+                                        ? `$${planFeatures.price.monthly}/month`
+                                        : `$${planFeatures.price.annually}/year`}
+                                </p>
+                            )}
+                        </div>
 
-                <TabsContent value="month" className="mt-0">
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        <PlanCard
-                            plan="Free"
-                            price="$0"
-                            features={t.features.free}
-                            interval="month"
-                            currentPlan={subscription?.plan === "Free"}
+                        {subscription?.status === 'active' && currentPeriodEnd && (
+                            <div className="flex items-center text-sm text-muted-foreground">
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                <span>Current period ends on {currentPeriodEnd}</span>
+                            </div>
+                        )}
+
+                        {subscription?.status === 'canceled' && currentPeriodEnd && (
+                            <Alert variant="warning" className="mt-4">
+                                <AlertTriangleIcon className="h-4 w-4" />
+                                <AlertTitle>Subscription Canceled</AlertTitle>
+                                <AlertDescription>
+                                    Your subscription has been canceled and will end on {currentPeriodEnd}.
+                                    After this date, your account will be downgraded to the Free plan.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {subscription?.status === 'past_due' && (
+                            <Alert variant="destructive" className="mt-4">
+                                <AlertTriangleIcon className="h-4 w-4" />
+                                <AlertTitle>Payment Past Due</AlertTitle>
+                                <AlertDescription>
+                                    Your latest payment failed. Please update your payment method to
+                                    avoid service interruption.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {!subscription && (
+                            <Alert className="mt-4">
+                                <InfoIcon className="h-4 w-4" />
+                                <AlertTitle>Free Plan</AlertTitle>
+                                <AlertDescription>
+                                    You are currently on the Free plan with limited features.
+                                    Upgrade to unlock more capabilities.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </CardContent>
+                    <CardFooter className="flex flex-col space-y-2">
+                        <BillingPortalButton
+                            customerId={subscription?.stripeCustomerId}
+                            className="w-full"
                         />
 
-                        <PlanCard
-                            plan="Pro"
-                            price="$19"
-                            features={t.features.pro}
-                            interval="month"
-                            priceId={PRICE_IDS.PRO_MONTHLY}
-                            popular
-                            currentPlan={subscription?.plan === "Pro" && subscription?.billingCycle === "monthly"}
-                        />
+                        <Button variant="outline" className="w-full" asChild>
+                            <a href="/pricing">View Plans & Upgrade</a>
+                        </Button>
+                    </CardFooter>
+                </Card>
 
-                        <PlanCard
-                            plan="Business"
-                            price="$49"
-                            features={t.features.business}
-                            interval="month"
-                            priceId={PRICE_IDS.BUSINESS_MONTHLY}
-                            currentPlan={subscription?.plan === "Business" && subscription?.billingCycle === "monthly"}
-                        />
-                    </div>
-                </TabsContent>
+                {/* Plan Features */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Plan Features</CardTitle>
+                        <CardDescription>
+                            Your current plan includes the following features
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <ul className="space-y-3">
+                            <li className="flex items-start">
+                                <CheckCircleIcon className="mr-2 h-5 w-5 text-primary" />
+                                <span>{planFeatures.socialAccounts} social media accounts</span>
+                            </li>
+                            <li className="flex items-start">
+                                <CheckCircleIcon className="mr-2 h-5 w-5 text-primary" />
+                                <span>{planFeatures.scheduledPosts} scheduled posts per month</span>
+                            </li>
+                            <li className="flex items-start">
+                                <CheckCircleIcon className="mr-2 h-5 w-5 text-primary" />
+                                <span>{planFeatures.aiCreditsPerMonth} AI credits per month</span>
+                            </li>
+                            <li className="flex items-start">
+                                <CheckCircleIcon className="mr-2 h-5 w-5 text-primary" />
+                                <span>{planFeatures.contentSuggestions} content suggestions per month</span>
+                            </li>
+                            <li className="flex items-start">
+                                <CheckCircleIcon className="mr-2 h-5 w-5 text-primary" />
+                                <span>{planFeatures.analyticsRetentionDays}-day analytics retention</span>
+                            </li>
+                            <li className="flex items-start">
+                                <CheckCircleIcon className="mr-2 h-5 w-5 text-primary" />
+                                <span>{planFeatures.teamMembers} team members</span>
+                            </li>
+                            <li className="flex items-start">
+                                <CheckCircleIcon className="mr-2 h-5 w-5 text-primary" />
+                                <span>{planFeatures.customBranding ? 'Custom branding' : 'Standard branding'}</span>
+                            </li>
+                        </ul>
+                    </CardContent>
+                    <CardFooter>
+                        <Button variant="outline" className="w-full" asChild>
+                            <a href="/pricing">Compare Plans</a>
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </div>
 
-                <TabsContent value="year" className="mt-0">
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        <PlanCard
-                            plan="Free"
-                            price="$0"
-                            features={t.features.free}
-                            interval="year"
-                            currentPlan={subscription?.plan === "Free"}
-                        />
-
-                        <PlanCard
-                            plan="Pro"
-                            price="$180"
-                            features={t.features.pro}
-                            interval="year"
-                            priceId={PRICE_IDS.PRO_YEARLY}
-                            popular
-                            currentPlan={subscription?.plan === "Pro" && subscription?.billingCycle === "annually"}
-                        />
-
-                        <PlanCard
-                            plan="Business"
-                            price="$470"
-                            features={t.features.business}
-                            interval="year"
-                            priceId={PRICE_IDS.BUSINESS_YEARLY}
-                            currentPlan={subscription?.plan === "Business" && subscription?.billingCycle === "annually"}
-                        />
-                    </div>
-                </TabsContent>
-            </Tabs>
+            {/* Billing History */}
+            {subscription && (
+                <div className="mt-8">
+                    <h2 className="text-xl font-semibold mb-4">Billing History</h2>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Recent Invoices</CardTitle>
+                            <CardDescription>
+                                View and download your recent invoices
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-center py-6">
+                                <p className="text-muted-foreground">
+                                    To view your complete billing history and download invoices,
+                                    please visit the Stripe billing portal.
+                                </p>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <BillingPortalButton
+                                customerId={subscription?.stripeCustomerId}
+                                className="w-full"
+                            />
+                        </CardFooter>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 } 

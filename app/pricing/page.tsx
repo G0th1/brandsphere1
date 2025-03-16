@@ -17,6 +17,14 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/components/ui/use-toast"
+import { Metadata } from 'next';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { PLAN_FEATURES } from '@/lib/stripe';
+import PricingCards from '@/components/pricing/pricing-cards';
+import PricingFaq from '@/components/pricing/pricing-faq';
+import PricingHeader from '@/components/pricing/pricing-header';
 
 // Lägg till en enkel Spinner-komponent eftersom vi inte har en befintlig
 function Spinner({ className }: { className?: string }) {
@@ -361,6 +369,89 @@ const featureCategories: FeatureCategory[] = [
   }
 ];
 
-export default function PricingPage() {
-  redirect("/");
+export const metadata: Metadata = {
+  title: 'Pricing - BrandSphere',
+  description: 'Choose the right plan for your social media management and content creation needs. From individual creators to large businesses.',
+};
+
+export default async function PricingPage() {
+  const session = await getServerSession(authOptions);
+
+  // Get user subscription if they're logged in
+  let subscription = null;
+  if (session?.user) {
+    subscription = await db.subscription.findUnique({
+      where: { userId: session.user.id },
+    });
+  }
+
+  // Format plan features for the component
+  const plans = Object.entries(PLAN_FEATURES).map(([key, plan]) => ({
+    id: key,
+    name: plan.name,
+    description: getPlanDescription(key as keyof typeof PLAN_FEATURES),
+    price: {
+      monthly: plan.price.monthly,
+      annually: plan.price.annually,
+    },
+    features: [
+      `${plan.socialAccounts} social media accounts`,
+      `${plan.scheduledPosts} scheduled posts per month`,
+      `${plan.aiCreditsPerMonth} AI credits per month`,
+      `${plan.contentSuggestions} content suggestions per month`,
+      `${plan.analyticsRetentionDays}-day analytics retention`,
+      `${plan.teamMembers} team members`,
+      plan.customBranding ? 'Custom branding' : null,
+      getSupportDescription(plan.supportLevel as string),
+    ].filter(Boolean) as string[],
+    highlighted: key === 'PRO', // Highlight the Pro plan
+    currentPlan: session?.user && subscription?.plan?.toUpperCase() === key
+  }));
+
+  return (
+    <div className="container max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
+      <PricingHeader />
+
+      <PricingCards
+        plans={plans}
+        userId={session?.user?.id}
+        userEmail={session?.user?.email}
+      />
+
+      <div className="mt-24">
+        <PricingFaq />
+      </div>
+    </div>
+  );
+}
+
+// Helper functions for plan descriptions
+function getPlanDescription(planKey: keyof typeof PLAN_FEATURES): string {
+  switch (planKey) {
+    case 'FREE':
+      return 'Perfect for individuals just getting started with social media management.';
+    case 'BASIC':
+      return 'Ideal for content creators and small businesses looking to grow their social presence.';
+    case 'PRO':
+      return 'For professional marketers and growing businesses with multiple social channels.';
+    case 'BUSINESS':
+      return 'Complete solution for agencies and larger businesses with advanced needs.';
+    default:
+      return '';
+  }
+}
+
+function getSupportDescription(level: string): string {
+  switch (level) {
+    case 'community':
+      return 'Community support';
+    case 'email':
+      return 'Email support';
+    case 'priority':
+      return 'Priority support';
+    case 'dedicated':
+      return 'Dedicated account manager';
+    default:
+      return 'Support';
+  }
 } 

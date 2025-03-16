@@ -17,6 +17,8 @@ import {
     LogOut,
     Menu,
     X,
+    CreditCard,
+    UserCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -56,6 +58,16 @@ const NAVIGATION_ITEMS = [
         title: 'Team',
         icon: <Users className="h-5 w-5" />,
         href: '/dashboard/team',
+    },
+    {
+        title: 'Profile',
+        icon: <UserCircle className="h-5 w-5" />,
+        href: '/dashboard/profile',
+    },
+    {
+        title: 'Billing',
+        icon: <CreditCard className="h-5 w-5" />,
+        href: '/dashboard/billing',
     },
     {
         title: 'Settings',
