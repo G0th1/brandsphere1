@@ -50,6 +50,7 @@ import {
     Sun,
     Menu,
     X,
+    Sparkles,
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/subscription-context';
 import { ThemeToggle } from "@/app/components/theme-toggle";
@@ -73,6 +74,11 @@ const NAVIGATION_ITEMS = [
         title: 'Content',
         icon: <FileText className="h-5 w-5" />,
         href: '/dashboard/content',
+    },
+    {
+        title: 'AI Content',
+        icon: <Sparkles className="h-5 w-5" />,
+        href: '/dashboard/ai-content',
     },
     {
         title: 'Projects',

@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from 'react';
 import { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +14,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PostEditor } from '@/app/components/content/post-editor';
+import { SocialMediaPost } from '@/services/social-media';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/use-toast';
 
 export const metadata: Metadata = {
     title: 'Content Calendar | BrandSphereAI',
@@ -55,6 +62,34 @@ const scheduledContent = [
     },
 ];
 
+// Sample connected accounts
+const connectedAccounts = [
+    {
+        id: '1',
+        platform: 'Instagram',
+        username: 'mybrand',
+        avatarUrl: '/placeholder-avatar.jpg',
+    },
+    {
+        id: '2',
+        platform: 'LinkedIn',
+        username: 'My Brand',
+        avatarUrl: '/placeholder-avatar.jpg',
+    },
+    {
+        id: '3',
+        platform: 'Facebook',
+        username: 'My Brand Page',
+        avatarUrl: '/placeholder-avatar.jpg',
+    },
+    {
+        id: '4',
+        platform: 'Twitter',
+        username: '@mybrand',
+        avatarUrl: '/placeholder-avatar.jpg',
+    },
+];
+
 // Platform badge styling
 const getPlatformBadge = (platform: string) => {
     switch (platform) {
@@ -72,6 +107,9 @@ const getPlatformBadge = (platform: string) => {
 };
 
 export default function CalendarPage() {
+    const { toast } = useToast();
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [selectedDay, setSelectedDay] = useState<number | null>(null);
     const currentMonth = new Date().toLocaleString('default', { month: 'long' });
     const currentYear = new Date().getFullYear();
 
@@ -80,11 +118,47 @@ export default function CalendarPage() {
         return scheduledContent.find(content => content.day === day)?.items || [];
     };
 
+    // Handle creating a new post
+    const handleCreatePost = () => {
+        setIsDialogOpen(true);
+    };
+
+    // Handle day click to schedule a post on that specific day
+    const handleDayClick = (day: number) => {
+        setSelectedDay(day);
+        setIsDialogOpen(true);
+    };
+
+    // Handle saving a post
+    const handleSavePost = async (post: Partial<SocialMediaPost>) => {
+        try {
+            // In a real app, you'd save this to your backend
+            console.log('Saving post:', post);
+
+            // Simulating API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            toast({
+                title: post.status === 'published' ? 'Post Published!' : (post.status === 'scheduled' ? 'Post Scheduled!' : 'Draft Saved!'),
+                description: 'Your content has been successfully saved.',
+            });
+
+            setIsDialogOpen(false);
+        } catch (error) {
+            console.error('Error saving post:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to save post. Please try again.',
+                variant: 'destructive',
+            });
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Content Calendar</h1>
-                <Button className="flex items-center gap-1">
+                <Button className="flex items-center gap-1" onClick={handleCreatePost}>
                     <Plus className="h-4 w-4" />
                     <span>Schedule Content</span>
                 </Button>
@@ -158,13 +232,14 @@ export default function CalendarPage() {
                             return (
                                 <div
                                     key={day}
-                                    className={`border dark:border-gray-800 rounded-md pt-1 px-1 pb-2 h-24 sm:h-28 overflow-hidden ${isToday ? 'bg-gray-100 dark:bg-gray-800 border-primary dark:border-primary' : ''
+                                    className={`border dark:border-gray-800 rounded-md pt-1 px-1 pb-2 h-24 sm:h-28 overflow-hidden cursor-pointer hover:border-primary transition-colors ${isToday ? 'bg-gray-100 dark:bg-gray-800 border-primary dark:border-primary' : ''
                                         }`}
+                                    onClick={() => handleDayClick(day)}
                                 >
                                     <div className="text-right mb-1">
                                         <span className={`inline-block w-6 h-6 rounded-full text-center text-sm ${isToday
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'text-foreground'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'
                                             }`}>
                                             {day}
                                         </span>
@@ -217,6 +292,20 @@ export default function CalendarPage() {
                         ))}
                 </div>
             </div>
+
+            {/* Post Creation Dialog */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent className="max-w-4xl w-full p-0 bg-transparent border-none">
+                    <PostEditor
+                        initialPost={selectedDay ? {
+                            scheduledFor: new Date(currentYear, new Date().getMonth(), selectedDay, 9, 0, 0)
+                        } : undefined}
+                        accounts={connectedAccounts}
+                        onSave={handleSavePost}
+                        onCancel={() => setIsDialogOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 } 

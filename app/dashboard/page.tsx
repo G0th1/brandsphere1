@@ -1,13 +1,15 @@
 import { Metadata } from 'next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowUpRight, Users, BarChart3, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CalendarIcon, BarChart2, FileText, Users, ArrowRight, BookOpen, Zap, BellRing, Calendar, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { UsageStats } from '@/app/components/dashboard/usage-stats';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'Dashboard | BrandSphereAI',
-  description: 'Manage your social media presence with BrandSphereAI',
+  description: 'Manage your social media content and analytics',
 };
 
 /**
@@ -15,197 +17,380 @@ export const metadata: Metadata = {
  * Displays overview stats, upcoming posts, and recent analytics
  */
 export default function DashboardPage() {
-  // Sample statistics data
-  const stats = [
-    {
-      title: 'Scheduled Posts',
-      value: '12',
-      change: { value: 8, positive: true },
-      icon: <FileText className="h-4 w-4" />,
-    },
-    {
-      title: 'Connected Accounts',
-      value: '3',
-      change: { value: 0, positive: true },
-      icon: <Users className="h-4 w-4" />,
-    },
-    {
-      title: 'Total Followers',
-      value: '7.4k',
-      change: { value: 12, positive: true },
-      icon: <Users className="h-4 w-4" />,
-    },
-    {
-      title: 'Engagement Rate',
-      value: '4.2%',
-      change: { value: 2, positive: true },
-      icon: <BarChart3 className="h-4 w-4" />,
-    },
-  ];
-
-  // Sample upcoming posts
-  const upcomingPosts = [
-    {
-      id: 1,
-      title: 'New product announcement',
-      date: '2023-04-21',
-      time: '09:00',
-      platform: 'Instagram',
-      status: 'scheduled',
-    },
-    {
-      id: 2,
-      title: 'Weekly team update',
-      date: '2023-04-23',
-      time: '10:30',
-      platform: 'LinkedIn',
-      status: 'scheduled',
-    },
-    {
-      id: 3,
-      title: 'Customer testimonial highlight',
-      date: '2023-04-25',
-      time: '14:00',
-      platform: 'Facebook',
-      status: 'draft',
-    },
-  ];
-
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="space-y-8">
-        {/* Page header */}
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-description">Overview of your social media presence</p>
+    <div className="flex-1 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <div className="flex items-center space-x-2">
+          <Link href="/dashboard/upgrade">
+            <Button className="hidden md:flex" size="sm">
+              Upgrade to Pro
+            </Button>
+          </Link>
         </div>
-
-        {/* Stats cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, i) => (
-            <Card key={i} className="overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
+      </div>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Followers
                 </CardTitle>
-                <div className="p-2 bg-primary/10 rounded-md text-primary">
-                  {stat.icon}
-                </div>
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stat.value}</div>
-                <div className="flex items-center pt-2">
-                  <span
-                    className={`text-xs font-medium flex items-center ${stat.change.positive ? 'text-green-600' : 'text-red-600'
-                      }`}
-                  >
-                    {stat.change.positive ? '+' : '-'}
-                    {Math.abs(stat.change.value)}%
-                    <ArrowUpRight className={`h-3 w-3 ml-1 ${!stat.change.positive && 'rotate-180'}`} />
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-2">vs last month</span>
+                <div className="text-2xl font-bold">+1,234</div>
+                <p className="text-xs text-muted-foreground">
+                  +12% from last month
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Engagement Rate
+                </CardTitle>
+                <BarChart2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">3.2%</div>
+                <p className="text-xs text-muted-foreground">
+                  +0.4% from last month
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Scheduled Posts
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">7</div>
+                <p className="text-xs text-muted-foreground">
+                  Posts queued for this week
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Content Health
+                </CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Good</div>
+                <p className="text-xs text-muted-foreground">
+                  +2 new recommendations
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>
+                  Fast access to common tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Link href="/dashboard/calendar">
+                  <Button variant="outline" className="w-full justify-start h-auto py-4">
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center">
+                        <CalendarIcon className="mr-2 h-5 w-5 text-primary" />
+                        <span className="font-medium">Create New Post</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 text-left">
+                        Schedule content across your platforms
+                      </p>
+                    </div>
+                    <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </Link>
+
+                <Link href="/dashboard/ai-content">
+                  <Button variant="outline" className="w-full justify-start h-auto py-4">
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center">
+                        <Sparkles className="mr-2 h-5 w-5 text-primary" />
+                        <span className="font-medium">AI Content Generator</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 text-left">
+                        Create content ideas and hashtags with AI
+                      </p>
+                    </div>
+                    <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </Link>
+
+                <Link href="/dashboard/posts">
+                  <Button variant="outline" className="w-full justify-start h-auto py-4">
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center">
+                        <BookOpen className="mr-2 h-5 w-5 text-primary" />
+                        <span className="font-medium">Content Library</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 text-left">
+                        Manage your drafts and published posts
+                      </p>
+                    </div>
+                    <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </Link>
+
+                <Link href="/dashboard/analytics">
+                  <Button variant="outline" className="w-full justify-start h-auto py-4">
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center">
+                        <BarChart2 className="mr-2 h-5 w-5 text-primary" />
+                        <span className="font-medium">Review Analytics</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 text-left">
+                        See how your content is performing
+                      </p>
+                    </div>
+                    <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </Link>
+
+                <Link href="/dashboard/connect">
+                  <Button variant="outline" className="w-full justify-start h-auto py-4">
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center">
+                        <Zap className="mr-2 h-5 w-5 text-primary" />
+                        <span className="font-medium">Connect Account</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 text-left">
+                        Add new social media platforms
+                      </p>
+                    </div>
+                    <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Suspense fallback={<div className="h-[400px] rounded-lg border bg-card text-card-foreground shadow-sm flex items-center justify-center">Loading...</div>}>
+              <UsageStats />
+            </Suspense>
+          </div>
+
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Schedule</CardTitle>
+                <CardDescription>
+                  Your next 3 scheduled posts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4 rounded-md border p-3">
+                    <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600">
+                      <span className="text-xs">IG</span>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        New Product Showcase
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Tomorrow at 10:00 AM on Instagram
+                      </p>
+                    </div>
+                    <Link href="/dashboard/posts/1">
+                      <Button variant="ghost" size="sm">View</Button>
+                    </Link>
+                  </div>
+
+                  <div className="flex items-start space-x-4 rounded-md border p-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                      <span className="text-xs">FB</span>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        Weekly Tips Series
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Mar 18, 2023 at 2:30 PM on Facebook
+                      </p>
+                    </div>
+                    <Link href="/dashboard/posts/2">
+                      <Button variant="ghost" size="sm">View</Button>
+                    </Link>
+                  </div>
+
+                  <div className="flex items-start space-x-4 rounded-md border p-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                      <span className="text-xs">LI</span>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        Industry News Update
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Mar 20, 2023 at 9:00 AM on LinkedIn
+                      </p>
+                    </div>
+                    <Link href="/dashboard/posts/3">
+                      <Button variant="ghost" size="sm">View</Button>
+                    </Link>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
 
-        {/* Content tabs section */}
-        <Tabs defaultValue="upcoming" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="upcoming">Upcoming Posts</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="activity">Recent Activity</TabsTrigger>
-          </TabsList>
-
-          {/* Upcoming posts tab */}
-          <TabsContent value="upcoming" className="space-y-4">
-            <div className="bg-card rounded-lg border shadow-sm">
-              <div className="p-6">
-                <h3 className="text-lg font-medium mb-4">Upcoming Posts</h3>
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Notifications</CardTitle>
+                <CardDescription>
+                  Stay updated on your activity
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
-                  {upcomingPosts.map((post) => (
-                    <div
-                      key={post.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">{post.title}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {post.date} at {post.time}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={post.status === 'scheduled' ? 'default' : 'outline'}>
-                          {post.platform}
-                        </Badge>
-                        <Badge variant={post.status === 'scheduled' ? 'secondary' : 'outline'}>
-                          {post.status}
-                        </Badge>
-                      </div>
+                  <div className="flex items-start space-x-4">
+                    <BellRing className="h-5 w-5 mt-0.5 text-primary" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        Engagement alert
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Your post "Summer Collection Launch" is getting high engagement. Check it out!
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        1 hour ago
+                      </p>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <BellRing className="h-5 w-5 mt-0.5 text-primary" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        Post published
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Your scheduled post was successfully published to Instagram.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        3 hours ago
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <BellRing className="h-5 w-5 mt-0.5 text-primary" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        New account connected
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        You successfully connected your TikTok business account.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Yesterday
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-6">
-                  <Button variant="outline" size="sm" className="w-full">
-                    View All Posts
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        <TabsContent value="analytics" className="space-y-4">
+          <Card className="col-span-4">
+            <CardHeader>
+              <CardTitle>Analytics Overview</CardTitle>
+              <CardDescription>
+                Visit the analytics page for detailed insights
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[20rem] flex items-center justify-center border-t">
+              <div className="text-center space-y-2">
+                <BarChart2 className="h-10 w-10 mx-auto text-muted-foreground" />
+                <h3 className="text-lg font-medium">Engagement Overview</h3>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  Visit the full analytics dashboard to view detailed metrics on your social media performance.
+                </p>
+                <Link href="/dashboard/analytics">
+                  <Button className="mt-4">
+                    View Analytics Dashboard
                   </Button>
-                </div>
+                </Link>
               </div>
-            </div>
-          </TabsContent>
-
-          {/* Analytics tab */}
-          <TabsContent value="analytics" className="space-y-4">
-            <div className="bg-card rounded-lg border shadow-sm p-6">
-              <h3 className="text-lg font-medium mb-4">Performance Overview</h3>
-              <p className="text-muted-foreground mb-6">
-                Summary of your social media performance across all platforms.
-              </p>
-              <div className="h-[200px] flex items-center justify-center bg-accent/30 rounded-md">
-                <span className="text-muted-foreground">Analytics visualization will appear here</span>
-              </div>
-              <div className="mt-6">
-                <Button variant="outline" size="sm">
-                  View Detailed Analytics
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Activity tab */}
-          <TabsContent value="activity" className="space-y-4">
-            <div className="bg-card rounded-lg border shadow-sm p-6">
-              <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 border rounded-lg">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">New follower on Instagram</p>
-                    <p className="text-sm text-muted-foreground">2 hours ago</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="activity" className="space-y-4">
+          <Card className="col-span-4">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>
+                Your latest actions and notifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Today</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <span>Posted new content on Instagram</span>
+                      </div>
+                      <span className="text-muted-foreground">10:42 AM</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span>Scheduled 3 posts for next week</span>
+                      </div>
+                      <span className="text-muted-foreground">9:15 AM</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-start gap-4 p-4 border rounded-lg">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Post published on LinkedIn</p>
-                    <p className="text-sm text-muted-foreground">Yesterday at 15:30</p>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Yesterday</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-500" />
+                        <span>Generated AI content suggestions</span>
+                      </div>
+                      <span className="text-muted-foreground">4:30 PM</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-orange-500" />
+                        <span>Connected TikTok account</span>
+                      </div>
+                      <span className="text-muted-foreground">2:15 PM</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-pink-500" />
+                        <span>Updated profile settings</span>
+                      </div>
+                      <span className="text-muted-foreground">11:30 AM</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="mt-6">
-                <Button variant="outline" size="sm" className="w-full">
-                  View All Activity
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 } 
