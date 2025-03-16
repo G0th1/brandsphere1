@@ -1,13 +1,32 @@
 "use client"
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AlertCircle, RefreshCw, SparkleIcon } from 'lucide-react';
-import AIService, { AIUsage } from '@/services/ai-service';
+import { AlertCircle, RefreshCw, BarChart2, Hash, Newspaper } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+
+interface AIUsage {
+    userId: string;
+    usage: {
+        contentSuggestions: {
+            used: number;
+            limit: number;
+        };
+        hashtagSuggestions: {
+            used: number;
+            limit: number;
+        };
+        postAnalysis: {
+            used: number;
+            limit: number;
+        };
+    };
+    resetDate: string;
+    lastUpdated: string;
+}
 
 export function UsageStats() {
     const [isLoading, setIsLoading] = useState(true);
@@ -19,15 +38,17 @@ export function UsageStats() {
         setIsLoading(true);
         setError(null);
         try {
-            const usageData = await AIService.getUserAIUsage();
-            setUsage(usageData);
+            const response = await fetch('/api/ai/usage');
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch usage data');
+            }
+
+            const data = await response.json();
+            setUsage(data);
         } catch (err) {
-            setError("Failed to load usage data");
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to load AI usage statistics"
-            });
+            setError('Could not load your usage statistics. Please try again.');
+            console.error('Error fetching usage data:', err);
         } finally {
             setIsLoading(false);
         }
@@ -37,22 +58,41 @@ export function UsageStats() {
         fetchUsageData();
     }, []);
 
+    // Calculate percentage for progress bars
+    const getPercentage = (used: number, limit: number) => {
+        return Math.min(Math.round((used / limit) * 100), 100);
+    };
+
+    // Determine color based on usage percentage
+    const getProgressColor = (percentage: number) => {
+        if (percentage < 60) return 'bg-emerald-500';
+        if (percentage < 85) return 'bg-amber-500';
+        return 'bg-rose-500';
+    };
+
+    // Format the reset date
+    const formatResetDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        }).format(date);
+    };
+
     if (isLoading) {
         return (
-            <Card className="w-full">
+            <Card className="w-full h-[300px] animate-pulse">
                 <CardHeader>
-                    <CardTitle className="text-xl">AI Usage Statistics</CardTitle>
-                    <CardDescription>Loading your AI usage data...</CardDescription>
+                    <div className="h-7 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4 mt-2">
+                    <div className="space-y-6">
                         {[1, 2, 3].map((i) => (
                             <div key={i} className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
-                                </div>
-                                <div className="h-2 bg-gray-200 rounded w-full animate-pulse"></div>
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
                             </div>
                         ))}
                     </div>
@@ -61,123 +101,131 @@ export function UsageStats() {
         );
     }
 
-    if (error || !usage) {
+    if (error) {
         return (
             <Card className="w-full">
                 <CardHeader>
-                    <CardTitle className="text-xl">AI Usage Statistics</CardTitle>
-                    <CardDescription>There was an error loading your usage data</CardDescription>
+                    <CardTitle className="flex items-center text-amber-500">
+                        <AlertCircle className="mr-2 h-5 w-5" />
+                        Error Loading Usage Data
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col items-center justify-center py-6 text-center">
-                        <AlertCircle className="h-10 w-10 text-amber-500 mb-2" />
-                        <p className="mb-2">{error || "Failed to load usage data"}</p>
-                        <Button variant="outline" size="sm" onClick={fetchUsageData}>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Try Again
-                        </Button>
-                    </div>
+                    <p className="mb-4 text-muted-foreground">{error}</p>
+                    <Button
+                        onClick={fetchUsageData}
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center"
+                    >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Refresh
+                    </Button>
                 </CardContent>
             </Card>
         );
     }
 
-    // Calculate percentages for progress bars
-    const contentPercent = Math.min(100, Math.round((usage.usage.contentSuggestions.used / usage.usage.contentSuggestions.limit) * 100));
-    const hashtagPercent = Math.min(100, Math.round((usage.usage.hashtagSuggestions.used / usage.usage.hashtagSuggestions.limit) * 100));
-    const analysisPercent = Math.min(100, Math.round((usage.usage.postAnalysis.used / usage.usage.postAnalysis.limit) * 100));
+    if (!usage) return null;
 
-    // Helper to get color based on percentage
-    const getProgressColor = (percent: number) => {
-        if (percent < 50) return "bg-green-500";
-        if (percent < 80) return "bg-amber-500";
-        return "bg-red-500";
-    };
+    const contentPercentage = getPercentage(
+        usage.usage.contentSuggestions.used,
+        usage.usage.contentSuggestions.limit
+    );
+
+    const hashtagPercentage = getPercentage(
+        usage.usage.hashtagSuggestions.used,
+        usage.usage.hashtagSuggestions.limit
+    );
+
+    const analysisPercentage = getPercentage(
+        usage.usage.postAnalysis.used,
+        usage.usage.postAnalysis.limit
+    );
 
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle className="text-xl">AI Usage Statistics</CardTitle>
+                <CardTitle>AI Features Usage</CardTitle>
                 <CardDescription>
-                    Your usage resets on {new Date(usage.resetDate).toLocaleDateString()}
+                    Your monthly AI feature usage. Resets on {formatResetDate(usage.resetDate)}.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    <TooltipProvider>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm font-medium">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span>Content Suggestions</span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>AI-generated content ideas for your social media posts</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <span>
-                                    {usage.usage.contentSuggestions.used} / {usage.usage.contentSuggestions.limit}
-                                </span>
+            <CardContent className="space-y-6">
+                <TooltipProvider>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <Newspaper className="mr-2 h-4 w-4 text-blue-500" />
+                                <span className="text-sm font-medium">Content Suggestions</span>
                             </div>
-                            <Progress
-                                value={contentPercent}
-                                className="h-2"
-                                indicatorClassName={getProgressColor(contentPercent)}
-                            />
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="text-sm text-muted-foreground">
+                                        {usage.usage.contentSuggestions.used}/{usage.usage.contentSuggestions.limit}
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>AI-generated content ideas for your social media</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
+                        <Progress
+                            value={contentPercentage}
+                            className="h-2"
+                            indicatorClassName={getProgressColor(contentPercentage)}
+                        />
+                    </div>
 
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm font-medium">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span>Hashtag Suggestions</span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>AI-generated hashtags for improved content discoverability</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <span>
-                                    {usage.usage.hashtagSuggestions.used} / {usage.usage.hashtagSuggestions.limit}
-                                </span>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <Hash className="mr-2 h-4 w-4 text-purple-500" />
+                                <span className="text-sm font-medium">Hashtag Suggestions</span>
                             </div>
-                            <Progress
-                                value={hashtagPercent}
-                                className="h-2"
-                                indicatorClassName={getProgressColor(hashtagPercent)}
-                            />
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="text-sm text-muted-foreground">
+                                        {usage.usage.hashtagSuggestions.used}/{usage.usage.hashtagSuggestions.limit}
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>AI-generated hashtags for better post visibility</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
+                        <Progress
+                            value={hashtagPercentage}
+                            className="h-2"
+                            indicatorClassName={getProgressColor(hashtagPercentage)}
+                        />
+                    </div>
 
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm font-medium">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span>Post Analysis</span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>AI analysis of your posts for engagement optimization</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <span>
-                                    {usage.usage.postAnalysis.used} / {usage.usage.postAnalysis.limit}
-                                </span>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <BarChart2 className="mr-2 h-4 w-4 text-emerald-500" />
+                                <span className="text-sm font-medium">Post Analysis</span>
                             </div>
-                            <Progress
-                                value={analysisPercent}
-                                className="h-2"
-                                indicatorClassName={getProgressColor(analysisPercent)}
-                            />
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="text-sm text-muted-foreground">
+                                        {usage.usage.postAnalysis.used}/{usage.usage.postAnalysis.limit}
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>AI analysis of your content for engagement optimization</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
-                    </TooltipProvider>
-                </div>
+                        <Progress
+                            value={analysisPercentage}
+                            className="h-2"
+                            indicatorClassName={getProgressColor(analysisPercentage)}
+                        />
+                    </div>
+                </TooltipProvider>
             </CardContent>
-            {!usage.isPro && (
-                <CardFooter>
-                    <Button className="w-full" variant="default">
-                        <SparkleIcon className="mr-2 h-4 w-4" />
-                        Upgrade to Pro for Unlimited AI Features
-                    </Button>
-                </CardFooter>
-            )}
         </Card>
     );
 } 

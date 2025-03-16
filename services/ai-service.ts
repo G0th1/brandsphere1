@@ -72,7 +72,6 @@ export interface PostAnalysis {
 }
 
 export interface AIUsage {
-    isPro: boolean;
     usage: {
         contentSuggestions: {
             used: number;

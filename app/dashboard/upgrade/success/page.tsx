@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
@@ -13,11 +13,7 @@ import { dynamic } from "@/app/utils/dynamic-routes";
 export { dynamic };
 
 export default function UpgradeSuccessPage() {
-    return (
-        <AuthGuard>
-            <UpgradeSuccessPageContent />
-        </AuthGuard>
-    );
+    redirect("/dashboard");
 }
 
 function UpgradeSuccessPageContent() {

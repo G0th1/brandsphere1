@@ -10,6 +10,7 @@ import {
   Zap,
   CheckCircle
 } from "lucide-react"
+import { redirect } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,11 +27,7 @@ import { useToast } from "@/components/ui/use-toast"
 import AuthGuard from '@/app/components/auth-guard'
 
 export default function UpgradePage() {
-  return (
-    <AuthGuard>
-      <UpgradePageContent />
-    </AuthGuard>
-  )
+  redirect("/dashboard")
 }
 
 function UpgradePageContent() {

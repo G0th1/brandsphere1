@@ -21,13 +21,6 @@ export default function DashboardPage() {
     <div className="flex-1 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <div className="flex items-center space-x-2">
-          <Link href="/dashboard/upgrade">
-            <Button className="hidden md:flex" size="sm">
-              Upgrade to Pro
-            </Button>
-          </Link>
-        </div>
       </div>
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>

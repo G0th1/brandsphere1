@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
         // In a real implementation, you would fetch this from the database
         const mockUsage = {
             userId: session.user.id,
-            isPro: false,
             usage: {
                 contentSuggestions: {
                     used: 9,
