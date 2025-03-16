@@ -1,102 +1,161 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { createSafeSupabaseClient } from '@/app/utils/supabase-client';
-import AIService from '@/services/ai-service';
-import SubscriptionService from '@/services/subscription-service';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { z } from "zod";
 
-export const dynamic = 'force-dynamic';
+// Define the request schema
+const analyzeRequestSchema = z.object({
+    content: z.string().min(1, "Content is required"),
+    platform: z.enum(["instagram", "facebook", "twitter", "linkedin", "tiktok"]),
+    includeHashtags: z.boolean().optional().default(true),
+});
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
     try {
-        // Get user session
-        const session = await getServerSession();
+        // Check authentication
+        const session = await getServerSession(authOptions);
         if (!session?.user) {
             return NextResponse.json(
-                { error: 'Authentication required' },
+                { error: "Unauthorized" },
                 { status: 401 }
             );
         }
 
-        // Parse request body
-        const { content, platform } = await request.json();
+        // Parse and validate request body
+        const body = await req.json();
+        const validationResult = analyzeRequestSchema.safeParse(body);
 
-        if (!content || !platform) {
+        if (!validationResult.success) {
             return NextResponse.json(
-                { error: 'Missing required fields: content and platform are required' },
+                { error: "Invalid request", details: validationResult.error.format() },
                 { status: 400 }
             );
         }
 
-        // Get user's subscription tier
-        const subscription = await SubscriptionService.getUserSubscription();
-        const tier = subscription.plan === 'pro' ? 'pro' : 'free';
+        const { content, platform, includeHashtags } = validationResult.data;
 
-        // Get user's usage for the current month
-        const supabase = createSafeSupabaseClient();
-        const userId = session.user.id;
+        // In a real implementation, you would:
+        // 1. Check user's AI usage quota
+        // 2. Call an AI service (OpenAI, etc.)
+        // 3. Log the usage
+        // 4. Return the analysis results
 
-        const { data: usageData, error: usageError } = await supabase
-            .from('ai_usage')
-            .select('post_analysis_count')
-            .eq('user_id', userId)
-            .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+        // Calculate a mock score based on content length and some basic factors
+        const contentLength = content.length;
+        const hasHashtags = content.includes('#');
+        const hasEmojis = /[\p{Emoji}]/u.test(content);
+        const hasMentions = content.includes('@');
 
-        if (usageError && usageError.code !== 'PGRST116') { // PGRST116 is 'no rows returned'
-            console.error('Error fetching user AI usage:', usageError);
-            return NextResponse.json(
-                { error: 'Failed to check usage limits' },
-                { status: 500 }
-            );
-        }
+        // Base score out of 100
+        let score = Math.min(100, Math.max(50, 60 + contentLength / 20));
 
-        // Check if user has exceeded their monthly limit
-        const currentUsage = usageData?.post_analysis_count || 0;
-        const limits = AIService.getLimitsForTier(tier);
+        // Adjust score based on factors
+        if (hasHashtags) score += 5;
+        if (hasEmojis) score += 5;
+        if (hasMentions) score += 5;
+        if (contentLength > 50 && contentLength < 200) score += 10;
 
-        if (currentUsage >= limits.postAnalysis) {
-            return NextResponse.json(
-                {
-                    error: 'Monthly limit exceeded',
-                    message: `You've reached your monthly limit of ${limits.postAnalysis} post analyses. Upgrade to Pro for more.`,
-                    limit: limits.postAnalysis,
-                    usage: currentUsage
+        // Cap at 100
+        score = Math.min(100, score);
+
+        const analysis = {
+            overall: {
+                score: Math.round(score),
+                rating: score >= 80 ? "Excellent" : score >= 70 ? "Good" : score >= 60 ? "Average" : "Needs Improvement",
+            },
+            details: {
+                length: {
+                    value: contentLength,
+                    recommendation: contentLength < 50
+                        ? "Your post is quite short. Consider adding more context to engage your audience."
+                        : contentLength > 300
+                            ? "Your post is quite long. Consider breaking it up or making it more concise for better engagement."
+                            : "Your post length is good for engagement.",
                 },
-                { status: 403 }
-            );
+                sentiment: {
+                    value: "Positive",
+                    recommendation: "The positive tone is good for engagement."
+                },
+                engagement: {
+                    value: hasHashtags && hasEmojis ? "High" : hasHashtags || hasEmojis ? "Medium" : "Low",
+                    recommendation: !hasHashtags
+                        ? "Consider adding relevant hashtags to increase discoverability."
+                        : !hasEmojis
+                            ? "Adding some emojis can make your post more engaging and eye-catching."
+                            : "Good use of engagement elements."
+                }
+            },
+            improvement: {
+                suggestions: [
+                    contentLength < 50 ? "Add more context to tell a complete story." : "Keep your post concise while covering key points.",
+                    !hasHashtags ? "Include 3-5 relevant hashtags to increase visibility." : "Your hashtag usage looks good.",
+                    !hasEmojis ? "Add emojis to make your post more visually appealing." : "Good use of emojis!",
+                    "Consider adding a call-to-action to encourage engagement.",
+                ].filter(s => !s.includes("looks good") && !s.includes("Good use")),
+            }
+        };
+
+        // If hashtags were requested and not enough present
+        if (includeHashtags && !hasHashtags) {
+            const suggestedHashtags = generateMockHashtags(content, platform);
+            analysis.improvement.suggestedHashtags = suggestedHashtags;
         }
 
-        // Analyze post
-        const analysis = await AIService.analyzePost(content, platform);
-
-        // Update usage count
-        const { error: updateError } = await supabase
-            .from('ai_usage')
-            .upsert({
-                user_id: userId,
-                post_analysis_count: currentUsage + 1,
-                created_at: new Date().toISOString()
-            });
-
-        if (updateError) {
-            console.error('Error updating AI usage:', updateError);
-            // We'll still return the analysis even if tracking fails
-        }
+        // Update user's AI usage in the database (mock)
+        // In a real implementation, you would update the user's usage in the database
 
         return NextResponse.json({
-            ...analysis,
+            analysis,
             usage: {
-                current: currentUsage + 1,
-                limit: limits.postAnalysis
+                current: 12,
+                limit: 20
             }
         });
+
     } catch (error) {
-        console.error('Error processing post analysis request:', error);
+        console.error("Error analyzing post:", error);
         return NextResponse.json(
-            { error: 'Failed to analyze post' },
+            { error: "Failed to analyze post" },
             { status: 500 }
         );
     }
+}
+
+// Helper function to generate mock hashtags based on content
+function generateMockHashtags(content: string, platform: string) {
+    const commonWords = content
+        .toLowerCase()
+        .replace(/[^\w\s]/gi, '')
+        .split(/\s+/)
+        .filter(word => word.length > 3);
+
+    const industryHashtags = ["marketing", "business", "socialmedia", "digitalmarketing"];
+    const platformSpecificHashtags: Record<string, string[]> = {
+        instagram: ["instadaily", "instagood", "photooftheday"],
+        facebook: ["facebooklive", "facebookmarketing"],
+        twitter: ["twittermarketing", "tweet", "twitterstrategy"],
+        linkedin: ["linkedintips", "networking", "business"],
+        tiktok: ["tiktokmarketing", "tiktokcreator", "tiktokbusiness"]
+    };
+
+    // Create hashtags from content words
+    const contentHashtags = commonWords
+        .slice(0, 3)
+        .map(word => `#${word}`);
+
+    // Add industry hashtags
+    const selectedIndustryHashtags = industryHashtags
+        .slice(0, 2)
+        .map(tag => `#${tag}`);
+
+    // Add platform-specific hashtags
+    const selectedPlatformHashtags = platformSpecificHashtags[platform]
+        .slice(0, 2)
+        .map(tag => `#${tag}`);
+
+    return [
+        ...contentHashtags,
+        ...selectedIndustryHashtags,
+        ...selectedPlatformHashtags
+    ];
 } 

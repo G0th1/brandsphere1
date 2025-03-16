@@ -2,9 +2,8 @@ import { Metadata } from "next";
 import { ContentSuggestion } from "@/app/components/content/ContentSuggestion";
 import { HashtagGenerator } from "@/app/components/content/HashtagGenerator";
 import { PostAnalyzer } from "@/app/components/content/PostAnalyzer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Hash, FileText, Zap } from "lucide-react";
+import { UsageStats } from "@/app/components/dashboard/usage-stats";
 
 export const metadata: Metadata = {
     title: "AI Content | BrandSphereAI",
@@ -18,64 +17,7 @@ export default function AIContentPage() {
                 <h2 className="text-3xl font-bold tracking-tight">AI Content Generator</h2>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Content Ideas
-                        </CardTitle>
-                        <Sparkles className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">12/20</div>
-                        <p className="text-xs text-muted-foreground">
-                            Monthly usage
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Hashtag Suggestions
-                        </CardTitle>
-                        <Hash className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">8/15</div>
-                        <p className="text-xs text-muted-foreground">
-                            Monthly usage
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Post Analysis
-                        </CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">5/10</div>
-                        <p className="text-xs text-muted-foreground">
-                            Monthly usage
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            AI Credits
-                        </CardTitle>
-                        <Zap className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">25/45</div>
-                        <p className="text-xs text-muted-foreground">
-                            Total remaining
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
+            <UsageStats />
 
             <Tabs defaultValue="content" className="space-y-4">
                 <TabsList>

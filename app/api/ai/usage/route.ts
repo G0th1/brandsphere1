@@ -13,31 +13,34 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        // In a real implementation, you would:
-        // 1. Query the database for the user's AI usage
-        // 2. Get the user's subscription tier
-        // 3. Return the usage data with limits based on the tier
-
-        // For now, we'll return mock data
+        // Mock data for user's AI usage
+        // In a real implementation, you would fetch this from the database
         const mockUsage = {
-            contentSuggestions: 12,
-            contentSuggestionsLimit: 20,
-            hashtagSuggestions: 9,
-            hashtagSuggestionsLimit: 15,
-            postAnalysis: 5,
-            postAnalysisLimit: 10,
-            isPro: false
+            userId: session.user.id,
+            isPro: false,
+            usage: {
+                contentSuggestions: {
+                    used: 9,
+                    limit: 20
+                },
+                hashtagSuggestions: {
+                    used: 7,
+                    limit: 20
+                },
+                postAnalysis: {
+                    used: 12,
+                    limit: 20
+                }
+            },
+            resetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
+            lastUpdated: new Date().toISOString()
         };
 
-        return NextResponse.json({
-            success: true,
-            usage: mockUsage
-        });
-
+        return NextResponse.json(mockUsage);
     } catch (error) {
         console.error("Error fetching AI usage:", error);
         return NextResponse.json(
-            { error: "Failed to fetch AI usage" },
+            { error: "Failed to fetch AI usage data" },
             { status: 500 }
         );
     }

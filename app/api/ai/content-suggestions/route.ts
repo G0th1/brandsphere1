@@ -1,106 +1,86 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { createSafeSupabaseClient } from '@/app/utils/supabase-client';
-import AIService from '@/services/ai-service';
-import SubscriptionService from '@/services/subscription-service';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { z } from "zod";
 
-export const dynamic = 'force-dynamic';
+// Define the request schema
+const contentRequestSchema = z.object({
+    topic: z.string().min(1, "Topic is required"),
+    industry: z.string().min(1, "Industry is required"),
+    platform: z.enum(["instagram", "facebook", "twitter", "linkedin", "tiktok"]),
+    tone: z.string().optional().default("professional"),
+});
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
     try {
-        // Get user session
-        const session = await getServerSession();
+        // Check authentication
+        const session = await getServerSession(authOptions);
         if (!session?.user) {
             return NextResponse.json(
-                { error: 'Authentication required' },
+                { error: "Unauthorized" },
                 { status: 401 }
             );
         }
 
-        // Parse request body
-        const { topic, industry, platform, tone } = await request.json();
+        // Parse and validate request body
+        const body = await req.json();
+        const validationResult = contentRequestSchema.safeParse(body);
 
-        if (!topic || !industry || !platform) {
+        if (!validationResult.success) {
             return NextResponse.json(
-                { error: 'Missing required fields: topic, industry, and platform are required' },
+                { error: "Invalid request", details: validationResult.error.format() },
                 { status: 400 }
             );
         }
 
-        // Get user's subscription tier
-        const subscription = await SubscriptionService.getUserSubscription();
-        const tier = subscription.plan === 'pro' ? 'pro' : 'free';
+        const { topic, industry, platform, tone } = validationResult.data;
 
-        // Get user's usage for the current month
-        const supabase = createSafeSupabaseClient();
-        const userId = session.user.id;
+        // In a real implementation, you would:
+        // 1. Check user's AI usage quota
+        // 2. Call an AI service (OpenAI, etc.)
+        // 3. Log the usage
+        // 4. Return the generated content
 
-        const { data: usageData, error: usageError } = await supabase
-            .from('ai_usage')
-            .select('content_suggestions_count')
-            .eq('user_id', userId)
-            .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+        // For now, we'll return mock data
+        const mockSuggestions = [
+            {
+                id: "1",
+                platform,
+                content: `✨ Elevate your ${topic} game with these 5 ${industry} expert tips:\n\n1️⃣ Start with the basics\n2️⃣ Practice consistently\n3️⃣ Learn from the pros\n4️⃣ Invest in quality tools\n5️⃣ Share your journey\n\n#${topic.replace(/\s+/g, '')} #${industry.replace(/\s+/g, '')}Tips #GrowthMindset`,
+                hashtags: [`${topic}`, `${industry}Tips`, `GrowthMindset`],
+                bestPostingTime: "9:00 AM"
+            },
+            {
+                id: "2",
+                platform,
+                content: `🔍 The ultimate ${tone} guide to ${topic} in the ${industry} industry!\n\nWhether you're a beginner or pro, our latest blog post covers everything you need to know.\n\nTap the link in bio to read more! 👆\n\n#${topic.replace(/\s+/g, '')} #${industry.replace(/\s+/g, '')}Guide #LearnWithUs`,
+                hashtags: [`${topic}`, `${industry}Guide`, `LearnWithUs`],
+                bestPostingTime: "3:00 PM"
+            },
+            {
+                id: "3",
+                platform,
+                content: `Question for my ${industry} community: What's your biggest challenge when it comes to ${topic}?\n\nShare below 👇 and let's solve it together!\n\n#${industry.replace(/\s+/g, '')}Community #${topic.replace(/\s+/g, '')}Problems #Solutions`,
+                hashtags: [`${industry}Community`, `${topic}Problems`, `Solutions`],
+                bestPostingTime: "6:00 PM"
+            }
+        ];
 
-        if (usageError && usageError.code !== 'PGRST116') { // PGRST116 is 'no rows returned'
-            console.error('Error fetching user AI usage:', usageError);
-            return NextResponse.json(
-                { error: 'Failed to check usage limits' },
-                { status: 500 }
-            );
-        }
-
-        // Check if user has exceeded their monthly limit
-        const currentUsage = usageData?.content_suggestions_count || 0;
-        const limits = AIService.getLimitsForTier(tier);
-
-        if (currentUsage >= limits.contentSuggestions) {
-            return NextResponse.json(
-                {
-                    error: 'Monthly limit exceeded',
-                    message: `You've reached your monthly limit of ${limits.contentSuggestions} content suggestions. Upgrade to Pro for more.`,
-                    limit: limits.contentSuggestions,
-                    usage: currentUsage
-                },
-                { status: 403 }
-            );
-        }
-
-        // Generate content suggestions
-        const suggestions = await AIService.generateContentSuggestions(
-            topic,
-            industry,
-            platform,
-            tone || 'professional'
-        );
-
-        // Update usage count
-        const { error: updateError } = await supabase
-            .from('ai_usage')
-            .upsert({
-                user_id: userId,
-                content_suggestions_count: currentUsage + 1,
-                created_at: new Date().toISOString()
-            });
-
-        if (updateError) {
-            console.error('Error updating AI usage:', updateError);
-            // We'll still return the suggestions even if tracking fails
-        }
+        // Update user's AI usage in the database (mock)
+        // In a real implementation, you would update the user's usage in the database
 
         return NextResponse.json({
-            suggestions,
+            suggestions: mockSuggestions,
             usage: {
-                current: currentUsage + 1,
-                limit: limits.contentSuggestions
+                current: 9,
+                limit: 20
             }
         });
+
     } catch (error) {
-        console.error('Error processing content suggestions request:', error);
+        console.error("Error generating content:", error);
         return NextResponse.json(
-            { error: 'Failed to generate content suggestions' },
+            { error: "Failed to generate content suggestions" },
             { status: 500 }
         );
     }

@@ -8,118 +8,116 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Sparkles, Copy, Check, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
-
-interface ContentSuggestion {
-    id: string;
-    content: string;
-    platform: string;
-    type: string;
-}
-
-interface AIUsage {
-    contentSuggestions: number;
-    contentSuggestionsLimit: number;
-    hashtagSuggestions: number;
-    hashtagSuggestionsLimit: number;
-    postAnalysis: number;
-    postAnalysisLimit: number;
-    isPro: boolean;
-}
+import { Loader2, Sparkles, Copy, Check, RefreshCw, Clock, CalendarIcon } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import AIService, { ContentSuggestion as ContentSuggestionType } from "@/services/ai-service";
 
 export function ContentSuggestion() {
     const [topic, setTopic] = useState("");
+    const [industry, setIndustry] = useState("");
     const [platform, setPlatform] = useState("instagram");
-    const [contentType, setContentType] = useState("post");
+    const [tone, setTone] = useState("professional");
     const [isGenerating, setIsGenerating] = useState(false);
-    const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
+    const [suggestions, setSuggestions] = useState<ContentSuggestionType[]>([]);
     const [copied, setCopied] = useState<string | null>(null);
-    const [usage, setUsage] = useState<AIUsage | null>(null);
+    const [usageInfo, setUsageInfo] = useState<{ current: number; limit: number } | null>(null);
 
     const handleGenerate = async () => {
-        if (!topic) {
-            toast.error("Please enter a topic for your content");
+        if (!topic || !industry) {
+            toast({
+                variant: "destructive",
+                title: "Missing information",
+                description: "Please enter both a topic and an industry for your content"
+            });
             return;
         }
 
         setIsGenerating(true);
 
         try {
-            const response = await fetch('/api/ai/content', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    topic,
-                    platform,
-                    contentType,
-                }),
+            const result = await AIService.generateContentSuggestions({
+                topic,
+                industry,
+                platform: platform as any,
+                tone
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to generate content');
-            }
-
-            const data = await response.json();
-
-            if (data.success) {
-                setSuggestions(data.suggestions);
-                setUsage(data.usage);
-            } else {
-                throw new Error(data.error || 'Failed to generate content');
-            }
+            setSuggestions(result.suggestions);
+            setUsageInfo(result.usage);
+            
+            toast({
+                title: "Content generated",
+                description: `Generated ${result.suggestions.length} content suggestions for your topic`
+            });
         } catch (error) {
-            console.error('Error generating content:', error);
-            toast.error(error instanceof Error ? error.message : "Failed to generate suggestions. Please try again.");
+            console.error("Error generating content:", error);
+            
+            if (error instanceof Error && error.message.includes("Monthly limit exceeded")) {
+                toast({
+                    variant: "destructive",
+                    title: "Usage limit reached",
+                    description: "You've reached your monthly limit for content suggestions. Upgrade to Pro for more."
+                });
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Failed to generate content",
+                    description: "There was an error generating your content. Please try again later."
+                });
+            }
         } finally {
             setIsGenerating(false);
         }
     };
 
-    const handleCopy = (id: string, content: string) => {
+    const handleCopy = (content: string, id: string) => {
         navigator.clipboard.writeText(content);
         setCopied(id);
-        toast.success("Content copied to clipboard");
-
-        setTimeout(() => {
-            setCopied(null);
-        }, 2000);
-    };
-
-    const handleSave = (suggestion: ContentSuggestion) => {
-        // In a real implementation, this would save to your database
-        toast.success("Content saved to your drafts");
+        
+        toast({
+            title: "Content copied",
+            description: "The content has been copied to your clipboard"
+        });
+        
+        setTimeout(() => setCopied(null), 2000);
     };
 
     return (
-        <Card className="w-full">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    AI Content Suggestions
-                </CardTitle>
-                <CardDescription>
-                    Generate creative content ideas for your social media posts
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="topic">What would you like to post about?</Label>
-                    <Input
-                        id="topic"
-                        placeholder="Enter a topic, product, or theme..."
-                        value={topic}
-                        onChange={(e) => setTopic(e.target.value)}
-                    />
-                </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="md:col-span-1 lg:col-span-1">
+                <CardHeader>
+                    <CardTitle className="text-xl">Generate Content Ideas</CardTitle>
+                    <CardDescription>
+                        Get AI-powered content suggestions for your social media posts
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="topic">Topic</Label>
+                        <Input
+                            id="topic"
+                            placeholder="e.g., Social media marketing tips"
+                            value={topic}
+                            onChange={(e) => setTopic(e.target.value)}
+                        />
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <Label htmlFor="industry">Industry</Label>
+                        <Input
+                            id="industry"
+                            placeholder="e.g., Fashion, Technology, Finance"
+                            value={industry}
+                            onChange={(e) => setIndustry(e.target.value)}
+                        />
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="platform">Platform</Label>
-                        <Select value={platform} onValueChange={setPlatform}>
+                        <Select
+                            value={platform}
+                            onValueChange={setPlatform}
+                        >
                             <SelectTrigger id="platform">
                                 <SelectValue placeholder="Select platform" />
                             </SelectTrigger>
@@ -134,83 +132,89 @@ export function ContentSuggestion() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="content-type">Content Type</Label>
-                        <Select value={contentType} onValueChange={setContentType}>
-                            <SelectTrigger id="content-type">
-                                <SelectValue placeholder="Select content type" />
+                        <Label htmlFor="tone">Content Tone</Label>
+                        <Select
+                            value={tone}
+                            onValueChange={setTone}
+                        >
+                            <SelectTrigger id="tone">
+                                <SelectValue placeholder="Select tone" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="post">Regular Post</SelectItem>
-                                <SelectItem value="story">Story</SelectItem>
-                                <SelectItem value="reel">Reel/Video</SelectItem>
-                                <SelectItem value="carousel">Carousel</SelectItem>
+                                <SelectItem value="professional">Professional</SelectItem>
+                                <SelectItem value="casual">Casual</SelectItem>
+                                <SelectItem value="humorous">Humorous</SelectItem>
+                                <SelectItem value="inspirational">Inspirational</SelectItem>
+                                <SelectItem value="educational">Educational</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
-                </div>
+                </CardContent>
+                <CardFooter>
+                    <Button 
+                        className="w-full"
+                        onClick={handleGenerate}
+                        disabled={isGenerating || !topic || !industry}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate Ideas
+                            </>
+                        )}
+                    </Button>
+                </CardFooter>
+            </Card>
 
-                {usage && (
-                    <div className="text-sm text-muted-foreground">
-                        Content suggestions: {usage.contentSuggestions}/{usage.contentSuggestionsLimit}
-                        {usage.contentSuggestions >= usage.contentSuggestionsLimit && !usage.isPro && (
-                            <span className="ml-2 text-red-500">
-                                Limit reached. <a href="/dashboard/upgrade" className="underline">Upgrade to Pro</a>
-                            </span>
+            <Card className="md:col-span-1 lg:col-span-2">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl">Content Suggestions</CardTitle>
+                        {usageInfo && (
+                            <div className="text-sm text-muted-foreground">
+                                Usage: {usageInfo.current}/{usageInfo.limit}
+                            </div>
                         )}
                     </div>
-                )}
-
-                <Button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !topic || (usage && usage.contentSuggestions >= usage.contentSuggestionsLimit && !usage.isPro)}
-                    className="w-full"
-                >
+                    <CardDescription>
+                        {suggestions.length > 0 
+                            ? `Showing ${suggestions.length} suggestions for "${topic}" on ${platform}`
+                            : "Your AI-generated content ideas will appear here"}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
                     {isGenerating ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generating...
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Generate Suggestions
-                        </>
-                    )}
-                </Button>
-
-                {suggestions.length > 0 && (
-                    <div className="mt-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-medium">Suggestions</h3>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSuggestions([])}
-                            >
-                                Clear
-                            </Button>
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                            <p className="text-center text-lg">Generating creative content ideas...</p>
+                            <p className="text-center text-sm text-muted-foreground mt-2">
+                                This may take a few moments
+                            </p>
                         </div>
-
-                        <Tabs defaultValue="1" className="w-full">
-                            <TabsList className="grid grid-cols-3 mb-4">
-                                <TabsTrigger value="1">Option 1</TabsTrigger>
-                                <TabsTrigger value="2">Option 2</TabsTrigger>
-                                <TabsTrigger value="3">Option 3</TabsTrigger>
-                            </TabsList>
-
+                    ) : suggestions.length > 0 ? (
+                        <div className="space-y-4">
                             {suggestions.map((suggestion) => (
-                                <TabsContent key={suggestion.id} value={suggestion.id} className="space-y-4">
-                                    <div className="relative">
-                                        <Textarea
-                                            className="min-h-[200px] p-4 text-base"
-                                            value={suggestion.content}
-                                            readOnly
-                                        />
-                                        <div className="absolute top-2 right-2 flex space-x-1">
+                                <div key={suggestion.id} className="rounded-lg border p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium capitalize">
+                                            {suggestion.platform}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {suggestion.bestPostingTime && (
+                                                <div className="flex items-center text-xs text-muted-foreground">
+                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    {suggestion.bestPostingTime}
+                                                </div>
+                                            )}
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleCopy(suggestion.id, suggestion.content)}
+                                                onClick={() => handleCopy(suggestion.content, suggestion.id)}
                                             >
                                                 {copied === suggestion.id ? (
                                                     <Check className="h-4 w-4 text-green-500" />
@@ -218,36 +222,45 @@ export function ContentSuggestion() {
                                                     <Copy className="h-4 w-4" />
                                                 )}
                                             </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={handleGenerate}
-                                                disabled={isGenerating}
-                                            >
-                                                <RefreshCw className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                                            </Button>
                                         </div>
                                     </div>
-
-                                    <div className="flex justify-end space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => handleCopy(suggestion.id, suggestion.content)}
-                                        >
-                                            {copied === suggestion.id ? "Copied!" : "Copy"}
-                                        </Button>
-                                        <Button
-                                            onClick={() => handleSave(suggestion)}
-                                        >
-                                            Save to Drafts
-                                        </Button>
+                                    <div className="whitespace-pre-line text-sm">
+                                        {suggestion.content}
                                     </div>
-                                </TabsContent>
+                                    {suggestion.hashtags && suggestion.hashtags.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {suggestion.hashtags.map((tag, i) => (
+                                                <span
+                                                    key={i}
+                                                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                                                >
+                                                    #{tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             ))}
-                        </Tabs>
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
+                            <p className="text-lg font-medium">No content suggestions yet</p>
+                            <p className="text-sm text-muted-foreground mt-1 max-w-md">
+                                Fill in the form on the left and click "Generate Ideas" to get AI-powered content suggestions for your social media.
+                            </p>
+                        </div>
+                    )}
+                </CardContent>
+                {suggestions.length > 0 && (
+                    <CardFooter className="justify-center">
+                        <Button variant="outline" onClick={handleGenerate} disabled={isGenerating}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Generate More Ideas
+                        </Button>
+                    </CardFooter>
                 )}
-            </CardContent>
-        </Card>
+            </Card>
+        </div>
     );
 } 

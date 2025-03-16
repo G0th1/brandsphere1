@@ -1,104 +1,149 @@
 import { toast } from "@/components/ui/use-toast";
 import { AIUsage } from "@/types/ai";
 
+/**
+ * AI Service for BrandSphereAI
+ * Handles interactions with AI APIs for content generation, hashtags, and post analysis
+ */
+
+// Types for API requests and responses
+export interface ContentSuggestionRequest {
+    topic: string;
+    industry: string;
+    platform: "instagram" | "facebook" | "twitter" | "linkedin" | "tiktok";
+    tone?: string;
+}
+
 export interface ContentSuggestion {
+    id: string;
+    platform: string;
     content: string;
     hashtags: string[];
-    bestPostingTime?: string;
-    imagePrompt?: string;
+    bestPostingTime: string;
 }
 
-export interface HashtagResponse {
-    hashtags: string[];
-    recommended: string[];
-    trending: string[];
+export interface HashtagRequest {
+    topic: string;
+    platform: "instagram" | "facebook" | "twitter" | "linkedin" | "tiktok";
+    count?: number;
 }
 
-export interface PostAnalysisResponse {
-    sentiment: 'positive' | 'neutral' | 'negative';
-    suggestions: string[];
-    predictedEngagement: 'high' | 'medium' | 'low';
-    recommendedTime?: string;
+export interface Hashtag {
+    name: string;
+    popularity: string;
+    posts: string;
 }
 
-// Define the API limits for different subscription tiers
-const TIER_LIMITS = {
-    free: {
-        contentSuggestions: 10, // 10 AI-generated suggestions per month
-        hashtagSuggestions: 20, // 20 hashtag generations per month
-        postAnalysis: 15, // 15 post analyses per month
-    },
-    pro: {
-        contentSuggestions: 100, // 100 AI-generated suggestions per month
-        hashtagSuggestions: 200, // 200 hashtag generations per month
-        postAnalysis: 150, // 150 post analyses per month
-    }
-};
+export interface HashtagCategories {
+    popular: Hashtag[];
+    niche: Hashtag[];
+    trending: Hashtag[];
+}
+
+export interface PostAnalysisRequest {
+    content: string;
+    platform: "instagram" | "facebook" | "twitter" | "linkedin" | "tiktok";
+    includeHashtags?: boolean;
+}
+
+export interface PostAnalysis {
+    overall: {
+        score: number;
+        rating: string;
+    };
+    details: {
+        length: {
+            value: number;
+            recommendation: string;
+        };
+        sentiment: {
+            value: string;
+            recommendation: string;
+        };
+        engagement: {
+            value: string;
+            recommendation: string;
+        };
+    };
+    improvement: {
+        suggestions: string[];
+        suggestedHashtags?: string[];
+    };
+}
+
+export interface AIUsage {
+    isPro: boolean;
+    usage: {
+        contentSuggestions: {
+            used: number;
+            limit: number;
+        };
+        hashtagSuggestions: {
+            used: number;
+            limit: number;
+        };
+        postAnalysis: {
+            used: number;
+            limit: number;
+        };
+    };
+    resetDate: string;
+    lastUpdated: string;
+}
 
 /**
- * Service for handling AI-related functionality
+ * AIService class for handling AI functionality
  */
 class AIService {
-    private baseUrl = 'https://openrouter.ai/api/v1';
-    private apiKey: string;
+    private baseUrl: string;
 
     constructor() {
-        this.apiKey = process.env.OPENROUTER_API_KEY || '';
-        if (!this.apiKey) {
-            console.warn('OpenRouter API key is not set. AI features will not work.');
-        }
+        this.baseUrl = '/api/ai';
     }
 
     /**
-     * Generate content suggestions based on a topic
-     * @param topic The topic to generate content for
-     * @param platform The social media platform
-     * @param contentType The type of content (post, story, etc.)
+     * Generate content suggestions based on provided parameters
      */
-    async generateContentSuggestions(topic: string, platform: string, contentType: string) {
+    async generateContentSuggestions(params: ContentSuggestionRequest): Promise<{
+        suggestions: ContentSuggestion[];
+        usage: { current: number; limit: number };
+    }> {
         try {
-            const response = await fetch('/api/ai/content', {
+            const response = await fetch(`${this.baseUrl}/content-suggestions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    topic,
-                    platform,
-                    contentType,
-                }),
+                body: JSON.stringify(params),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to generate content');
+                throw new Error(errorData.error || 'Failed to generate content suggestions');
             }
 
             return await response.json();
         } catch (error) {
-            console.error('Error generating content:', error);
+            console.error('Error in generateContentSuggestions:', error);
             throw error;
         }
     }
 
     /**
-     * Generate hashtag suggestions based on a topic
-     * @param topic The topic to generate hashtags for
-     * @param platform The social media platform
-     * @param count The number of hashtags to generate
+     * Generate hashtags based on provided parameters
      */
-    async generateHashtags(topic: string, platform: string, count: number = 15) {
+    async generateHashtags(params: HashtagRequest): Promise<{
+        categories: HashtagCategories;
+        allHashtags: Hashtag[];
+        usage: { current: number; limit: number };
+    }> {
         try {
-            const response = await fetch('/api/ai/hashtags', {
+            const response = await fetch(`${this.baseUrl}/generate-hashtags`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    topic,
-                    platform,
-                    count,
-                }),
+                body: JSON.stringify(params),
             });
 
             if (!response.ok) {
@@ -108,27 +153,25 @@ class AIService {
 
             return await response.json();
         } catch (error) {
-            console.error('Error generating hashtags:', error);
+            console.error('Error in generateHashtags:', error);
             throw error;
         }
     }
 
     /**
-     * Analyze a post for engagement potential and improvement suggestions
-     * @param content The post content to analyze
-     * @param platform The social media platform
+     * Analyze a post based on provided parameters
      */
-    async analyzePost(content: string, platform: string) {
+    async analyzePost(params: PostAnalysisRequest): Promise<{
+        analysis: PostAnalysis;
+        usage: { current: number; limit: number };
+    }> {
         try {
-            const response = await fetch('/api/ai/analyze', {
+            const response = await fetch(`${this.baseUrl}/analyze-post`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    content,
-                    platform,
-                }),
+                body: JSON.stringify(params),
             });
 
             if (!response.ok) {
@@ -138,54 +181,34 @@ class AIService {
 
             return await response.json();
         } catch (error) {
-            console.error('Error analyzing post:', error);
+            console.error('Error in analyzePost:', error);
             throw error;
         }
     }
 
     /**
-     * Get the current AI usage for the user
+     * Get the current user's AI usage
      */
-    async getAIUsage(): Promise<AIUsage> {
+    async getUserAIUsage(): Promise<AIUsage> {
         try {
-            const response = await fetch('/api/ai/usage', {
+            const response = await fetch(`${this.baseUrl}/usage`, {
                 method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to get AI usage');
+                throw new Error(errorData.error || 'Failed to fetch AI usage');
             }
 
-            const data = await response.json();
-            return data.usage;
+            return await response.json();
         } catch (error) {
-            console.error('Error getting AI usage:', error);
+            console.error('Error in getUserAIUsage:', error);
             throw error;
         }
     }
-
-    /**
-     * Get the limits for each AI feature based on the user's subscription tier
-     * @param tier The user's subscription tier (free, pro)
-     */
-    getLimitsForTier(tier: 'free' | 'pro'): Record<string, number> {
-        const limits: Record<string, Record<string, number>> = {
-            free: {
-                contentSuggestions: 20,
-                hashtagSuggestions: 15,
-                postAnalysis: 10,
-            },
-            pro: {
-                contentSuggestions: 100,
-                hashtagSuggestions: 100,
-                postAnalysis: 50,
-            },
-        };
-
-        return limits[tier];
-    }
 }
 
-// Export as singleton
 export default new AIService(); 
