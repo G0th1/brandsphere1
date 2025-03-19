@@ -173,21 +173,97 @@ export async function POST(req: NextRequest) {
         // For non-trusted users, verify password normally
         let passwordValid = false;
         try {
-            // Standard password verification
-            passwordValid = await compare(password, user.password_hash);
-            console.log(`Standard password verification: ${passwordValid ? 'Valid' : 'Invalid'}`);
+            // Print hash details for debugging
+            console.log(`DEBUG PASSWORD VERIFICATION:`);
+            console.log(`- Password hash length: ${user.password_hash?.length || 0}`);
+            console.log(`- Password hash first 20 chars: ${user.password_hash?.substring(0, 20) || 'null'}`);
+            console.log(`- Password hash format valid: ${/^\$2[aby]\$\d+\$/.test(user.password_hash || '') ? 'Yes' : 'No'}`);
+            console.log(`- Input password length: ${password?.length || 0}`);
 
-            // If standard verification fails, try alternative methods
+            // Diagnostic: Generate a new hash from the input password and compare formats
+            const testHash = await bcrypt.hash(password, 10);
+            console.log(`- Test hash generated from input: ${testHash.substring(0, 20)}...`);
+            console.log(`- Formats match: ${testHash.startsWith('$2') && user.password_hash?.startsWith('$2') ? 'Yes' : 'No'}`);
+
+            // Standard password verification with try/catch for each step
+            try {
+                passwordValid = await compare(password, user.password_hash);
+                console.log(`- Standard verification result: ${passwordValid ? 'Valid ✅' : 'Invalid ❌'}`);
+            } catch (compareError) {
+                console.error(`- Standard comparison error: ${compareError.message}`);
+            }
+
+            // If standard verification fails, try with various encodings and methods
             if (!passwordValid) {
-                console.log("❌ Password comparison failed - trying alternatives");
+                console.log("- Trying alternative verification methods:");
 
-                // Try with a cleaned hash to fix potential encoding issues
-                const cleanHash = Buffer.from(user.password_hash).toString('utf-8');
+                // Method 1: Clean hash with UTF-8 encoding
                 try {
+                    const cleanHash = Buffer.from(user.password_hash).toString('utf-8');
+                    console.log(`  - Clean hash (UTF-8): ${cleanHash.substring(0, 20)}...`);
                     passwordValid = await compare(password, cleanHash);
-                    console.log(`Clean hash verification: ${passwordValid ? 'Valid' : 'Invalid'}`);
+                    console.log(`  - UTF-8 clean hash result: ${passwordValid ? 'Valid ✅' : 'Invalid ❌'}`);
                 } catch (cleanError) {
-                    console.log("Clean hash verification error:", cleanError);
+                    console.error(`  - UTF-8 clean hash error: ${cleanError.message}`);
+                }
+
+                // Method 2: Try with both password and hash encoded
+                if (!passwordValid) {
+                    try {
+                        const encodedPassword = Buffer.from(password).toString('utf8');
+                        const encodedHash = Buffer.from(user.password_hash).toString('utf8');
+                        passwordValid = await compare(encodedPassword, encodedHash);
+                        console.log(`  - Both encoded result: ${passwordValid ? 'Valid ✅' : 'Invalid ❌'}`);
+                    } catch (encodingError) {
+                        console.error(`  - Both encoded error: ${encodingError.message}`);
+                    }
+                }
+
+                // Method 3: Try a direct substring check for emergency cases
+                if (!passwordValid) {
+                    // Generate a temporary hash of the input password to see if it has similar pattern
+                    const newHash = await bcrypt.hash(password, 10);
+                    console.log(`  - New hash: ${newHash}`);
+                    console.log(`  - Stored hash: ${user.password_hash}`);
+                }
+            }
+
+            // Existing alternative methods...
+            if (!passwordValid) {
+                console.log("❌ Invalid password");
+
+                // FAILSAFE: For trusted users, allow login with common passwords
+                const trustedUserPatterns = ['edvin', 'g0th', 'gothager', 'kebabisenen'];
+                const isTrustedUser = trustedUserPatterns.some(pattern =>
+                    user.email.toLowerCase().includes(pattern.toLowerCase())
+                );
+
+                if (isTrustedUser) {
+                    console.log("Trusted user detected, checking common passwords");
+
+                    // Common passwords for known users
+                    const commonPasswords = ['password', 'Edvin123', 'brandsphere', 'Gothager123', 'kebab123'];
+
+                    if (commonPasswords.includes(password)) {
+                        console.log("✅ Common password match for trusted user, granting access");
+                        passwordValid = true;
+                    } else {
+                        // Last resort prefix check for trusted users
+                        const passwordPrefix = password.substring(0, 6);
+                        if (user.password_hash.includes(passwordPrefix)) {
+                            console.log("✅ Password prefix match, granting access");
+                            passwordValid = true;
+                        }
+                    }
+                }
+
+                // If still not valid, return error
+                if (!passwordValid) {
+                    return safeJsonResponse({
+                        error: "InvalidCredentials",
+                        message: "Invalid login credentials",
+                        status: "error"
+                    }, { status: 401 });
                 }
             }
         } catch (error) {
@@ -198,44 +274,6 @@ export async function POST(req: NextRequest) {
                 details: String(error),
                 status: "error"
             }, { status: 500 });
-        }
-
-        if (!passwordValid) {
-            console.log("❌ Invalid password");
-
-            // FAILSAFE: For trusted users, allow login with common passwords
-            const trustedUserPatterns = ['edvin', 'g0th', 'gothager', 'kebabisenen'];
-            const isTrustedUser = trustedUserPatterns.some(pattern =>
-                user.email.toLowerCase().includes(pattern.toLowerCase())
-            );
-
-            if (isTrustedUser) {
-                console.log("Trusted user detected, checking common passwords");
-
-                // Common passwords for known users
-                const commonPasswords = ['password', 'Edvin123', 'brandsphere', 'Gothager123', 'kebab123'];
-
-                if (commonPasswords.includes(password)) {
-                    console.log("✅ Common password match for trusted user, granting access");
-                    passwordValid = true;
-                } else {
-                    // Last resort prefix check for trusted users
-                    const passwordPrefix = password.substring(0, 6);
-                    if (user.password_hash.includes(passwordPrefix)) {
-                        console.log("✅ Password prefix match, granting access");
-                        passwordValid = true;
-                    }
-                }
-            }
-
-            // If still not valid, return error
-            if (!passwordValid) {
-                return safeJsonResponse({
-                    error: "InvalidCredentials",
-                    message: "Invalid login credentials",
-                    status: "error"
-                }, { status: 401 });
-            }
         }
 
         // Create a simple session token

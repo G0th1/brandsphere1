@@ -44,7 +44,7 @@ export async function POST(req: Request) {
         // Uppdatera användarens lösenord
         await db.user.update({
             where: { id: resetToken.userId },
-            data: { password: hashedPassword },
+            data: { password_hash: hashedPassword },
         });
 
         // Ta bort den använda token
