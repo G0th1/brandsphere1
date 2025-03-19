@@ -55,11 +55,11 @@ export async function POST(req: NextRequest) {
             where: { id: userId },
             select: {
                 id: true,
-                password: true,
+                password_hash: true,
             },
         });
 
-        if (!user || !user.password) {
+        if (!user || !user.password_hash) {
             return NextResponse.json(
                 { error: 'User not found or no password set' },
                 { status: 404 }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Verify the current password
-        const isCurrentPasswordValid = await compare(currentPassword, user.password);
+        const isCurrentPasswordValid = await compare(currentPassword, user.password_hash);
 
         if (!isCurrentPasswordValid) {
             return NextResponse.json(
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         await db.user.update({
             where: { id: userId },
             data: {
-                password: hashedPassword,
+                password_hash: hashedPassword,
             },
         });
 
