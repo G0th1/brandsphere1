@@ -4,28 +4,15 @@
         "NEXTAUTH_URL": "https://brandsphere1.vercel.app",
         "NEXTAUTH_SECRET": "fd1f312b048a465d8debe3f2d7fe8bbd",
         "DATABASE_URL": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?connect_timeout=5&sslmode=require",
-        "NEXT_PUBLIC_SITE_URL": "https://brandsphere1.vercel.app",
         "POSTGRES_PRISMA_URL": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?connect_timeout=5&sslmode=require",
         "POSTGRES_URL_NON_POOLING": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=30",
-        "NEXT_PUBLIC_OFFLINE_MODE": "false",
-        "NODE_ENV": "production",
         "SKIP_DB_VALIDATION": "true",
-        "PRISMA_SKIP_DATABASE_CHECK": "true"
+        "PRISMA_SKIP_DATABASE_CHECK": "true",
+        "NODE_ENV": "production"
     },
     "buildCommand": "npm run build",
-    "devCommand": "npm run dev",
     "installCommand": "npm install",
     "framework": "nextjs",
-    "regions": [
-        "fra1"
-    ],
-    "crons": [
-        {
-            "path": "/api/cron/cleanup-sessions",
-            "schedule": "0 0 * * *"
-        }
-    ],
-    "cleanUrls": true,
     "redirects": [
         {
             "source": "/login",
@@ -37,66 +24,5 @@
             "destination": "/auth/login",
             "permanent": true
         }
-    ],
-    "headers": [
-        {
-            "source": "/fonts/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
-        },
-        {
-            "source": "/images/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
-        },
-        {
-            "source": "/_next/static/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
-        },
-        {
-            "source": "/(.*)",
-            "headers": [
-                {
-                    "key": "X-Content-Type-Options",
-                    "value": "nosniff"
-                },
-                {
-                    "key": "X-Frame-Options",
-                    "value": "DENY"
-                },
-                {
-                    "key": "X-XSS-Protection",
-                    "value": "1; mode=block"
-                },
-                {
-                    "key": "Referrer-Policy",
-                    "value": "strict-origin-when-cross-origin"
-                }
-            ]
-        }
-    ],
-    "outputDirectory": ".next",
-    "git": {
-        "deploymentEnabled": {
-            "main": true,
-            "master": true
-        }
-    },
-    "github": {
-        "silent": true
-    },
-    "ignoreCommand": "!grep -q \"neonctl\" package.json && echo \"Ignoring db branch creation\""
+    ]
 }
