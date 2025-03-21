@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -17,7 +17,10 @@ export function createSafeSupabaseClient(): SupabaseClient {
         }
 
         // Otherwise create a real client
-        return createClientComponentClient();
+        return createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
     } catch (error) {
         console.warn('Error creating Supabase client, using mock client', error);
         return createMockSupabaseClient();

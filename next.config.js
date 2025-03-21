@@ -26,6 +26,14 @@ const nextConfig = {
     // Remove console and debugger statements in production
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Configure module aliases
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': '.',
+    };
+    return config;
+  },
   // Configure security headers
   async headers() {
     return [

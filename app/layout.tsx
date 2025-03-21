@@ -1,18 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Analytics } from '@/components/analytics';
 import Script from 'next/script';
 import { Providers } from './providers';
-
-// Load Inter font with optimal subset for better performance
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -39,8 +31,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans antialiased">
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <main className="min-h-screen flex flex-col">
