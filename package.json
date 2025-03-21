@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/prisma-generate.js",
+    "prebuild": "NODE_ENV=production node scripts/prisma-generate.js",
     "build": "next build",
+    "vercel-build": "next build",
     "start": "next start",
     "lint": "next lint",
     "deploy": "node scripts/deploy-with-neon.js",
