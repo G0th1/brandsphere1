@@ -98,6 +98,5 @@
     "github": {
         "silent": true
     },
-    "ignoreCommand": "!grep -q \"neonctl\" package.json && echo \"Ignoring db branch creation\"",
-    "skipNeonBranching": true
+    "ignoreCommand": "!grep -q \"neonctl\" package.json && echo \"Ignoring db branch creation\""
 }
