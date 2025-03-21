@@ -1,0 +1,25 @@
+{
+    "version": 2,
+    "regions": [
+        "sfo1"
+    ],
+    "builds": [
+        {
+            "src": "package.json",
+            "use": "@vercel/next",
+            "config": {
+                "timeout": 60000,
+                "maxLambdaSize": "50mb",
+                "zeroConfig": true,
+                "skipAutoInstall": false,
+                "buildCommand": "npm run build"
+            }
+        }
+    ],
+    "env": {
+        "SKIP_DB_VALIDATION": "true",
+        "PRISMA_SKIP_DATABASE_CHECK": "true",
+        "NODE_ENV": "production",
+        "NEXT_TELEMETRY_DISABLED": "1"
+    }
+}

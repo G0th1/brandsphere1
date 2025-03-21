@@ -2,6 +2,7 @@
 
 console.log('Starting Prisma client generation...');
 
+// Set environment variables to skip database checks
 process.env.SKIP_DB_VALIDATION = 'true';
 process.env.PRISMA_SKIP_DATABASE_CHECK = 'true';
 process.env.NODE_ENV = process.env.NODE_ENV || 'production';

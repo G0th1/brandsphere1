@@ -1,43 +1,39 @@
 @echo off
-echo.
-echo ============================
-echo BrandSphere AI Deployment Tool
-echo ============================
-echo.
-echo Starting deployment process...
-echo.
+echo -----------------------------------------------
+echo Deploying BrandSphere to Vercel (Debug Version)
+echo -----------------------------------------------
 
-:: 1. Test database connection with Neon
-echo Testing Neon database connection...
-call npm run test:neon
-if %ERRORLEVEL% NEQ 0 (
-  echo Database connection test failed! Check your connection settings.
-  echo You can continue deployment anyway, but the app might not work correctly.
-  pause
-)
+:: Set environment variables for deployment
+set VERCEL_PROJECT_ID=prj_9HrTlV4HZhQtxHcWfTZgHPDVsMjR
+set VERCEL_ORG_ID=team_vdvx9Ku6liQpWFNDhcPy5GkG
+set NEXTJS_IGNORE_ESLINT=1
+set NEXT_TELEMETRY_DISABLED=1
+set NEXT_DISABLE_SOURCEMAPS=1
+set NODE_OPTIONS=--max-old-space-size=4096
 
-:: 2. Pull environment variables
-echo.
-echo Pulling latest environment variables from Vercel...
+:: Force node version
+echo Ensuring correct Node.js version...
+call nvm use 18.17.0 || echo Node version change failed, continuing with current version
+
+:: Clean cache
+echo Cleaning Vercel cache...
+call vercel env pull .env.local
 call vercel env pull .env.production.local
+call rmdir /s /q .vercel\cache 2>nul
+call rmdir /s /q .next 2>nul
+call rmdir /s /q node_modules\.cache 2>nul
 
-:: 3. Install dependencies if needed
-if not exist node_modules (
-  echo Installing dependencies...
-  call npm install
-)
+:: Install dependencies
+echo Installing dependencies...
+call npm install
 
-:: 4. Generate Prisma client
-echo.
-echo Generating Prisma client...
-call npm run prisma:generate
+:: Run the deployment with verbose mode
+echo Starting deployment (with build logs)...
+call vercel deploy --prod --debug --yes
 
-:: 5. Deploy with Neon serverless driver
-echo.
-echo Starting deployment with Neon serverless driver...
-call npm run deploy:vercel
-
-echo.
-echo Deployment process completed!
-echo.
-pause 
+echo -----------------------------------------------
+echo If deployment failed, try these troubleshooting steps:
+echo 1. Check the Vercel logs with: vercel logs
+echo 2. Try deploying with just: vercel --prod
+echo 3. Visit the Vercel dashboard and check the build logs
+echo ----------------------------------------------- 
