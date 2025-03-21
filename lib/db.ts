@@ -3,6 +3,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
 import { DATABASE_URL } from './database-url';
+import { neon, neonConfig } from '@neondatabase/serverless';
+
+// Configure Neon for serverless environment with optimal settings
+neonConfig.useSecureWebSocket = true;
+neonConfig.pipelineTLS = true;
+neonConfig.poolQueryTimeoutMs = 15000; // 15 second query timeout
+neonConfig.poolMaxUses = 100; // Max pool connection reuse
+neonConfig.poolConnectionTimeoutMs = 10000; // 10 second connection timeout
 
 // Database configuration
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -88,20 +96,24 @@ if (isDevelopment && DATABASE_URL.startsWith('file:')) {
     setupDatabase();
 }
 
-// Initialize and export Prisma client
-if (process.env.NODE_ENV === 'production') {
-    prisma = new PrismaClient();
-} else {
-    // Prevent multiple instances during development
-    const globalForPrisma = global as unknown as { prisma: PrismaClient };
+// Initialize and export Prisma client with Neon serverless configuration
+prisma = new PrismaClient({
+    datasources: {
+        db: {
+            url: DATABASE_URL
+        }
+    },
+    log: isDevelopment ? ['error', 'warn'] : ['error'],
+    // Add better error handling for connections
+    errorFormat: 'pretty',
+});
 
-    if (!globalForPrisma.prisma) {
-        globalForPrisma.prisma = new PrismaClient({
-            log: ['error'],
-        });
-    }
+// Create a Neon SQL executor for raw queries
+export const sql = neon(DATABASE_URL);
 
-    prisma = globalForPrisma.prisma;
+// Make sure DATABASE_URL is set for other tools that might read it
+if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = DATABASE_URL;
 }
 
 export const db = prisma;
@@ -111,73 +123,42 @@ export * from '@prisma/client';
 
 // Test connection on startup (but don't block execution)
 (async function () {
-    try {
-        console.log('🔄 Testing database connection...');
-        await db.$connect();
-        console.log('✅ Database connection successful');
+    let retries = 0;
+    const maxRetries = 3;
 
-        // Run a simple query to validate the connection
-        const result = await db.$queryRaw`SELECT NOW()`;
-        console.log('✅ Database query successful:', result);
-    } catch (error) {
-        console.error('❌ Database connection error:', error);
-        console.error('Please check your database configuration and ensure Neon database is accessible.');
-    }
-})();
+    while (retries < maxRetries) {
+        try {
+            console.log(`🔄 Testing database connection (attempt ${retries + 1})...`);
 
-// Check if we're in the browser and in offline mode
-if (typeof window !== 'undefined') {
-    (async function setupOfflineMode() {
-        // Add a short delay to let the app initialize first
-        setTimeout(() => {
-            try {
-                // Check if offline mode is enabled in localStorage
-                const isOfflineMode = localStorage.getItem('offlineMode') === 'true';
+            // Test Prisma connection
+            await db.$connect();
+            console.log('✅ Prisma connection successful');
 
-                // Add browser compatibility check
-                const ua = window.navigator.userAgent;
-                const isChrome = ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1;
+            // Test Neon serverless connection
+            const result = await sql`SELECT NOW()`;
+            console.log('✅ Neon serverless connection successful:', result[0].now);
 
-                if (!isChrome) {
-                    console.log('🔄 Non-Chrome browser detected. Applying database compatibility fixes.');
+            // Successfully connected
+            break;
+        } catch (error) {
+            retries++;
+            console.error(`❌ Database connection error (attempt ${retries}/${maxRetries}):`, error);
 
-                    // Set SameSite=None cookies for cross-browser compatibility
-                    document.cookie = "db-compat=true; path=/; SameSite=None; Secure";
+            if (retries >= maxRetries) {
+                console.error('⚠️ Maximum connection attempts reached. Database connection failed.');
+                console.error('Please check your database configuration and ensure Neon database is accessible.');
 
-                    // Add event listener to catch connection errors
-                    window.addEventListener('error', function (event) {
-                        if (event.message && (
-                            event.message.includes('database') ||
-                            event.message.includes('connection') ||
-                            event.message.includes('fetch')
-                        )) {
-                            console.warn('⚠️ Caught database error:', event.message);
-                            // Prevent the error from disrupting the user experience
-                            event.preventDefault();
-                            return true;
-                        }
-                    }, true);
+                // Log more details in development
+                if (isDevelopment) {
+                    console.error('Database URL:', DATABASE_URL.substring(0, 20) + '...');
+                    console.error('Full error:', error);
                 }
-
-                if (isOfflineMode) {
-                    console.log('🔌 Running in offline mode with mock database');
-
-                    // Create mock handlers for common database operations
-                    const mockSuccessResponse = { success: true };
-
-                    // Intercept database operations with a proxy
-                    window.addEventListener('error', function (event) {
-                        // Catch database-related errors
-                        if (event.message && event.message.includes('database') && isOfflineMode) {
-                            console.log('🛡️ Prevented database error in offline mode:', event.message);
-                            event.preventDefault();
-                            return true;
-                        }
-                    }, true);
-                }
-            } catch (e) {
-                console.error('Error setting up browser compatibility:', e);
+            } else {
+                // Wait before retrying (exponential backoff)
+                const waitTime = Math.min(1000 * Math.pow(2, retries), 10000);
+                console.log(`Retrying in ${waitTime / 1000} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
             }
-        }, 500);
-    })();
-} 
+        }
+    }
+})(); 

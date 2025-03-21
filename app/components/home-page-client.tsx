@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, Check, Star, Zap, ArrowRight, Globe } from 'lucide-react'
+import { ChevronRight, Check, Star, ArrowRight, Globe } from 'lucide-react'
 import { useTranslation, useLanguage } from '@/contexts/language-context'
 import { homeTranslations } from '@/lib/translations'
 import { useState } from "react"
@@ -13,11 +13,6 @@ export default function HomePageClient() {
     const { language } = useLanguage();
     const t = useTranslation(homeTranslations);
     const safeRouter = useSafeRouter();
-
-    const handleTryDemo = (e: React.MouseEvent) => {
-        e.preventDefault();
-        safeRouter.navigate('/demo/login');
-    };
 
     // Function to create the underlined version of the title
     const renderTitleWithUnderline = () => {
@@ -70,7 +65,7 @@ export default function HomePageClient() {
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-                                <Link href="/auth/register" passHref>
+                                <Link href="/auth/login" passHref>
                                     <Button size="lg" className="group" asChild>
                                         <a>
                                             {t.hero.getStarted}
@@ -84,11 +79,6 @@ export default function HomePageClient() {
                                         <a>{t.hero.viewPricing}</a>
                                     </Button>
                                 </Link>
-
-                                <Button variant="secondary" size="lg" className="flex items-center gap-2" onClick={handleTryDemo}>
-                                    <Zap className="h-4 w-4 text-yellow-500" />
-                                    {t.hero.tryDemo}
-                                </Button>
                             </div>
 
                             <div className="pt-4 flex items-center gap-4 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '400ms' }}>
@@ -123,45 +113,6 @@ export default function HomePageClient() {
                             {/* Decorative elements */}
                             <div className="absolute -bottom-6 -right-12 w-40 h-40 bg-primary/30 rounded-full blur-3xl opacity-60" />
                             <div className="absolute -top-12 -left-12 w-40 h-40 bg-blue-500/30 rounded-full blur-3xl opacity-60" />
-                        </div>
-                    </div>
-                </section>
-
-                {/* Additional section to highlight demo functionality */}
-                <section className="py-12 md:py-16 bg-gradient-to-r from-yellow-50/10 to-primary/5">
-                    <div className="container mx-auto px-4 md:px-6">
-                        <div className="grid md:grid-cols-2 gap-10 items-center">
-                            <div className="space-y-4">
-                                <div className="inline-flex items-center rounded-full px-3 py-1 text-sm bg-yellow-100 text-yellow-800">
-                                    <Zap className="h-4 w-4 mr-2" />
-                                    Premium Demo
-                                </div>
-                                <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">
-                                    Try All Premium Features for Free
-                                </h2>
-                                <p className="text-lg text-muted-foreground">
-                                    Experience the power of our advanced AI features, scheduling tools, and analytics without registration.
-                                </p>
-                                <div className="pt-2">
-                                    <Button className="group" size="lg" onClick={handleTryDemo}>
-                                        Try Premium Demo
-                                        <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="relative">
-                                <div className="rounded-lg overflow-hidden shadow-lg border">
-                                    <div className="relative w-full aspect-video bg-zinc-800 flex items-center justify-center">
-                                        <span className="text-zinc-400 text-sm">Premium features preview</span>
-                                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                                            <div className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                                                <Zap className="h-8 w-8 text-white" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="absolute -bottom-4 -right-4 h-24 w-24 bg-yellow-400/20 rounded-full blur-2xl"></div>
-                            </div>
                         </div>
                     </div>
                 </section>
@@ -206,17 +157,11 @@ export default function HomePageClient() {
                             <p className="text-xl text-muted-foreground">
                                 {t.cta.subtitle}
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                            <div className="flex flex-col sm:flex-row gap-4 mt-8 justify-center">
                                 <Link href="/auth/login">
                                     <Button size="lg">
                                         {t.cta.buttonText}
                                         <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </Link>
-                                <Link href="/demo/login">
-                                    <Button size="lg" variant="outline" className="gap-2">
-                                        <Zap className="h-4 w-4 text-yellow-500" />
-                                        {language === 'sv' ? 'Starta demo' : 'Start demo'}
                                     </Button>
                                 </Link>
                             </div>

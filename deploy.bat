@@ -1,21 +1,43 @@
 @echo off
-echo BrandSphereAI Deployment Script
-echo =============================
-echo This script will deploy your optimized dashboard to Vercel
+echo.
+echo ============================
+echo BrandSphere AI Deployment Tool
+echo ============================
+echo.
+echo Starting deployment process...
 echo.
 
-echo Step 1: Making sure all changes are committed to git...
-git add .
-git commit -m "Dashboard optimization and deployment" --allow-empty
+:: 1. Test database connection with Neon
+echo Testing Neon database connection...
+call npm run test:neon
+if %ERRORLEVEL% NEQ 0 (
+  echo Database connection test failed! Check your connection settings.
+  echo You can continue deployment anyway, but the app might not work correctly.
+  pause
+)
+
+:: 2. Pull environment variables
+echo.
+echo Pulling latest environment variables from Vercel...
+call vercel env pull .env.production.local
+
+:: 3. Install dependencies if needed
+if not exist node_modules (
+  echo Installing dependencies...
+  call npm install
+)
+
+:: 4. Generate Prisma client
+echo.
+echo Generating Prisma client...
+call npm run prisma:generate
+
+:: 5. Deploy with Neon serverless driver
+echo.
+echo Starting deployment with Neon serverless driver...
+call npm run deploy:vercel
 
 echo.
-echo Step 2: Deploying to Vercel...
-echo You may need to authenticate if you haven't already
-vercel --prod
-
+echo Deployment process completed!
 echo.
-echo If the deployment was successful, your site should be live!
-echo Visit your Vercel dashboard to see the deployment status and URL.
-echo.
-echo Press any key to exit...
-pause > nul 
+pause 

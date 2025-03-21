@@ -1,238 +1,218 @@
 "use client";
 
-import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Zap } from "lucide-react";
-import Link from "next/link";
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { signIn } from 'next-auth/react';
+import { toast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import Image from 'next/image';
 
 export default function LoginPage() {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-    const { toast } = useToast();
-
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+    const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
+    const [errorMessage, setErrorMessage] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-
-        // Basic validation
-        if (!email || !password) {
-            toast({
-                title: "Error",
-                description: "Please enter both email and password.",
-                variant: "destructive",
-            });
-            setIsLoading(false);
-            return;
-        }
+        setErrorMessage('');
 
         try {
-            console.log("Login attempt started with:", email);
+            // Check database connection first
+            const dbCheckResponse = await fetch('/api/db-health-check', {
+                method: 'GET',
+                cache: 'no-store',
+            });
 
-            // Clear any previous dashboard loaded flag
-            sessionStorage.removeItem('dashboard_loaded');
-            sessionStorage.removeItem('auth_in_progress');
-
-            try {
-                // Use the simplest possible login approach
-                const result = await signIn("credentials", {
-                    email,
-                    password,
-                    redirect: false,
+            if (!dbCheckResponse.ok) {
+                console.error('Database connection error:', await dbCheckResponse.text());
+                setErrorMessage('Database connection error. Please try again in a few moments.');
+                toast({
+                    title: "Database Error",
+                    description: "We're having trouble connecting to our database. Please try again later.",
+                    variant: "destructive",
                 });
+                setIsLoading(false);
+                return;
+            }
 
-                // Log result but don't show debug overlay
-                console.log("Login result:", result);
+            // Try NextAuth signIn
+            const result = await signIn('credentials', {
+                redirect: false,
+                email,
+                password,
+            });
 
-                if (result?.error) {
-                    console.error("Login error:", result.error);
-
-                    let errorMessage = "Invalid login credentials.";
-
-                    if (result.error === "CredentialsSignin") {
-                        errorMessage = "The email or password you entered is incorrect.";
-                    } else if (result.error.includes("fetch")) {
-                        errorMessage = "Network error. Please check your connection and try again.";
-                    } else if (result.error.includes("JSON")) {
-                        errorMessage = "Server error. The authentication service is not responding correctly.";
-                    } else if (result.error.includes("Database")) {
-                        errorMessage = "Database connection error. Please try again later.";
-                    } else {
-                        errorMessage = `Error: ${result.error}`;
-                    }
-
-                    toast({
-                        title: "Authentication Error",
-                        description: errorMessage,
-                        variant: "destructive",
-                    });
-                    setIsLoading(false);
-                    return;
-                }
-
-                // Success - show toast
+            if (!result?.error) {
                 toast({
                     title: "Success",
-                    description: "Login successful! Redirecting...",
+                    description: "Login successful!",
+                    variant: "default",
                 });
-
-                // Save login info in storage
-                localStorage.setItem('user_email', email);
-                localStorage.setItem('auth_timestamp', Date.now().toString());
-                sessionStorage.setItem('dashboard_loaded', 'true');
-
-                // Redirect to dashboard
-                window.location.href = '/dashboard';
-            } catch (signInError) {
-                console.error("SignIn function error:", signInError);
-
-                // Detailed error for JSON parsing issues
-                if (signInError instanceof SyntaxError && signInError.message.includes('JSON')) {
-                    console.error("JSON parsing error details:", {
-                        message: signInError.message,
-                        stack: signInError.stack
-                    });
-
-                    toast({
-                        title: "Server Error",
-                        description: "The authentication server returned an invalid response. Please try again or contact support.",
-                        variant: "destructive",
-                    });
-                } else {
-                    toast({
-                        title: "Login Error",
-                        description: signInError instanceof Error ? signInError.message : "An unexpected error occurred",
-                        variant: "destructive",
-                    });
-                }
-                setIsLoading(false);
+                router.push(callbackUrl);
+                router.refresh();
+                return;
             }
-        } catch (error) {
-            console.error("Login error:", error);
 
-            const errorMessage = error instanceof Error
-                ? `Error: ${error.message}`
-                : "Something went wrong. Please try again.";
+            // If NextAuth fails, try direct token login
+            const tokenResponse = await fetch('/api/auth/token-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
 
+            const tokenData = await tokenResponse.json();
+
+            if (tokenResponse.ok && tokenData.status === 'success') {
+                toast({
+                    title: "Success",
+                    description: "Login successful!",
+                    variant: "default",
+                });
+                router.push(callbackUrl);
+                router.refresh();
+                return;
+            }
+
+            // If both methods fail, show error message
+            setErrorMessage('Login failed. Please check your credentials and try again.');
             toast({
                 title: "Error",
-                description: errorMessage,
+                description: "Login failed. Please check your credentials.",
                 variant: "destructive",
             });
+        } catch (error) {
+            console.error('Login error:', error);
+
+            // Check if error is related to database connection
+            const isDatabaseError = error instanceof Error &&
+                (error.message.includes('database') ||
+                    error.message.includes('connection') ||
+                    error.message.includes('ECONNREFUSED') ||
+                    error.message.includes('timeout'));
+
+            if (isDatabaseError) {
+                setErrorMessage('Database connection error. Please try again in a few moments.');
+                toast({
+                    title: "Database Error",
+                    description: "We're having trouble connecting to our database. Please try again later.",
+                    variant: "destructive",
+                });
+            } else {
+                setErrorMessage('An error occurred during login. Please try again later.');
+                toast({
+                    title: "Error",
+                    description: "Login service is unavailable. Please try again later.",
+                    variant: "destructive",
+                });
+            }
+        } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
-                <Card className="max-w-md w-full">
-                    <CardHeader>
-                        <CardTitle className="text-2xl">Sign in to your account</CardTitle>
-                        <CardDescription>Enter your email and password to sign in to your account</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                    className="w-full"
-                                    autoComplete="email"
-                                />
-                            </div>
+        <div className="min-h-screen flex flex-col justify-center bg-gradient-to-b from-zinc-900 to-zinc-950 text-white">
+            <div className="mx-auto w-full max-w-md p-6">
+                <div className="mb-8 text-center">
+                    <div className="flex justify-center mb-6">
+                        <Image
+                            src="/images/logo.svg"
+                            alt="BrandSphere Logo"
+                            width={48}
+                            height={48}
+                            className="h-12 w-auto"
+                        />
+                    </div>
+                    <h1 className="text-3xl font-bold">Welcome back</h1>
+                    <p className="text-zinc-400 mt-2">
+                        Sign in to continue to BrandSphere
+                    </p>
+                </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                    className="w-full"
-                                    autoComplete="current-password"
-                                />
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="w-full mt-6"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Please wait...
-                                    </>
-                                ) : "Sign in"}
-                            </Button>
-                        </form>
-
-                        {/* Demo Mode Section */}
-                        <div className="mt-6 pt-4 border-t">
-                            <div className="text-center mb-2">
-                                <span className="bg-background px-2 text-xs text-muted-foreground">HAVING DATABASE ISSUES?</span>
-                            </div>
-                            <div className="text-sm text-center mb-2">
-                                Skip the hassle of authentication and database setup
-                            </div>
-                            <Link href="/demo/login" className="w-full">
-                                <Button variant="outline" className="w-full flex gap-2 items-center justify-center">
-                                    <Zap className="h-4 w-4 text-yellow-500" />
-                                    Use Demo Mode Instead
-                                </Button>
-                            </Link>
+                <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-zinc-700/50">
+                    {errorMessage && (
+                        <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-200 text-sm">
+                            {errorMessage}
                         </div>
-                    </CardContent>
-                    <CardFooter className="flex flex-col space-y-4">
-                        <div className="text-sm text-center">
-                            <Link href="/auth/forgot-password" className="text-primary hover:underline">
-                                Forgot password?
-                            </Link>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="email" className="text-zinc-200">
+                                Email
+                            </Label>
+                            <Input
+                                id="email"
+                                name="email"
+                                type="email"
+                                autoComplete="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="bg-zinc-700/50 text-zinc-200 border-zinc-600 focus:ring-primary"
+                                placeholder="Enter your email"
+                            />
                         </div>
-                        <div className="text-sm text-center">
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <Label htmlFor="password" className="text-zinc-200">
+                                    Password
+                                </Label>
+                                <Link href="/auth/forgot-password" className="text-sm text-primary hover:text-primary/80">
+                                    Forgot password?
+                                </Link>
+                            </div>
+                            <Input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autoComplete="current-password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="bg-zinc-700/50 text-zinc-200 border-zinc-600 focus:ring-primary"
+                                placeholder="Enter your password"
+                            />
+                        </div>
+
+                        <Button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Signing in...
+                                </>
+                            ) : (
+                                "Sign in"
+                            )}
+                        </Button>
+                    </form>
+
+                    <div className="mt-6 text-center text-sm">
+                        <p className="text-zinc-400">
                             Don't have an account?{" "}
-                            <Link href="/auth/register" className="text-primary hover:underline">
-                                Create an account
+                            <Link href="/auth/register" className="text-primary hover:text-primary/80 font-medium">
+                                Sign up
                             </Link>
-                        </div>
-
-                        <div className="border-t pt-4 mt-2">
-                            <div className="text-center mb-2">
-                                <span className="bg-background px-2 text-xs text-muted-foreground">DATABASE CONNECTION ISSUES?</span>
-                            </div>
-                            <div className="text-sm text-center mb-2">
-                                Skip the database setup and try our fully-featured demo
-                            </div>
-                            <Button
-                                variant="outline"
-                                className="w-full flex gap-2 items-center justify-center"
-                                onClick={() => router.push('/demo/login')}
-                            >
-                                <Zap className="h-4 w-4 text-yellow-500" />
-                                Use Demo Mode Instead
-                            </Button>
-                        </div>
-                    </CardFooter>
-                </Card>
-            </main>
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 } 

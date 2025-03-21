@@ -47,7 +47,7 @@ export default function PricingCards({ plans, userId, userEmail }: PricingCardsP
     const handlePlanSelection = async (planId: string) => {
         if (!userId) {
             // Redirect to sign in if user is not logged in
-            router.push(`/login?callbackUrl=/pricing`);
+            router.push(`/auth/login?callbackUrl=/pricing`);
             return;
         }
 
@@ -150,8 +150,8 @@ export default function PricingCards({ plans, userId, userEmail }: PricingCardsP
                 <Card
                     key={plan.id}
                     className={`flex flex-col ${plan.highlighted
-                            ? 'border-primary shadow-lg shadow-primary/20 relative overflow-hidden'
-                            : ''
+                        ? 'border-primary shadow-lg shadow-primary/20 relative overflow-hidden'
+                        : ''
                         }`}
                 >
                     {plan.highlighted && (

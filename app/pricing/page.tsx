@@ -198,7 +198,7 @@ const translations: Translations = {
   }
 };
 
-// Uppdatera plans med Stripe priceIds
+// Updating plans with correct pricing
 const plans: Plan[] = [
   {
     name: "Free",
@@ -227,12 +227,12 @@ const plans: Plan[] = [
     price: {
       en: {
         monthly: 19,
-        yearly: 180,
+        yearly: 190,
         currency: "$"
       },
       sv: {
         monthly: 19,
-        yearly: 180,
+        yearly: 190,
         currency: "$"
       }
     },
@@ -248,20 +248,20 @@ const plans: Plan[] = [
   },
   {
     name: "Business",
-    description: "For businesses needing advanced features.",
+    description: "For businesses looking to scale their social media strategy.",
     price: {
       en: {
         monthly: 49,
-        yearly: 470,
+        yearly: 490,
         currency: "$"
       },
       sv: {
         monthly: 49,
-        yearly: 470,
+        yearly: 490,
         currency: "$"
       }
     },
-    features: ["20 connected social accounts", "Unlimited scheduled posts", "Advanced analytics", "Competitor analysis", "AI content generation", "Custom branding", "Team collaboration", "API access", "24/7 priority support"],
+    features: ["Unlimited social accounts", "Advanced analytics", "Custom branding", "API access", "Team collaboration", "Dedicated account manager", "Phone & priority support"],
     excludes: [],
     cta: "getStartedButton",
     popular: false,

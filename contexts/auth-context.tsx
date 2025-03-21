@@ -25,28 +25,13 @@ export const useAuth = (): AuthContextType => {
   const { data: session, status } = useSession();
   const isLoading = status === 'loading';
 
-  // Check for offline mode
-  const isOfflineMode = typeof window !== 'undefined' && localStorage.getItem('offlineMode') === 'true';
-
-  // Create a mock user for offline mode
-  const offlineUser: User | null = isOfflineMode ? {
-    id: 'offline-user',
-    name: 'Offline User',
-    email: 'offline@example.com',
-    image: null
-  } : null;
-
   const signOut = async (): Promise<void> => {
-    // Clear offline mode if enabled
-    if (isOfflineMode) {
-      localStorage.removeItem('offlineMode');
-    }
     await nextAuthSignOut({ redirect: true, callbackUrl: '/' });
   };
 
   return {
-    user: isOfflineMode ? offlineUser : (session?.user as User || null),
-    isLoading: isOfflineMode ? false : isLoading,
+    user: session?.user as User || null,
+    isLoading,
     signOut
   };
 };

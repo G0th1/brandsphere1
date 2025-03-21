@@ -131,7 +131,7 @@ export default function VerifyPage() {
           >
             {isResending ? "Sending..." : "Resend verification link"}
           </Button>
-          <Link href="/login" className="w-full">
+          <Link href="/auth/login" className="w-full">
             <Button
               variant="ghost"
               className="w-full"

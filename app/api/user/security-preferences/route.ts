@@ -6,8 +6,7 @@ import { z } from 'zod';
 
 // Define the schema for security preferences
 const securityPreferencesSchema = z.object({
-    userId: z.string(),
-    twoFactorEnabled: z.boolean().default(false),
+    userId: z.string().uuid(),
     loginNotifications: z.boolean().default(false),
     sessionTimeout: z.number().min(15).default(60),
 });
@@ -35,7 +34,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { userId, twoFactorEnabled, loginNotifications, sessionTimeout } = validationResult.data;
+        const { userId, loginNotifications, sessionTimeout } = validationResult.data;
 
         // Ensure the user is updating their own preferences
         if (session.user.id !== userId) {
@@ -56,7 +55,6 @@ export async function POST(req: NextRequest) {
             await db.securitySetting.update({
                 where: { userId },
                 data: {
-                    twoFactorEnabled,
                     loginNotifications,
                     sessionTimeout,
                 },
@@ -66,7 +64,6 @@ export async function POST(req: NextRequest) {
             await db.securitySetting.create({
                 data: {
                     userId,
-                    twoFactorEnabled,
                     loginNotifications,
                     sessionTimeout,
                 },
@@ -77,7 +74,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             message: 'Security preferences updated successfully',
             data: {
-                twoFactorEnabled,
                 loginNotifications,
                 sessionTimeout,
             },
@@ -131,7 +127,6 @@ export async function GET(req: NextRequest) {
         // If no settings found, return default values
         if (!securitySettings) {
             return NextResponse.json({
-                twoFactorEnabled: false,
                 loginNotifications: false,
                 sessionTimeout: 60,
             });
@@ -139,7 +134,6 @@ export async function GET(req: NextRequest) {
 
         // Return the security preferences
         return NextResponse.json({
-            twoFactorEnabled: securitySettings.twoFactorEnabled,
             loginNotifications: securitySettings.loginNotifications,
             sessionTimeout: securitySettings.sessionTimeout,
         });

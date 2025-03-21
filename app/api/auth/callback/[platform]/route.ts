@@ -88,7 +88,7 @@ export async function GET(
         const session = await getServerSession(authOptions);
         if (!session?.user) {
             return NextResponse.redirect(
-                `${process.env.NEXT_PUBLIC_SITE_URL}/login?callbackUrl=/dashboard/profile`
+                `${process.env.NEXT_PUBLIC_SITE_URL}/auth/login?callbackUrl=/dashboard/profile`
             );
         }
 

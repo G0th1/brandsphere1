@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { socialMediaService } from '@/services/social-media';
 
 // GET /api/social-accounts - Get all social accounts for the current user

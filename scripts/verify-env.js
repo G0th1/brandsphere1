@@ -55,4 +55,35 @@ console.log('🔄 Försöker ansluta till databasen...');
     } finally {
         await prisma.$disconnect();
     }
-})(); 
+})();
+
+// Verify environment variables before deployment
+console.log('Environment Variable Verification');
+console.log('===============================');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+
+// Check database variables
+console.log('\nDatabase Configuration:');
+const dbUrl = process.env.DATABASE_URL || 'NOT SET';
+console.log('DATABASE_URL:', dbUrl.substring(0, 30) + '...');
+
+// Check NextAuth variables
+console.log('\nNextAuth Configuration:');
+console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || 'NOT SET');
+console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'SET (hidden)' : 'NOT SET');
+
+// Summary
+console.log('\nVerification Summary:');
+const missingVars = [];
+if (!process.env.DATABASE_URL) missingVars.push('DATABASE_URL');
+if (!process.env.NEXTAUTH_URL) missingVars.push('NEXTAUTH_URL');
+if (!process.env.NEXTAUTH_SECRET) missingVars.push('NEXTAUTH_SECRET');
+
+if (missingVars.length === 0) {
+    console.log('✅ All critical environment variables are set');
+} else {
+    console.log('❌ Missing critical variables:', missingVars.join(', '));
+}
+
+// Exit with appropriate code
+process.exit(missingVars.length === 0 ? 0 : 1); 

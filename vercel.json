@@ -1,19 +1,24 @@
 {
     "version": 2,
-    "buildCommand": "next build",
-    "devCommand": "next dev",
+    "env": {
+        "NEXTAUTH_URL": "https://brandsphere1.vercel.app",
+        "NEXTAUTH_SECRET": "fd1f312b048a465d8debe3f2d7fe8bbd",
+        "DATABASE_URL": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?connect_timeout=5&sslmode=require",
+        "NEXT_PUBLIC_SITE_URL": "https://brandsphere1.vercel.app",
+        "POSTGRES_PRISMA_URL": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?connect_timeout=5&sslmode=require",
+        "POSTGRES_URL_NON_POOLING": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=30",
+        "NEXT_PUBLIC_OFFLINE_MODE": "false",
+        "NODE_ENV": "production",
+        "SKIP_DB_VALIDATION": "true",
+        "PRISMA_SKIP_DATABASE_CHECK": "true"
+    },
+    "buildCommand": "npm run build",
+    "devCommand": "npm run dev",
     "installCommand": "npm install",
     "framework": "nextjs",
     "regions": [
         "fra1"
     ],
-    "env": {
-        "NEXTAUTH_URL": "https://${VERCEL_URL}",
-        "NEXT_PUBLIC_SITE_URL": "https://${VERCEL_URL}",
-        "DATABASE_URL": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require",
-        "POSTGRES_PRISMA_URL": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3-pooler.eu-central-1.aws.neon.tech/neondb?connect_timeout=15&sslmode=require",
-        "POSTGRES_URL_NON_POOLING": "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
-    },
     "crons": [
         {
             "path": "/api/cron/cleanup-sessions",
@@ -21,6 +26,18 @@
         }
     ],
     "cleanUrls": true,
+    "redirects": [
+        {
+            "source": "/login",
+            "destination": "/auth/login",
+            "permanent": true
+        },
+        {
+            "source": "/auth/debug",
+            "destination": "/auth/login",
+            "permanent": true
+        }
+    ],
     "headers": [
         {
             "source": "/fonts/(.*)",
@@ -71,16 +88,6 @@
             ]
         }
     ],
-    "functions": {
-        "app/api/auth/**/*": {
-            "memory": 1024,
-            "maxDuration": 10
-        },
-        "app/api/**/*": {
-            "memory": 1024,
-            "maxDuration": 10
-        }
-    },
     "outputDirectory": ".next",
     "git": {
         "deploymentEnabled": {

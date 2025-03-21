@@ -54,7 +54,6 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 // Define the security preferences form schema
 const securityPreferencesSchema = z.object({
-    twoFactorEnabled: z.boolean().default(false),
     loginNotifications: z.boolean().default(true),
     sessionTimeout: z.boolean().default(false),
 });
@@ -83,7 +82,6 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
     const preferencesForm = useForm<SecurityPreferencesValues>({
         resolver: zodResolver(securityPreferencesSchema),
         defaultValues: {
-            twoFactorEnabled: false,
             loginNotifications: true,
             sessionTimeout: false,
         },
@@ -259,33 +257,6 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
                 <CardContent>
                     <Form {...preferencesForm}>
                         <form onSubmit={preferencesForm.handleSubmit(onPreferencesSubmit)} className="space-y-4">
-                            <FormField
-                                control={preferencesForm.control}
-                                name="twoFactorEnabled"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-base">Two-Factor Authentication</FormLabel>
-                                            <FormDescription>
-                                                Add an extra layer of security to your account by requiring a verification code in addition to your password.
-                                            </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                                disabled
-                                            />
-                                        </FormControl>
-                                        {field.value && (
-                                            <p className="text-xs text-muted-foreground mt-2 absolute top-4 right-14">
-                                                Coming soon
-                                            </p>
-                                        )}
-                                    </FormItem>
-                                )}
-                            />
-
                             <FormField
                                 control={preferencesForm.control}
                                 name="loginNotifications"

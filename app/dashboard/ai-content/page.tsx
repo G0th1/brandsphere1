@@ -4,6 +4,7 @@ import { HashtagGenerator } from "@/app/components/content/HashtagGenerator";
 import { PostAnalyzer } from "@/app/components/content/PostAnalyzer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsageStats } from "@/app/components/dashboard/usage-stats";
+import { BatchGenerator } from "@/app/components/content/BatchGenerator";
 
 export const metadata: Metadata = {
     title: "AI Content | BrandSphereAI",
@@ -24,6 +25,7 @@ export default function AIContentPage() {
                     <TabsTrigger value="content">Content Ideas</TabsTrigger>
                     <TabsTrigger value="hashtags">Hashtag Generator</TabsTrigger>
                     <TabsTrigger value="analysis">Post Analysis</TabsTrigger>
+                    <TabsTrigger value="batch">Batch Generator</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="content" className="space-y-4">
@@ -36,6 +38,10 @@ export default function AIContentPage() {
 
                 <TabsContent value="analysis" className="space-y-4">
                     <PostAnalyzer />
+                </TabsContent>
+
+                <TabsContent value="batch" className="space-y-4">
+                    <BatchGenerator />
                 </TabsContent>
             </Tabs>
         </div>

@@ -115,7 +115,6 @@ export const homeTranslations: Translations<{
         subtitle: string;
         getStarted: string;
         viewPricing: string;
-        tryDemo: string;
         freeTrial: string;
         noCardRequired: string;
         cancelAnytime: string;
@@ -149,11 +148,10 @@ export const homeTranslations: Translations<{
             subtitle: 'Save time and create better content with our intelligent social media platform.',
             getStarted: 'Get Started Free',
             viewPricing: 'View Pricing',
-            tryDemo: 'Try as Premium',
             freeTrial: 'Free Trial',
             noCardRequired: 'No Credit Card Required',
             cancelAnytime: 'Cancel Anytime',
-            dashboardAlt: 'BrandSphereAI Dashboard Demo',
+            dashboardAlt: 'BrandSphereAI Dashboard',
         },
         features: {
             title: 'Everything you need to succeed on social media',
@@ -204,11 +202,10 @@ export const homeTranslations: Translations<{
             subtitle: 'Spara tid och skapa bättre innehåll med vår intelligenta plattform för sociala medier.',
             getStarted: 'Kom igång gratis',
             viewPricing: 'Visa priser',
-            tryDemo: 'Testa som premium',
             freeTrial: 'Gratis provperiod',
             noCardRequired: 'Inget kreditkort krävs',
             cancelAnytime: 'Avsluta när som helst',
-            dashboardAlt: 'BrandSphereAI Kontrollpanel Demo',
+            dashboardAlt: 'BrandSphereAI Kontrollpanel',
         },
         features: {
             title: 'Allt du behöver för att lyckas på sociala medier',

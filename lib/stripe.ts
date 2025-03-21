@@ -2,61 +2,62 @@ import Stripe from "stripe";
 
 // Create a mock Stripe client if the API key is missing
 const createMockStripe = () => {
-    console.warn('Stripe API key missing - using mock Stripe client');
+  console.warn('Stripe API key missing - using mock Stripe client');
 
-    return new Proxy({}, {
-        get: (target, prop) => {
-            // Handle common method calls with mock responses
-            if (prop === 'webhooks') {
-                return {
-                    constructEvent: () => ({ type: 'mock_event', data: { object: {} } })
-                };
-            }
+  return new Proxy({}, {
+    get: (target, prop) => {
+      // Handle common method calls with mock responses
+      if (prop === 'webhooks') {
+        return {
+          constructEvent: () => ({ type: 'mock_event', data: { object: {} } })
+        };
+      }
 
-            if (prop === 'customers' || prop === 'subscriptions' || prop === 'checkout') {
-                return {
-                    create: () => Promise.resolve({ id: 'mock_id' }),
-                    retrieve: () => Promise.resolve({ id: 'mock_id', status: 'active' }),
-                    update: () => Promise.resolve({ id: 'mock_id' }),
-                    list: () => Promise.resolve({ data: [] })
-                };
-            }
+      if (prop === 'customers' || prop === 'subscriptions' || prop === 'checkout') {
+        return {
+          create: () => Promise.resolve({ id: 'mock_id' }),
+          retrieve: () => Promise.resolve({ id: 'mock_id', status: 'active' }),
+          update: () => Promise.resolve({ id: 'mock_id' }),
+          list: () => Promise.resolve({ data: [] })
+        };
+      }
 
-            // For any other property, return a function that resolves to an empty object
-            return () => Promise.resolve({});
-        }
-    });
+      // For any other property, return a function that resolves to an empty object
+      return () => Promise.resolve({});
+    }
+  });
 };
 
 // Initialize Stripe client with fallback to mock
 let stripe: any;
 
 try {
-    const apiKey = process.env.STRIPE_API_KEY || process.env.STRIPE_SECRET_KEY;
+  const apiKey = process.env.STRIPE_API_KEY || process.env.STRIPE_SECRET_KEY;
 
-    if (apiKey) {
-        // Use real Stripe client when API key is available
-        stripe = new Stripe(apiKey, {
-            apiVersion: "2023-10-16",
-            typescript: true,
-        });
-    } else {
-        // Use mock client for development/testing
-        stripe = createMockStripe();
-    }
-} catch (error) {
-    console.error('Error initializing Stripe:', error);
-    // Fallback to mock client on error
+  if (apiKey) {
+    // Use real Stripe client when API key is available
+    stripe = new Stripe(apiKey, {
+      apiVersion: "2023-10-16",
+      typescript: true,
+    });
+  } else {
+    // Use mock client for development/testing
     stripe = createMockStripe();
+  }
+} catch (error) {
+  console.error('Error initializing Stripe:', error);
+  // Fallback to mock client on error
+  stripe = createMockStripe();
 }
 
 export { stripe };
 
 // Stripe price IDs for different plans and billing cycles
 export const STRIPE_PRICES = {
-  BASIC: {
-    monthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID || 'price_basic_monthly',
-    annually: process.env.STRIPE_BASIC_ANNUAL_PRICE_ID || 'price_basic_annual',
+  // Free plan isn't needed in Stripe but we include it for complete data
+  FREE: {
+    monthly: 'free',
+    annually: 'free',
   },
   PRO: {
     monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || 'price_pro_monthly',
@@ -129,7 +130,7 @@ export async function createCustomer(email: string, name: string, userId: string
       userId,
     },
   });
-  
+
   return customer;
 }
 
@@ -138,7 +139,7 @@ export async function getCustomerByUserId(userId: string) {
     limit: 1,
     email: userId,
   });
-  
+
   return customers.data[0];
 }
 
@@ -168,7 +169,7 @@ export async function createCheckoutSession(
       billingCycle,
     },
   });
-  
+
   return session;
 }
 
@@ -181,35 +182,35 @@ export async function createBillingPortalSession(customerId: string, returnUrl: 
     customer: customerId,
     return_url: returnUrl,
   });
-  
+
   return session;
 }
 
 // Determine if a user has an active subscription
 export function hasActiveSubscription(subscription: any): boolean {
   if (!subscription) return false;
-  
+
   // Check if subscription is active
   if (subscription.status !== 'active') return false;
-  
+
   // Check if the subscription period is still valid
   const currentPeriodEnd = new Date(subscription.stripeCurrentPeriodEnd);
   const now = new Date();
-  
+
   return currentPeriodEnd > now;
 }
 
 // Get plan tier based on subscription
 export function getUserPlanTier(subscription: any): 'FREE' | 'BASIC' | 'PRO' | 'BUSINESS' {
   if (!hasActiveSubscription(subscription)) return 'FREE';
-  
+
   // Extract plan from subscription
   const plan = subscription.plan.toUpperCase();
-  
+
   // Validate that the plan exists in our defined plans
   if (['BASIC', 'PRO', 'BUSINESS'].includes(plan)) {
     return plan as 'BASIC' | 'PRO' | 'BUSINESS';
   }
-  
+
   return 'FREE';
 } 

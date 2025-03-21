@@ -7,7 +7,6 @@ import { AuthProvider } from '@/contexts/auth-context'
 
 // Application-specific providers
 import { LanguageProvider } from '@/contexts/language-context'
-import { DemoProvider } from '@/contexts/demo-context'
 import { SubscriptionProvider } from '@/contexts/subscription-context'
 
 // Error handling components
@@ -24,11 +23,9 @@ export function Providers({ children }: { children: ReactNode }) {
             <DbErrorBoundary>
                 <AuthProvider>
                     <LanguageProvider>
-                        <DemoProvider>
-                            <SubscriptionProvider>
-                                {children}
-                            </SubscriptionProvider>
-                        </DemoProvider>
+                        <SubscriptionProvider>
+                            {children}
+                        </SubscriptionProvider>
                     </LanguageProvider>
                 </AuthProvider>
             </DbErrorBoundary>

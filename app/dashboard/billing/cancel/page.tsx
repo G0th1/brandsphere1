@@ -15,7 +15,7 @@ export default async function SubscriptionCancelPage() {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-        redirect('/login?callbackUrl=/dashboard/billing/cancel');
+        redirect('/auth/login?callbackUrl=/dashboard/billing/cancel');
     }
 
     return (

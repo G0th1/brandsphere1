@@ -344,27 +344,6 @@ export default function SettingsPage() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Two-Factor Authentication</CardTitle>
-                            <CardDescription>
-                                Add an extra layer of security to your account.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="two-factor">Enable two-factor authentication</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Require a verification code when logging in
-                                    </p>
-                                </div>
-                                <Switch id="two-factor" />
-                            </div>
-                            <Button variant="outline">Set Up Two-Factor Authentication</Button>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
                             <CardTitle>Sessions</CardTitle>
                             <CardDescription>
                                 Manage your active sessions and devices.

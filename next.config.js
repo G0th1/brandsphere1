@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['lh3.googleusercontent.com', 'platform-lookaside.fbsbx.com']
+    domains: ['lh3.googleusercontent.com', 'platform-lookaside.fbsbx.com', 'images.unsplash.com', 'placekitten.com']
   },
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client']
@@ -34,14 +34,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: `
-              default-src 'self';
-              script-src 'self' 'unsafe-inline' 'unsafe-eval' plausible.io;
-              style-src 'self' 'unsafe-inline';
-              img-src 'self' blob: data: https:;
-              connect-src 'self' https://plausible.io https://*.supabase.co https://*.upstash.io https://*.googleapis.com https://*.facebook.com https://*.facebook.net;
-              frame-ancestors 'none';
-            `.replace(/\s+/g, ' ').trim()
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' plausible.io; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; connect-src 'self' https://plausible.io https://*.supabase.co https://*.upstash.io https://*.googleapis.com https://*.facebook.com https://*.facebook.net; frame-ancestors 'none';"
           },
           {
             key: 'X-Frame-Options',
@@ -82,7 +75,35 @@ const nextConfig = {
         ]
       }
     ]
-  }
+  },
+  // Legacy redirects
+  async redirects() {
+    return [
+      // App routes
+      {
+        source: '/app/:path*',
+        destination: '/dashboard/:path*',
+        permanent: false,
+      },
+      // Remove these redirects
+      // {
+      //   source: '/auth/login',
+      //   destination: '/login',
+      //   permanent: false,
+      // },
+      // {
+      //   source: '/auth/register',
+      //   destination: '/register',
+      //   permanent: false,
+      // },
+      // New routes
+      {
+        source: '/auth/debug',
+        destination: '/login',
+        permanent: true,
+      },
+    ];
+  },
 }
 
 module.exports = nextConfig 

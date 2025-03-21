@@ -3,22 +3,17 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './auth-context';
-import { useDemo } from './demo-context';
 import subscriptionService, { UserSubscription } from '@/services/subscription-service';
 
 interface SubscriptionContextType {
     subscription: UserSubscription | null;
     isLoading: boolean;
-    isDemoActive: boolean;
-    activateDemo: () => void;
-    deactivateDemo: () => void;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
-    const { user: demoUser, startDemo, exitDemo } = useDemo();
     const [subscription, setSubscription] = useState<UserSubscription | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
@@ -36,17 +31,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
                 setIsLoading(true);
                 const userSubscription = await subscriptionService.getUserSubscription();
                 setSubscription(userSubscription);
-
-                // Remove the automatic demo activation for free tier users
-                // This is causing the navigation loop issue
-                /*
-                if (userSubscription.plan === 'free' && !demoUser) {
-                    // Add a slight delay to ensure context is fully initialized
-                    setTimeout(() => {
-                        startDemo();
-                    }, 500);
-                }
-                */
             } catch (error) {
                 console.error('Error loading subscription:', error);
             } finally {
@@ -55,26 +39,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         };
 
         loadSubscription();
-    }, [user, demoUser, startDemo]);
-
-    // Activate demo mode
-    const activateDemo = () => {
-        startDemo();
-    };
-
-    // Deactivate demo mode
-    const deactivateDemo = () => {
-        exitDemo();
-    };
+    }, [user]);
 
     return (
         <SubscriptionContext.Provider
             value={{
                 subscription,
-                isLoading,
-                isDemoActive: !!demoUser,
-                activateDemo,
-                deactivateDemo
+                isLoading
             }}
         >
             {children}

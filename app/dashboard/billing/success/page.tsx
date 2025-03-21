@@ -19,7 +19,7 @@ export default async function SubscriptionSuccessPage({
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-        redirect('/login?callbackUrl=/dashboard/billing/success');
+        redirect('/auth/login?callbackUrl=/dashboard/billing/success');
     }
 
     // Verify the checkout session ID if needed

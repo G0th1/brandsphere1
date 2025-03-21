@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -34,51 +34,95 @@ export function UsageStats() {
     const [usage, setUsage] = useState<AIUsage | null>(null);
     const { toast } = useToast();
 
-    const fetchUsageData = async () => {
+    // Memoize the fetch function to avoid recreation on each render
+    const fetchUsageData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
+
         try {
-            const response = await fetch('/api/ai/usage');
+            // Add a timestamp to prevent caching issues
+            const response = await fetch(`/api/ai/usage?t=${Date.now()}`);
 
             if (!response.ok) {
-                throw new Error('Failed to fetch usage data');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to fetch usage data');
             }
 
             const data = await response.json();
             setUsage(data);
         } catch (err) {
-            setError('Could not load your usage statistics. Please try again.');
             console.error('Error fetching usage data:', err);
+            setError('Could not load your usage statistics. Please try again.');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchUsageData();
     }, []);
 
-    // Calculate percentage for progress bars
-    const getPercentage = (used: number, limit: number) => {
-        return Math.min(Math.round((used / limit) * 100), 100);
-    };
+    useEffect(() => {
+        // Use an AbortController to cancel the fetch if the component unmounts
+        const abortController = new AbortController();
 
-    // Determine color based on usage percentage
-    const getProgressColor = (percentage: number) => {
+        const fetchData = async () => {
+            try {
+                await fetchUsageData();
+            } catch (err) {
+                // This will catch any errors not caught in fetchUsageData
+                console.error('Unhandled error in fetchData:', err);
+            }
+        };
+
+        fetchData();
+
+        // Cleanup function to abort fetch if component unmounts
+        return () => {
+            abortController.abort();
+        };
+    }, [fetchUsageData]);
+
+    // Memoize these calculations to prevent recalculation on each render
+    const getPercentage = useCallback((used: number, limit: number) => {
+        return Math.min(Math.round((used / limit) * 100), 100);
+    }, []);
+
+    const getProgressColor = useCallback((percentage: number) => {
         if (percentage < 60) return 'bg-emerald-500';
         if (percentage < 85) return 'bg-amber-500';
         return 'bg-rose-500';
-    };
+    }, []);
 
-    // Format the reset date
-    const formatResetDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        }).format(date);
-    };
+    const formatResetDate = useCallback((dateString: string) => {
+        try {
+            const date = new Date(dateString);
+            return new Intl.DateTimeFormat('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            }).format(date);
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'upcoming';
+        }
+    }, []);
+
+    // Use memoization for derived values from the usage state
+    const { contentPercentage, hashtagPercentage, analysisPercentage } = useMemo(() => {
+        if (!usage) return { contentPercentage: 0, hashtagPercentage: 0, analysisPercentage: 0 };
+
+        return {
+            contentPercentage: getPercentage(
+                usage.usage.contentSuggestions.used,
+                usage.usage.contentSuggestions.limit
+            ),
+            hashtagPercentage: getPercentage(
+                usage.usage.hashtagSuggestions.used,
+                usage.usage.hashtagSuggestions.limit
+            ),
+            analysisPercentage: getPercentage(
+                usage.usage.postAnalysis.used,
+                usage.usage.postAnalysis.limit
+            )
+        };
+    }, [usage, getPercentage]);
 
     if (isLoading) {
         return (
@@ -113,7 +157,7 @@ export function UsageStats() {
                 <CardContent>
                     <p className="mb-4 text-muted-foreground">{error}</p>
                     <Button
-                        onClick={fetchUsageData}
+                        onClick={() => fetchUsageData()}
                         size="sm"
                         variant="outline"
                         className="flex items-center"
@@ -127,21 +171,6 @@ export function UsageStats() {
     }
 
     if (!usage) return null;
-
-    const contentPercentage = getPercentage(
-        usage.usage.contentSuggestions.used,
-        usage.usage.contentSuggestions.limit
-    );
-
-    const hashtagPercentage = getPercentage(
-        usage.usage.hashtagSuggestions.used,
-        usage.usage.hashtagSuggestions.limit
-    );
-
-    const analysisPercentage = getPercentage(
-        usage.usage.postAnalysis.used,
-        usage.usage.postAnalysis.limit
-    );
 
     return (
         <Card className="w-full">

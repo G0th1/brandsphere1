@@ -58,7 +58,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.5,
     },
     {
-      url: `${baseUrl}/login`,
+      url: `${baseUrl}/auth/login`,
       lastModified: new Date(),
       changeFrequency: 'yearly' as const,
       priority: 0.3,

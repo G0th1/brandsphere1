@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "buildCommand": "",
+    "outputDirectory": ".",
+    "framework": null,
+    "routes": [
+        {
+            "src": "/(.*)",
+            "status": 301,
+            "headers": {
+                "Location": "https://brandsphere1-l2vygfr5k-g0th1s-projects.vercel.app/$1"
+            }
+        }
+    ]
+}

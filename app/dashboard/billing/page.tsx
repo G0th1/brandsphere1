@@ -138,7 +138,7 @@ export default async function BillingPage() {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-        redirect('/login?callbackUrl=/dashboard/billing');
+        redirect('/auth/login?callbackUrl=/dashboard/billing');
     }
 
     // Get user subscription
