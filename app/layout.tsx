@@ -5,13 +5,25 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Analytics } from '@/components/analytics';
 import Script from 'next/script';
 import { Providers } from './providers';
+import { Inter } from 'next/font/google';
+import { siteConfig } from '@/lib/site-config';
+
+// Import startup checks - this runs server-side only
+import { registerStartupChecks } from '@/lib/startup';
+
+// Register startup checks in server context
+if (typeof window === 'undefined') {
+  registerStartupChecks();
+}
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | BrandSphereAI',
-    default: 'BrandSphereAI - AI-Powered Social Media Management',
+    default: siteConfig.name,
+    template: `%s | ${siteConfig.name}`,
   },
-  description: 'Revolutionize your social media strategy with AI-powered content generation, scheduling, and analytics.',
+  description: siteConfig.description,
   keywords: [
     'social media management',
     'ai content generator',
@@ -22,6 +34,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'BrandSphereAI Team' }],
   creator: 'BrandSphereAI',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://brandsphere.ai'),
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({
@@ -37,7 +54,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans antialiased">
+      <body className={inter.className}>
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <main className="min-h-screen flex flex-col">

@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { prisma, withErrorHandling } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { checkDatabaseHealth } from '@/lib/prisma';
 import { safeJsonResponse, errorResponse } from "@/lib/api-utils";
 
 /**
@@ -8,34 +8,32 @@ import { safeJsonResponse, errorResponse } from "@/lib/api-utils";
  * This endpoint performs a basic database query to verify connectivity
  * Used by the client to determine if there are database connection issues
  */
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
     try {
-        const startTime = Date.now();
+        const health = await checkDatabaseHealth();
 
-        // Run a simple query to check connection
-        await withErrorHandling(async () => {
-            const result = await prisma.$queryRaw`SELECT 1 as connected`;
-            return result;
-        });
+        if (!health.ok) {
+            return NextResponse.json({
+                status: 'error',
+                message: health.error || 'Database connection failed',
+                timestamp: new Date().toISOString()
+            }, { status: 503 });
+        }
 
-        const endTime = Date.now();
-        const responseTime = endTime - startTime;
-
-        // Return success response with timing information
-        return safeJsonResponse({
-            status: "ok",
-            message: "Database connection successful",
-            timestamp: new Date().toISOString(),
-            responseTime: `${responseTime}ms`,
+        return NextResponse.json({
+            status: 'ok',
+            responseTime: health.responseTime,
+            message: 'Database connection successful',
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error("Database health check failed:", error);
+        console.error('Database health check error:', error);
 
-        // Return detailed error information
-        return errorResponse({
-            name: "DatabaseError",
-            message: "Database connection failed: " + (error instanceof Error ? error.message : "Unknown error")
-        } as Error, 503); // Service Unavailable
+        return NextResponse.json({
+            status: 'error',
+            message: error instanceof Error ? error.message : 'Unknown database error',
+            timestamp: new Date().toISOString()
+        }, { status: 500 });
     }
 }
 
