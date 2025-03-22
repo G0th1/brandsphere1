@@ -15,10 +15,56 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isDebugMode, setIsDebugMode] = useState(false);
+    const [debugResult, setDebugResult] = useState(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
     const [errorMessage, setErrorMessage] = useState('');
+
+    // Add debug login function
+    const handleDebugLogin = async () => {
+        if (!email || !password) {
+            setErrorMessage('Please enter both email and password for diagnosis');
+            return;
+        }
+
+        setIsLoading(true);
+        setErrorMessage('');
+        setDebugResult(null);
+
+        try {
+            const response = await fetch('/api/auth/debug-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                setDebugResult(data.results);
+
+                // If password was reset successfully, show message
+                if (data.results.passwordReset?.success) {
+                    toast({
+                        title: "Password Reset",
+                        description: "Your password has been updated. Please try logging in again.",
+                        variant: "default",
+                    });
+                }
+            } else {
+                setErrorMessage(data.message || 'Error running diagnostics');
+            }
+        } catch (error) {
+            console.error('Debug login error:', error);
+            setErrorMessage('Error running login diagnostics');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,20 +82,20 @@ export default function LoginPage() {
                     // Add timeout to prevent hanging on network issues
                     signal: AbortSignal.timeout(5000) // 5 second timeout
                 });
-                
+
                 dbIsAvailable = dbCheckResponse.ok;
-                
+
                 if (!dbIsAvailable) {
                     const errorText = await dbCheckResponse.text();
                     console.error('Database connection error:', errorText);
-                    
+
                     setErrorMessage('Database connection error. Please try again in a few moments.');
                     toast({
                         title: "Database Error",
                         description: "We're having trouble connecting to our database. Please try again later.",
                         variant: "destructive",
                     });
-                    
+
                     setIsLoading(false);
                     return;
                 }
@@ -62,16 +108,16 @@ export default function LoginPage() {
             // Try NextAuth signIn with enhanced error handling and timeout
             const signInController = new AbortController();
             const signInTimeout = setTimeout(() => signInController.abort(), 10000); // 10 seconds timeout
-            
+
             try {
                 const result = await signIn('credentials', {
                     redirect: false,
                     email,
                     password,
                 });
-                
+
                 clearTimeout(signInTimeout);
-                
+
                 if (!result?.error) {
                     toast({
                         title: "Success",
@@ -82,27 +128,27 @@ export default function LoginPage() {
                     router.refresh();
                     return;
                 }
-                
+
                 // If NextAuth fails but error is specifically about credentials,
                 // don't try fallback method
-                if (result.error.includes('credentials') || 
-                    result.error.includes('password') || 
+                if (result.error.includes('credentials') ||
+                    result.error.includes('password') ||
                     result.error.includes('email')) {
                     throw new Error(result.error);
                 }
-                
+
                 // Log the specific error for debugging
                 console.warn('NextAuth login failed, trying fallback:', result.error);
             } catch (signInError) {
                 clearTimeout(signInTimeout);
-                
+
                 // If it's an abort error, the request timed out
                 if (signInError.name === 'AbortError') {
                     console.error('Sign-in request timed out');
                 } else {
                     console.error('Sign-in error:', signInError);
                 }
-                
+
                 // Continue to fallback method
             }
 
@@ -110,7 +156,7 @@ export default function LoginPage() {
             try {
                 const tokenController = new AbortController();
                 const tokenTimeout = setTimeout(() => tokenController.abort(), 8000); // 8 seconds timeout
-                
+
                 const tokenResponse = await fetch('/api/auth/token-login', {
                     method: 'POST',
                     headers: {
@@ -119,12 +165,12 @@ export default function LoginPage() {
                     body: JSON.stringify({ email, password }),
                     signal: tokenController.signal
                 });
-                
+
                 clearTimeout(tokenTimeout);
-                
+
                 if (tokenResponse.ok) {
                     const tokenData = await tokenResponse.json();
-                    
+
                     if (tokenData.status === 'success') {
                         toast({
                             title: "Success",
@@ -136,7 +182,7 @@ export default function LoginPage() {
                         return;
                     }
                 }
-                
+
                 // If both methods fail with specific credential errors, show invalid credentials message
                 setErrorMessage('Login failed. Please check your credentials and try again.');
                 toast({
@@ -147,7 +193,7 @@ export default function LoginPage() {
             } catch (tokenError) {
                 // Handle token login errors
                 console.error('Token login error:', tokenError);
-                
+
                 // If it's an abort error, the request timed out
                 if (tokenError.name === 'AbortError') {
                     setErrorMessage('Login request timed out. Please try again later.');
@@ -216,6 +262,27 @@ export default function LoginPage() {
                         </div>
                     )}
 
+                    {debugResult && (
+                        <div className="mb-4 p-3 bg-blue-900/20 border border-blue-800 rounded-md text-blue-100 text-sm">
+                            <h3 className="font-bold mb-2">Login Diagnosis</h3>
+                            <ul className="space-y-1">
+                                <li>User found: {debugResult.userLookup.success ? '✅' : '❌'}</li>
+                                <li>Password verification: {debugResult.passwordVerification.success ? '✅' : '❌'}</li>
+                                <li>Password reset: {debugResult.passwordReset.success ? '✅' : '❌'}</li>
+                            </ul>
+                            {debugResult.recommendations.length > 0 && (
+                                <div className="mt-2">
+                                    <h4 className="font-semibold">Recommendations:</h4>
+                                    <ul className="list-disc pl-4 mt-1 space-y-1">
+                                        {debugResult.recommendations.map((rec, i) => (
+                                            <li key={i}>{rec}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-zinc-200">
@@ -258,8 +325,8 @@ export default function LoginPage() {
 
                         <Button
                             type="submit"
+                            className="w-full bg-primary hover:bg-primary/90"
                             disabled={isLoading}
-                            className="w-full"
                         >
                             {isLoading ? (
                                 <>
@@ -267,14 +334,41 @@ export default function LoginPage() {
                                     Signing in...
                                 </>
                             ) : (
-                                "Sign in"
+                                'Sign in'
                             )}
                         </Button>
+
+                        {isDebugMode && (
+                            <Button
+                                type="button"
+                                onClick={handleDebugLogin}
+                                className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Diagnosing...
+                                    </>
+                                ) : (
+                                    'Diagnose Login Issue'
+                                )}
+                            </Button>
+                        )}
                     </form>
 
-                    <div className="mt-6 text-center text-sm">
-                        <p className="text-zinc-400">
-                            Don't have an account?{" "}
+                    <div className="mt-4 text-center">
+                        <button
+                            onClick={() => setIsDebugMode(!isDebugMode)}
+                            className="text-xs text-zinc-500 hover:text-zinc-300"
+                        >
+                            {isDebugMode ? 'Hide Debug Mode' : 'Enable Debug Mode'}
+                        </button>
+                    </div>
+
+                    <div className="mt-6 text-center">
+                        <p className="text-zinc-400 text-sm">
+                            Don&apos;t have an account?{' '}
                             <Link href="/auth/register" className="text-primary hover:text-primary/80 font-medium">
                                 Sign up
                             </Link>
