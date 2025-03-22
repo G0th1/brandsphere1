@@ -125,8 +125,16 @@ export default function LoginPage() {
                         description: "Login successful!",
                         variant: "default",
                     });
-                    router.push(callbackUrl);
-                    router.refresh();
+
+                    // Use a more direct navigation method
+                    console.log("Login successful, redirecting to:", callbackUrl);
+
+                    // Short delay to ensure cookie is set
+                    setTimeout(() => {
+                        // Use window.location for a full page navigation that ensures cookies are properly used
+                        window.location.href = callbackUrl;
+                    }, 500);
+
                     return;
                 }
 
@@ -178,8 +186,13 @@ export default function LoginPage() {
                             description: "Login successful!",
                             variant: "default",
                         });
-                        router.push(callbackUrl);
-                        router.refresh();
+
+                        // Use direct navigation for fallback method too
+                        console.log("Token login successful, redirecting to:", callbackUrl);
+                        setTimeout(() => {
+                            window.location.href = callbackUrl;
+                        }, 500);
+
                         return;
                     }
                 }

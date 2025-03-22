@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -12,7 +11,6 @@ interface ButtonEmergencyLoginProps {
 
 export function ButtonEmergencyLogin({ email }: ButtonEmergencyLoginProps) {
     const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
 
     const handleEmergencyLogin = async () => {
         if (!email) {
@@ -45,10 +43,11 @@ export function ButtonEmergencyLogin({ email }: ButtonEmergencyLoginProps) {
                     duration: 10000, // Show for 10 seconds
                 });
 
-                // Wait a moment for the toast to be read
+                // Wait a moment for the toast to be read, then use direct navigation
+                console.log("Emergency login successful, redirecting to dashboard");
                 setTimeout(() => {
-                    router.push('/dashboard');
-                    router.refresh();
+                    // Use window.location for a full page navigation that ensures cookies are properly used
+                    window.location.href = '/dashboard';
                 }, 1500);
             } else {
                 toast({
