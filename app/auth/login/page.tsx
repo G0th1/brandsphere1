@@ -374,6 +374,15 @@ export default function LoginPage() {
                             </Link>
                         </p>
                     </div>
+
+                    <div className="mt-4 pt-4 border-t border-zinc-700/30 text-center">
+                        <p className="text-zinc-500 text-xs">
+                            Trouble signing in?{' '}
+                            <Link href="/auth/emergency" className="text-amber-500 hover:text-amber-400 font-medium">
+                                Emergency Access
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
