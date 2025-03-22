@@ -41,12 +41,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Update local state based on NextAuth session
     useEffect(() => {
+        console.log('AuthProvider - Session state changed:', {
+            status,
+            hasSession: !!session,
+            sessionData: session ? JSON.stringify(session).substring(0, 200) + '...' : 'No session'
+        });
+
         if (status === 'loading') {
+            console.log('AuthProvider - Session is loading');
             setIsLoading(true);
             return;
         }
 
         if (session && session.user) {
+            console.log('AuthProvider - Session loaded successfully, user:', {
+                id: session.user.id,
+                email: session.user.email,
+                role: (session.user as any).role
+            });
+
             setUser({
                 id: session.user.id as string || '',
                 email: session.user.email || '',
@@ -54,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
             setIsLoading(false);
         } else {
+            console.log('AuthProvider - No session found or invalid session');
             setUser(null);
             setIsLoading(false);
         }
@@ -62,12 +76,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Login function
     const login = async (email: string, password: string) => {
         try {
+            console.log('AuthProvider - Login attempt for:', email);
             setIsLoading(true);
 
             const result = await signIn('credentials', {
                 redirect: false,
                 email,
                 password,
+            });
+
+            console.log('AuthProvider - Login result:', {
+                success: !result?.error,
+                error: result?.error || 'No error',
+                url: result?.url
             });
 
             if (!result?.error) {
@@ -91,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Logout function
     const logout = () => {
+        console.log('AuthProvider - Logging out');
         signOut({ redirect: true, callbackUrl: '/auth/login' });
     };
 
@@ -102,6 +124,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
     };
+
+    console.log('AuthProvider - Current auth state:', {
+        isAuthenticated: !!user,
+        isLoading,
+        hasUser: !!user
+    });
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 } 

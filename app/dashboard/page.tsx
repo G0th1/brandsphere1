@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from 'react';
+import { useAuth } from '../components/AuthClient';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -235,152 +239,54 @@ const UpcomingSchedule = () => (
  * Displays overview stats, upcoming posts, and recent analytics
  */
 export default function DashboardPage() {
-  return (
-    <div className="flex-1 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight text-white">Dashboard</h2>
+  const { user, isLoading } = useAuth();
+  const [pageLoaded, setPageLoaded] = useState(false);
+
+  useEffect(() => {
+    console.log("Dashboard page mounted, auth state:", {
+      user,
+      isLoading
+    });
+    setPageLoaded(true);
+  }, [user, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+        <div className="bg-zinc-800 rounded-lg p-6">
+          <p>Loading dashboard data...</p>
+        </div>
       </div>
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="bg-zinc-800 text-zinc-400">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-zinc-700 data-[state=active]:text-white">Overview</TabsTrigger>
-          <TabsTrigger value="analytics" className="data-[state=active]:bg-zinc-700 data-[state=active]:text-white">Analytics</TabsTrigger>
-          <TabsTrigger value="activity" className="data-[state=active]:bg-zinc-700 data-[state=active]:text-white">Recent Activity</TabsTrigger>
-        </TabsList>
+    );
+  }
 
-        <TabsContent value="overview" className="space-y-4">
-          <Suspense fallback={<div className="h-28 w-full animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg"></div>}>
-            <DashboardStats />
-          </Suspense>
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Suspense fallback={<div className="md:col-span-2 h-64 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg"></div>}>
-              <QuickActions />
-            </Suspense>
+      <div className="bg-zinc-800 rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-2">Welcome, {user?.email || 'User'}</h2>
+        <p className="text-zinc-400 mb-4">Account Status: {user ? 'Active' : 'Not authenticated'}</p>
 
-            <Suspense fallback={<div className="h-[300px] rounded-lg border bg-card text-card-foreground shadow-sm flex items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            </div>}>
-              <UsageStats />
-            </Suspense>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="bg-zinc-700 p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Dashboard Debug Info</h3>
+            <ul className="text-sm text-zinc-300 space-y-1">
+              <li>User ID: {user?.id || 'Not available'}</li>
+              <li>Email: {user?.email || 'Not available'}</li>
+              <li>Role: {user?.role || 'Not available'}</li>
+              <li>Page loaded: {pageLoaded ? 'Yes' : 'No'}</li>
+              <li>Auth loading: {isLoading ? 'Yes' : 'No'}</li>
+            </ul>
           </div>
 
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-            <Suspense fallback={<div className="h-64 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg"></div>}>
-              <UpcomingSchedule />
-            </Suspense>
-
-            {/* Recent Notifications Card */}
-            <Suspense fallback={<div className="h-64 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg"></div>}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Notifications</CardTitle>
-                  <CardDescription>
-                    Stay updated on your activity
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <BellRing className="h-5 w-5 text-primary" />
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">New comment on your post</p>
-                        <p className="text-xs text-muted-foreground">35 minutes ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <CalendarIcon className="h-5 w-5 text-primary" />
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">Post published successfully</p>
-                        <p className="text-xs text-muted-foreground">2 hours ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <Users className="h-5 w-5 text-primary" />
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">10 new followers this week</p>
-                        <p className="text-xs text-muted-foreground">1 day ago</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Suspense>
+          <div className="bg-zinc-700 p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Quick Stats</h3>
+            <p className="text-zinc-300">This is a simplified dashboard view for testing authentication flow.</p>
           </div>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <Suspense fallback={<div className="h-96 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg"></div>}>
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle>Analytics Dashboard</CardTitle>
-                <CardDescription>
-                  Your social media performance metrics
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="h-96 flex items-center justify-center">
-                <p className="text-center text-muted-foreground">
-                  Select a date range to view detailed analytics
-                </p>
-              </CardContent>
-            </Card>
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="activity" className="space-y-4">
-          <Suspense fallback={<div className="h-96 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg"></div>}>
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>
-                  Your recent actions and updates
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-8">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
-                      <Calendar className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">Post scheduled</p>
-                      <p className="text-xs text-muted-foreground">
-                        You scheduled a new post for Instagram on March 17, 2023
-                      </p>
-                      <p className="text-xs text-muted-foreground">Today at 2:15 PM</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
-                      <BarChart2 className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">Analytics viewed</p>
-                      <p className="text-xs text-muted-foreground">
-                        You viewed your Instagram analytics
-                      </p>
-                      <p className="text-xs text-muted-foreground">Yesterday at 11:30 AM</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
-                      <Sparkles className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">AI content generated</p>
-                      <p className="text-xs text-muted-foreground">
-                        You generated 5 content ideas using AI
-                      </p>
-                      <p className="text-xs text-muted-foreground">March 15, 2023 at 4:20 PM</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 } 
