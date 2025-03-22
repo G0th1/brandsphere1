@@ -1,12 +1,19 @@
 import { PrismaClient } from '@prisma/client';
 
-// PrismaClient is attached to the `global` object in development to prevent
-// exhausting database connections during hot reloading
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+// Use the global types defined in types/process.d.ts
+// This removes the need for the globalForPrisma workaround
 
-// Create Prisma client with additional configuration and error handling
-function createPrismaClient() {
+/**
+ * Create Prisma client with additional configuration and error handling
+ */
+function createPrismaClient(): PrismaClient {
     try {
+        // Validate engine type setting
+        const engineType = process.env.PRISMA_CLIENT_ENGINE_TYPE || 'binary';
+        if (engineType !== 'binary' && engineType !== 'library') {
+            console.warn(`Invalid PRISMA_CLIENT_ENGINE_TYPE "${engineType}", defaulting to "binary"`);
+        }
+
         return new PrismaClient({
             log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
             // Improved connection settings
@@ -29,12 +36,12 @@ function createPrismaClient() {
     }
 }
 
-// Use the global prisma instance if available (development) or create a new one
-export const prisma = globalForPrisma.prisma || createPrismaClient();
+// Use the global prisma instance or create a new one
+export const prisma = global.prisma || createPrismaClient();
 
 // Add prisma to the global object in development
-if (process.env.NODE_ENV === 'development') {
-    globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') {
+    global.prisma = prisma;
 }
 
 /**
