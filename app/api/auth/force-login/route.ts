@@ -3,12 +3,14 @@ import { cookies } from "next/headers";
 import { SignJWT } from "jose";
 import { hash } from "bcrypt";
 import { prisma } from "@/lib/prisma";
-import { safeJsonResponse } from "@/lib/api-utils";
+import { v4 as uuidv4 } from 'uuid';
 
-// Secret used to sign the token
-const SECRET_KEY = new TextEncoder().encode(
-    process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
-);
+// Secret key for JWT signing
+const getJwtSecretKey = () => {
+    const secret = process.env.NEXTAUTH_SECRET || "DEVELOPMENT_SECRET_KEY";
+    const encoder = new TextEncoder();
+    return encoder.encode(secret);
+};
 
 /**
  * Force Login API
@@ -16,114 +18,113 @@ const SECRET_KEY = new TextEncoder().encode(
  * An emergency login endpoint that bypasses NextAuth completely.
  * It directly creates a session token and sets cookies.
  */
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
     try {
-        // Extract login details
-        const body = await req.json();
-        const { email } = body;
+        const { email } = await request.json();
 
         if (!email) {
-            return safeJsonResponse(
-                {
-                    status: "error",
-                    message: "Email is required"
-                },
+            return NextResponse.json(
+                { success: false, error: "Email is required" },
                 { status: 400 }
             );
         }
 
-        console.log(`🔑 Force Login: Attempting direct login for ${email}`);
+        console.log(`Force login requested for email: ${email}`);
 
-        // Find user by email
+        // Find the user by email
         const user = await prisma.user.findUnique({
             where: { email },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                role: true
-            }
         });
 
         if (!user) {
-            return safeJsonResponse(
-                {
-                    status: "error",
-                    message: "User not found"
-                },
+            return NextResponse.json(
+                { success: false, error: "User not found" },
                 { status: 404 }
             );
         }
 
-        // Reset user's password to a known value for emergency access
-        const fixedPassword = "BrandSphere!123";
-        const hashedPassword = await hash(fixedPassword, 10);
+        // Generate a simple password for emergency access
+        const tempPassword = "BrandSphere!123";
+
+        // Update the user's password
+        const hashedPassword = await hash(tempPassword, 10);
 
         await prisma.user.update({
             where: { id: user.id },
-            data: { password_hash: hashedPassword }
+            data: {
+                password: hashedPassword,
+            },
         });
 
-        // Create a session token for the user
+        // Generate a JWT token for the user (signed with the same secret as NextAuth)
         const token = await new SignJWT({
             sub: user.id,
             email: user.email,
             name: user.name || "",
-            role: user.role || "user"
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 1 day
+            jti: uuidv4(),
         })
             .setProtectedHeader({ alg: "HS256" })
-            .setIssuedAt()
-            .setExpirationTime("24h") // 24 hour expiration
-            .sign(SECRET_KEY);
+            .sign(await getJwtSecretKey());
 
-        // Set all cookie variants to ensure compatibility
+        // Set multiple cookies for maximum compatibility
         const cookieStore = cookies();
 
-        // Set the session token as a cookie - using both names for compatibility
-        cookieStore.set("next-auth.session-token", token, {
+        // Set NextAuth session token
+        cookieStore.set('next-auth.session-token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 60 * 60 * 24, // 24 hours
-            path: "/"
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24, // 1 day
+            path: '/',
+            sameSite: 'lax'
         });
 
-        cookieStore.set("__Secure-next-auth.session-token", token, {
+        // Set direct auth token
+        cookieStore.set('direct-auth-token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 60 * 60 * 24, // 24 hours
-            path: "/"
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24, // 1 day
+            path: '/',
+            sameSite: 'lax'
         });
 
-        // Also set our direct auth token for middleware
-        cookieStore.set("direct-auth-token", token, {
+        // Set a callback cookie to simulate NextAuth behavior
+        cookieStore.set('next-auth.callback-url', '/dashboard', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 60 * 60 * 24, // 24 hours
-            path: "/"
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24, // 1 day
+            path: '/',
+            sameSite: 'lax'
         });
 
-        console.log(`✅ Emergency access granted for ${email}`);
+        // Also set a CSRF token cookie
+        cookieStore.set('next-auth.csrf-token', uuidv4(), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24, // 1 day
+            path: '/',
+            sameSite: 'lax'
+        });
 
-        // Return success response with redirect
-        return safeJsonResponse({
-            status: "success",
+        console.log(`Emergency access granted for: ${email}`);
+
+        return NextResponse.json({
+            success: true,
             message: "Emergency access granted",
             user: {
                 id: user.id,
                 email: user.email,
-                role: user.role
+                name: user.name
             },
-            resetPassword: fixedPassword,
-            redirectTo: "/dashboard"
+            token: token,
+            tempPassword: tempPassword,
+            expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() // 1 day
         });
     } catch (error) {
         console.error("Force login error:", error);
-
-        return safeJsonResponse(
-            {
-                status: "error",
-                message: "Error during emergency login"
-            },
+        return NextResponse.json(
+            { success: false, error: "Failed to grant emergency access" },
             { status: 500 }
         );
     }

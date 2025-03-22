@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
-import { toast } from '@/components/ui/use-toast';
+import { signIn } from "next-auth/react";
+import { toast } from 'sonner';
+import Cookies from 'js-cookie';
+import { useAuth } from "@/app/components/AuthClient";
+import ButtonEmergencyLogin from "@/app/components/ButtonEmergencyLogin";
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,242 +15,170 @@ import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { createRoot } from 'react-dom/client';
 
+const timeoutPromise = (ms: number) => {
+    return new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out')), ms)
+    );
+};
+
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isDebugMode, setIsDebugMode] = useState(false);
     const [debugResult, setDebugResult] = useState(null);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
-    const [errorMessage, setErrorMessage] = useState('');
+    const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+    const [loginError, setLoginError] = useState("");
+    const { loginSuccess } = useAuth();
+    const [authDebug, setAuthDebug] = useState<any>(null);
 
-    // Add debug login function
-    const handleDebugLogin = async () => {
-        if (!email || !password) {
-            setErrorMessage('Please enter both email and password for diagnosis');
-            return;
-        }
+    // Check for cookie presence
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            // Check for auth cookie presence
+            const hasSession = document.cookie.includes('next-auth.session-token');
 
-        setIsLoading(true);
-        setErrorMessage('');
-        setDebugResult(null);
-
-        try {
-            const response = await fetch('/api/auth/debug-login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
+            setAuthDebug({
+                hasSession,
+                cookies: document.cookie,
+                callbackUrl
             });
 
-            const data = await response.json();
-
-            if (data.status === 'success') {
-                setDebugResult(data.results);
-
-                // If password was reset successfully, show message
-                if (data.results.passwordReset?.success) {
-                    toast({
-                        title: "Password Reset",
-                        description: "Your password has been updated. Please try logging in again.",
-                        variant: "default",
-                    });
-                }
-            } else {
-                setErrorMessage(data.message || 'Error running diagnostics');
+            // If user already has session, redirect to dashboard
+            if (hasSession) {
+                console.log("Session token found, redirecting to dashboard...");
+                window.location.href = callbackUrl;
             }
-        } catch (error) {
-            console.error('Debug login error:', error);
-            setErrorMessage('Error running login diagnostics');
+        }
+    }, [callbackUrl]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setLoginError("");
+
+        try {
+            console.log("Attempting to log in with email:", email);
+
+            // First check if database is reachable
+            let dbHealthCheck;
+            try {
+                // Set a timeout of 5 seconds for DB health check
+                dbHealthCheck = await Promise.race([
+                    fetch('/api/health'),
+                    timeoutPromise(5000)
+                ]);
+            } catch (error) {
+                console.error("Database health check timed out:", error);
+                throw new Error("Database connectivity issue. Please try again or use emergency access.");
+            }
+
+            if (!dbHealthCheck?.ok) {
+                console.error("DB health check failed:", await dbHealthCheck?.text());
+                throw new Error("Database connectivity issue. Please try again or use emergency access.");
+            }
+
+            console.log("Database health check passed, attempting sign in");
+
+            // Set a timeout of a 8 seconds for sign-in
+            const signInResult = await Promise.race([
+                signIn("credentials", {
+                    redirect: false,
+                    email,
+                    password,
+                }),
+                timeoutPromise(8000)
+            ]);
+
+            console.log("Sign in result:", signInResult);
+
+            if (!signInResult?.ok) {
+                // First login attempt failed
+                console.log("First login attempt failed, trying token-based login");
+
+                // Try token-based login as fallback
+                const tokenLoginResponse = await fetch("/api/auth/debug-login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                    }),
+                });
+
+                const tokenLoginData = await tokenLoginResponse.json();
+                console.log("Token login response:", tokenLoginData);
+
+                if (!tokenLoginResponse.ok) {
+                    throw new Error(tokenLoginData.error || "Invalid login credentials");
+                }
+
+                // Set direct auth cookie manually
+                Cookies.set('direct-auth-token', tokenLoginData.token, {
+                    expires: 1, // 1 day
+                    path: '/'
+                });
+
+                // Set a backup cookie in HttpOnly mode via call to API
+                await fetch("/api/auth/set-cookie", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        token: tokenLoginData.token,
+                    }),
+                });
+
+                toast.success("Login successful with token-based auth");
+                loginSuccess(tokenLoginData.user);
+
+                // Force a hard navigation to ensure cookies are applied
+                console.log("Login successful! Redirecting to:", callbackUrl);
+
+                // Set a small delay to ensure cookies are set before navigation
+                setTimeout(() => {
+                    // Use window.location for a full page navigation
+                    window.location.href = callbackUrl;
+                }, 500);
+
+                return;
+            }
+
+            // First login attempt succeeded
+            toast.success("Login successful!");
+
+            // Call our auth context's login success method
+            loginSuccess({
+                email,
+                id: "", // Will be filled by session
+                name: "",
+            });
+
+            // Force a hard navigation
+            console.log("Login successful! Redirecting to:", callbackUrl);
+
+            // Set a small delay to ensure cookies are set before navigation
+            setTimeout(() => {
+                // Use window.location for a full page navigation
+                window.location.href = callbackUrl;
+            }, 500);
+
+        } catch (error: any) {
+            console.error("Login error:", error);
+            toast.error(error.message || "An unexpected error occurred");
+            setLoginError(error.message || "An unexpected error occurred");
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setErrorMessage('');
-
-        try {
-            // Check database connection first with enhanced error handling
-            let dbIsAvailable = false;
-            try {
-                const dbCheckResponse = await fetch('/api/db-health-check', {
-                    method: 'GET',
-                    cache: 'no-store',
-                    headers: { 'Cache-Control': 'no-cache' },
-                    // Add timeout to prevent hanging on network issues
-                    signal: AbortSignal.timeout(5000) // 5 second timeout
-                });
-
-                dbIsAvailable = dbCheckResponse.ok;
-
-                if (!dbIsAvailable) {
-                    const errorText = await dbCheckResponse.text();
-                    console.error('Database connection error:', errorText);
-
-                    setErrorMessage('Database connection error. Please try again in a few moments.');
-                    toast({
-                        title: "Database Error",
-                        description: "We're having trouble connecting to our database. Please try again later.",
-                        variant: "destructive",
-                    });
-
-                    setIsLoading(false);
-                    return;
-                }
-            } catch (dbError) {
-                console.error('Database health check failed:', dbError);
-                // Continue with login attempt even if db check fails
-                // The actual authentication might still work
-            }
-
-            // Try NextAuth signIn with enhanced error handling and timeout
-            const signInController = new AbortController();
-            const signInTimeout = setTimeout(() => signInController.abort(), 10000); // 10 seconds timeout
-
-            try {
-                const result = await signIn('credentials', {
-                    redirect: false,
-                    email,
-                    password,
-                });
-
-                clearTimeout(signInTimeout);
-
-                if (!result?.error) {
-                    toast({
-                        title: "Success",
-                        description: "Login successful!",
-                        variant: "default",
-                    });
-
-                    // Use a more direct navigation method
-                    console.log("Login successful, redirecting to:", callbackUrl);
-
-                    // Short delay to ensure cookie is set
-                    setTimeout(() => {
-                        // Use window.location for a full page navigation that ensures cookies are properly used
-                        window.location.href = callbackUrl;
-                    }, 500);
-
-                    return;
-                }
-
-                // If NextAuth fails but error is specifically about credentials,
-                // don't try fallback method
-                if (result.error.includes('credentials') ||
-                    result.error.includes('password') ||
-                    result.error.includes('email')) {
-                    throw new Error(result.error);
-                }
-
-                // Log the specific error for debugging
-                console.warn('NextAuth login failed, trying fallback:', result.error);
-            } catch (signInError) {
-                clearTimeout(signInTimeout);
-
-                // If it's an abort error, the request timed out
-                if (signInError.name === 'AbortError') {
-                    console.error('Sign-in request timed out');
-                } else {
-                    console.error('Sign-in error:', signInError);
-                }
-
-                // Continue to fallback method
-            }
-
-            // Fallback: Try direct token login
-            try {
-                const tokenController = new AbortController();
-                const tokenTimeout = setTimeout(() => tokenController.abort(), 8000); // 8 seconds timeout
-
-                const tokenResponse = await fetch('/api/auth/token-login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, password }),
-                    signal: tokenController.signal
-                });
-
-                clearTimeout(tokenTimeout);
-
-                if (tokenResponse.ok) {
-                    const tokenData = await tokenResponse.json();
-
-                    if (tokenData.status === 'success') {
-                        toast({
-                            title: "Success",
-                            description: "Login successful!",
-                            variant: "default",
-                        });
-
-                        // Use direct navigation for fallback method too
-                        console.log("Token login successful, redirecting to:", callbackUrl);
-                        setTimeout(() => {
-                            window.location.href = callbackUrl;
-                        }, 500);
-
-                        return;
-                    }
-                }
-
-                // If both methods fail with specific credential errors, show invalid credentials message
-                setErrorMessage('Login failed. Please check your credentials and try again.');
-                toast({
-                    title: "Error",
-                    description: "Login failed. Please check your credentials.",
-                    variant: "destructive",
-                });
-            } catch (tokenError) {
-                // Handle token login errors
-                console.error('Token login error:', tokenError);
-
-                // If it's an abort error, the request timed out
-                if (tokenError.name === 'AbortError') {
-                    setErrorMessage('Login request timed out. Please try again later.');
-                    toast({
-                        title: "Timeout",
-                        description: "Login request took too long. Please try again.",
-                        variant: "destructive",
-                    });
-                } else {
-                    throw tokenError; // Let the outer catch handle it
-                }
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-
-            // Check if error is related to database connection
-            const isDatabaseError = error instanceof Error &&
-                (error.message.includes('database') ||
-                    error.message.includes('connection') ||
-                    error.message.includes('ECONNREFUSED') ||
-                    error.message.includes('timeout'));
-
-            if (isDatabaseError) {
-                setErrorMessage('Database connection error. Please try again in a few moments.');
-                toast({
-                    title: "Database Error",
-                    description: "We're having trouble connecting to our database. Please try again later.",
-                    variant: "destructive",
-                });
-            } else {
-                setErrorMessage('An error occurred during login. Please try again later.');
-                toast({
-                    title: "Error",
-                    description: "Login service is temporarily unavailable. Please try again later.",
-                    variant: "destructive",
-                });
-            }
-        } finally {
-            setIsLoading(false);
-        }
+    const toggleDebug = () => {
+        setIsDebugMode(!isDebugMode);
     };
 
     return (
@@ -270,9 +201,15 @@ export default function LoginPage() {
                 </div>
 
                 <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-zinc-700/50">
-                    {errorMessage && (
+                    {loginError && (
                         <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-200 text-sm">
-                            {errorMessage}
+                            {loginError}
+                        </div>
+                    )}
+
+                    {authDebug && isDebugMode && (
+                        <div className="mb-4 p-3 bg-gray-700 rounded text-xs mb-4 overflow-auto max-h-28">
+                            <pre>{JSON.stringify(authDebug, null, 2)}</pre>
                         </div>
                     )}
 
@@ -312,6 +249,7 @@ export default function LoginPage() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="bg-zinc-700/50 text-zinc-200 border-zinc-600 focus:ring-primary"
                                 placeholder="Enter your email"
+                                disabled={isLoading}
                             />
                         </div>
 
@@ -334,6 +272,7 @@ export default function LoginPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="bg-zinc-700/50 text-zinc-200 border-zinc-600 focus:ring-primary"
                                 placeholder="Enter your password"
+                                disabled={isLoading}
                             />
                         </div>
 
@@ -355,7 +294,7 @@ export default function LoginPage() {
                         {isDebugMode && (
                             <Button
                                 type="button"
-                                onClick={handleDebugLogin}
+                                onClick={toggleDebug}
                                 className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
                                 disabled={isLoading}
                             >
@@ -373,7 +312,7 @@ export default function LoginPage() {
 
                     <div className="mt-4 text-center">
                         <button
-                            onClick={() => setIsDebugMode(!isDebugMode)}
+                            onClick={toggleDebug}
                             className="text-xs text-zinc-500 hover:text-zinc-300"
                         >
                             {isDebugMode ? 'Hide Debug Mode' : 'Enable Debug Mode'}
@@ -394,28 +333,7 @@ export default function LoginPage() {
                             Trouble signing in?
                         </p>
                         <div className="mt-2">
-                            <Link href="#" onClick={(e) => {
-                                e.preventDefault();
-                                // Create the emergency access modal
-                                if (email) {
-                                    import('@/app/components/ButtonEmergencyLogin').then(({ ButtonEmergencyLogin }) => {
-                                        // Use the component only when needed
-                                        const button = document.createElement('div');
-                                        button.id = 'emergency-login-container';
-                                        document.body.appendChild(button);
-                                        const root = createRoot(button);
-                                        root.render(<ButtonEmergencyLogin email={email} />);
-                                    });
-                                } else {
-                                    toast({
-                                        title: "Email Required",
-                                        description: "Please enter your email address first",
-                                        variant: "destructive",
-                                    });
-                                }
-                            }} className="text-amber-500 hover:text-amber-400 font-medium text-sm">
-                                Emergency Access
-                            </Link>
+                            <ButtonEmergencyLogin email={email} callbackUrl={callbackUrl} />
                         </div>
                     </div>
                 </div>

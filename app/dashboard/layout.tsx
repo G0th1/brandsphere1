@@ -24,15 +24,53 @@ export default function Layout({
     const [redirectAttempted, setRedirectAttempted] = useState(false);
     const [mountTime] = useState(() => Date.now());
     const [gracePeriod, setGracePeriod] = useState(true);
+    const [cookieCheck, setCookieCheck] = useState<{
+        hasNextAuthSession: boolean,
+        hasNextAuthCallback: boolean,
+        hasDirectAuth: boolean,
+        allCookies: string
+    }>({
+        hasNextAuthSession: false,
+        hasNextAuthCallback: false,
+        hasDirectAuth: false,
+        allCookies: ''
+    });
 
     // Don't redirect during initial grace period to allow session to initialize
     useEffect(() => {
-        // Give a 3-second grace period after initial page load
+        // Give a 5-second grace period after initial page load
         const timer = setTimeout(() => {
             setGracePeriod(false);
-        }, 3000);
+        }, 5000);
 
         return () => clearTimeout(timer);
+    }, []);
+
+    // Check for auth cookies
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const cookies = document.cookie;
+
+            setCookieCheck({
+                hasNextAuthSession: cookies.includes('next-auth.session-token'),
+                hasNextAuthCallback: cookies.includes('next-auth.callback-url'),
+                hasDirectAuth: cookies.includes('direct-auth-token'),
+                allCookies: cookies
+            });
+
+            // Check every second for cookies
+            const interval = setInterval(() => {
+                const currentCookies = document.cookie;
+                setCookieCheck({
+                    hasNextAuthSession: currentCookies.includes('next-auth.session-token'),
+                    hasNextAuthCallback: currentCookies.includes('next-auth.callback-url'),
+                    hasDirectAuth: currentCookies.includes('direct-auth-token'),
+                    allCookies: currentCookies
+                });
+            }, 1000);
+
+            return () => clearInterval(interval);
+        }
     }, []);
 
     // Add more detailed debugging logs
@@ -45,28 +83,30 @@ export default function Layout({
             sessionStatus,
             gracePeriod,
             redirectAttempted,
-            timeSinceMount: Date.now() - mountTime
+            timeSinceMount: Date.now() - mountTime,
+            cookieCheck
         });
 
         // Only redirect if:
         // 1. Not in grace period
         // 2. Not loading
         // 3. Not authenticated
-        // 4. Haven't already attempted redirect
-        if (!gracePeriod && !isLoading && !isAuthenticated && !redirectAttempted) {
-            console.log("Grace period ended, not authenticated, redirecting to login page");
+        // 4. No auth cookies present at all
+        // 5. Haven't already attempted redirect
+        const hasAnyCookies = cookieCheck.hasNextAuthSession || cookieCheck.hasDirectAuth;
+
+        if (!gracePeriod && !isLoading && !isAuthenticated && !hasAnyCookies && !redirectAttempted) {
+            console.log("Grace period ended, no auth detected, redirecting to login page");
             setRedirectAttempted(true);
             router.push('/auth/login');
         }
-    }, [isAuthenticated, isLoading, router, user, session, sessionStatus, redirectAttempted, gracePeriod, mountTime]);
+    }, [isAuthenticated, isLoading, router, user, session, sessionStatus, redirectAttempted, gracePeriod, mountTime, cookieCheck]);
 
-    // Check for direct session cookie or token existence regardless of auth state
+    // Determine authentication status from all possible sources
     const hasDirectSession =
         !!session?.user ||
-        (typeof window !== 'undefined' && (
-            document.cookie.includes('next-auth.session-token') ||
-            document.cookie.includes('direct-auth-token')
-        ));
+        cookieCheck.hasNextAuthSession ||
+        cookieCheck.hasDirectAuth;
 
     // Show loading state during grace period or while auth is loading
     if (gracePeriod || isLoading) {
@@ -77,6 +117,11 @@ export default function Layout({
                 <p className="ml-2 text-sm text-gray-400">
                     {gracePeriod ? "Initializing your session..." : "Loading your dashboard..."}
                 </p>
+                {cookieCheck.hasNextAuthSession && (
+                    <p className="absolute bottom-4 text-xs text-green-500">
+                        Authentication token detected ✓
+                    </p>
+                )}
             </div>
         );
     }

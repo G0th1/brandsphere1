@@ -1,87 +1,136 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { useState } from "react";
+import Cookies from 'js-cookie';
+import { toast } from "sonner";
+import { useAuth } from "./AuthClient";
 
-interface ButtonEmergencyLoginProps {
+export default function ButtonEmergencyLogin({
+    email,
+    callbackUrl = "/dashboard"
+}: {
     email: string;
-}
-
-export function ButtonEmergencyLogin({ email }: ButtonEmergencyLoginProps) {
-    const [isLoading, setIsLoading] = useState(false);
+    callbackUrl?: string;
+}) {
+    const [loading, setLoading] = useState(false);
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const { loginSuccess } = useAuth();
 
     const handleEmergencyLogin = async () => {
         if (!email) {
-            toast({
-                title: "Error",
-                description: "Please enter your email first",
-                variant: "destructive",
-            });
+            toast.error("Email is required for emergency access");
             return;
         }
 
-        setIsLoading(true);
+        setLoading(true);
 
         try {
-            const response = await fetch('/api/auth/force-login', {
-                method: 'POST',
+            const response = await fetch("/api/auth/force-login", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ email }),
             });
 
             const data = await response.json();
 
-            if (data.status === 'success') {
-                toast({
-                    title: "Emergency Access Granted",
-                    description: `Your temporary password is: ${data.resetPassword}`,
-                    variant: "default",
-                    duration: 10000, // Show for 10 seconds
+            if (response.ok && data.success) {
+                // Show the temporary password
+                setPassword(data.tempPassword);
+                setShowPassword(true);
+
+                // Set cookies using the direct API for better reliability
+                await fetch("/api/auth/set-cookie", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        token: data.token,
+                    }),
                 });
 
-                // Wait a moment for the toast to be read, then use direct navigation
-                console.log("Emergency login successful, redirecting to dashboard");
-                setTimeout(() => {
-                    // Use window.location for a full page navigation that ensures cookies are properly used
-                    window.location.href = '/dashboard';
-                }, 1500);
-            } else {
-                toast({
-                    title: "Emergency Login Failed",
-                    description: data.message || "Could not complete emergency login",
-                    variant: "destructive",
+                // Set additional cookie for client-side detection
+                Cookies.set('direct-auth-token', data.token, {
+                    expires: 1, // 1 day
+                    path: '/'
                 });
+
+                // Update auth context
+                loginSuccess(data.user);
+
+                toast.success("Emergency access granted!");
+
+                // Force a hard navigation after a short delay to ensure cookies are set
+                setTimeout(() => {
+                    window.location.href = callbackUrl;
+                }, 500);
+            } else {
+                throw new Error(data.error || "Emergency login failed");
             }
-        } catch (error) {
-            console.error('Emergency login error:', error);
-            toast({
-                title: "Error",
-                description: "An unexpected error occurred",
-                variant: "destructive",
-            });
+        } catch (error: any) {
+            toast.error(`Emergency login failed: ${error.message}`);
+            console.error("Emergency login error:", error);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
     return (
-        <Button
-            onClick={handleEmergencyLogin}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-            disabled={isLoading}
-        >
-            {isLoading ? (
-                <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                </>
+        <div>
+            {showPassword ? (
+                <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-800 rounded text-yellow-200 text-sm">
+                    <p className="font-bold">Emergency access granted!</p>
+                    <p className="mt-1">Your password has been reset to:</p>
+                    <div className="mt-1 p-2 bg-yellow-950/50 rounded font-mono text-yellow-100">
+                        {password}
+                    </div>
+                    <p className="mt-2 text-xs">
+                        You will be redirected to dashboard in a moment...
+                    </p>
+                </div>
             ) : (
-                'Emergency Login'
+                <button
+                    type="button"
+                    onClick={handleEmergencyLogin}
+                    disabled={loading || !email}
+                    className={`px-3 py-2 text-sm font-medium text-center rounded-md w-full 
+            ${!email
+                            ? "bg-yellow-900/20 text-yellow-700 cursor-not-allowed"
+                            : "bg-yellow-700 hover:bg-yellow-800 text-white"
+                        }`}
+                >
+                    {loading ? (
+                        <span className="flex items-center justify-center">
+                            <svg
+                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                ></circle>
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                            Processing...
+                        </span>
+                    ) : (
+                        "Emergency Access"
+                    )}
+                </button>
             )}
-        </Button>
+        </div>
     );
 } 
