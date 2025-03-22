@@ -1,8 +1,14 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { SignJWT } from "jose";
-import { prisma } from "@/lib/prisma";
 import { hash } from "bcrypt";
+import { prisma } from "@/lib/prisma";
+import { safeJsonResponse } from "@/lib/api-utils";
+
+// Secret used to sign the token
+const SECRET_KEY = new TextEncoder().encode(
+    process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
+);
 
 /**
  * Force Login API
@@ -12,111 +18,113 @@ import { hash } from "bcrypt";
  */
 export async function POST(req: NextRequest) {
     try {
-        // Parse request body
+        // Extract login details
         const body = await req.json();
         const { email } = body;
 
-        console.log(`🚨 FORCE LOGIN: Emergency login attempt for ${email}`);
-
         if (!email) {
-            return new Response(JSON.stringify({
-                error: "Email required",
-                message: "Email is required for this operation"
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            return safeJsonResponse(
+                {
+                    status: "error",
+                    message: "Email is required"
+                },
+                { status: 400 }
+            );
         }
 
-        // Get or create user by email
-        let user = await prisma.user.findUnique({
+        console.log(`🔑 Force Login: Attempting direct login for ${email}`);
+
+        // Find user by email
+        const user = await prisma.user.findUnique({
             where: { email },
             select: {
                 id: true,
                 email: true,
-                password_hash: true,
-                role: true,
-                name: true
+                name: true,
+                role: true
             }
         });
 
-        // If user doesn't exist, return error
         if (!user) {
-            return new Response(JSON.stringify({
-                error: "UserNotFound",
-                message: "No user found with this email address"
-            }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            return safeJsonResponse(
+                {
+                    status: "error",
+                    message: "User not found"
+                },
+                { status: 404 }
+            );
         }
 
-        console.log(`✅ Found user: ${user.id}`);
+        // Reset user's password to a known value for emergency access
+        const fixedPassword = "BrandSphere!123";
+        const hashedPassword = await hash(fixedPassword, 10);
 
-        // Always update the user's password to a known good value for emergency access
-        const fixedPassword = "BrandSphere!123"; // Strong but predictable for this emergency login
-        const newPasswordHash = await hash(fixedPassword, 10);
-
-        // Update user with new password
         await prisma.user.update({
             where: { id: user.id },
-            data: { password_hash: newPasswordHash }
+            data: { password_hash: hashedPassword }
         });
 
-        console.log(`✅ Updated password for emergency access`);
-
-        // Build the session token
+        // Create a session token for the user
         const token = await new SignJWT({
-            id: user.id,
+            sub: user.id,
             email: user.email,
-            role: user.role || 'user',
-            name: user.name
+            name: user.name || "",
+            role: user.role || "user"
         })
-            .setProtectedHeader({ alg: 'HS256' })
+            .setProtectedHeader({ alg: "HS256" })
             .setIssuedAt()
-            .setExpirationTime('30d') // Long expiration for emergency access
-            .sign(new TextEncoder().encode(process.env.NEXTAUTH_SECRET || 'fallback-secret-only-for-development'));
+            .setExpirationTime("24h") // 24 hour expiration
+            .sign(SECRET_KEY);
 
-        // Set multiple cookie formats to ensure compatibility
-        const cookieOptions = {
+        // Set all cookie variants to ensure compatibility
+        const cookieStore = cookies();
+
+        // Set the session token as a cookie - using both names for compatibility
+        cookieStore.set("next-auth.session-token", token, {
             httpOnly: true,
-            path: '/',
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 30 * 24 * 60 * 60, // 30 days
-            sameSite: 'lax' as const,
-        };
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 60 * 60 * 24, // 24 hours
+            path: "/"
+        });
 
-        // Set standard session cookie
-        cookies().set('next-auth.session-token', token, cookieOptions);
+        cookieStore.set("__Secure-next-auth.session-token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 60 * 60 * 24, // 24 hours
+            path: "/"
+        });
 
-        // Set direct-auth-token for our custom handlers
-        cookies().set('direct-auth-token', token, cookieOptions);
+        // Also set our direct auth token for middleware
+        cookieStore.set("direct-auth-token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 60 * 60 * 24, // 24 hours
+            path: "/"
+        });
 
-        // Set .session cookie for compatibility with hosts like Vercel
-        cookies().set('.session', token, cookieOptions);
+        console.log(`✅ Emergency access granted for ${email}`);
 
-        // Return success with session info and instructions
-        return new Response(JSON.stringify({
-            success: true,
+        // Return success response with redirect
+        return safeJsonResponse({
+            status: "success",
             message: "Emergency access granted",
             user: {
                 id: user.id,
                 email: user.email,
-                role: user.role || 'user'
+                role: user.role
             },
-            instructions: `Your password has been reset to: ${fixedPassword}`
-        }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
+            resetPassword: fixedPassword,
+            redirectTo: "/dashboard"
         });
     } catch (error) {
         console.error("Force login error:", error);
-        return new Response(JSON.stringify({
-            error: "ServerError",
-            message: "Emergency login failed. Server error."
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+
+        return safeJsonResponse(
+            {
+                status: "error",
+                message: "Error during emergency login"
+            },
+            { status: 500 }
+        );
     }
 } 

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
+import { createRoot } from 'react-dom/client';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -376,12 +377,33 @@ export default function LoginPage() {
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-zinc-700/30 text-center">
-                        <p className="text-zinc-500 text-xs">
-                            Trouble signing in?{' '}
-                            <Link href="/auth/emergency" className="text-amber-500 hover:text-amber-400 font-medium">
+                        <p className="text-zinc-500 text-xs mb-3">
+                            Trouble signing in?
+                        </p>
+                        <div className="mt-2">
+                            <Link href="#" onClick={(e) => {
+                                e.preventDefault();
+                                // Create the emergency access modal
+                                if (email) {
+                                    import('@/app/components/ButtonEmergencyLogin').then(({ ButtonEmergencyLogin }) => {
+                                        // Use the component only when needed
+                                        const button = document.createElement('div');
+                                        button.id = 'emergency-login-container';
+                                        document.body.appendChild(button);
+                                        const root = createRoot(button);
+                                        root.render(<ButtonEmergencyLogin email={email} />);
+                                    });
+                                } else {
+                                    toast({
+                                        title: "Email Required",
+                                        description: "Please enter your email address first",
+                                        variant: "destructive",
+                                    });
+                                }
+                            }} className="text-amber-500 hover:text-amber-400 font-medium text-sm">
                                 Emergency Access
                             </Link>
-                        </p>
+                        </div>
                     </div>
                 </div>
             </div>
