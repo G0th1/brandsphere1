@@ -6,7 +6,6 @@ const nextConfig = {
     domains: ['lh3.googleusercontent.com', 'platform-lookaside.fbsbx.com', 'images.unsplash.com', 'placekitten.com']
   },
   experimental: {
-    appDir: true,
     serverComponentsExternalPackages: ['@prisma/client']
   },
   // Disable TypeScript errors during development

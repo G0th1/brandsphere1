@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../components/AuthClient';
-import { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,10 +12,7 @@ import { Suspense, lazy } from 'react';
 // Lazy load components that are not needed for initial render
 const UsageStats = lazy(() => import('@/app/components/dashboard/usage-stats').then(mod => ({ default: mod.UsageStats })));
 
-export const metadata: Metadata = {
-  title: 'Dashboard | BrandSphereAI',
-  description: 'Manage your social media content and analytics',
-};
+// Metadata is now in a separate file: metadata.ts
 
 // Split into smaller components for better rendering
 const DashboardStats = () => (
