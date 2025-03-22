@@ -22,43 +22,69 @@ export default function Layout({
     const { data: session, status: sessionStatus } = useSession();
     const router = useRouter();
     const [redirectAttempted, setRedirectAttempted] = useState(false);
+    const [mountTime] = useState(() => Date.now());
+    const [gracePeriod, setGracePeriod] = useState(true);
+
+    // Don't redirect during initial grace period to allow session to initialize
+    useEffect(() => {
+        // Give a 3-second grace period after initial page load
+        const timer = setTimeout(() => {
+            setGracePeriod(false);
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, []);
 
     // Add more detailed debugging logs
     useEffect(() => {
-        console.log("Dashboard Layout - Detailed Auth Debug:", {
+        console.log("Dashboard Layout - Auth State:", {
             isAuthenticated,
             isLoading,
             user,
             sessionData: session,
             sessionStatus,
-            redirectAttempted
+            gracePeriod,
+            redirectAttempted,
+            timeSinceMount: Date.now() - mountTime
         });
 
-        if (!isLoading && !isAuthenticated && !redirectAttempted) {
-            console.log("Not authenticated, redirecting to login page");
+        // Only redirect if:
+        // 1. Not in grace period
+        // 2. Not loading
+        // 3. Not authenticated
+        // 4. Haven't already attempted redirect
+        if (!gracePeriod && !isLoading && !isAuthenticated && !redirectAttempted) {
+            console.log("Grace period ended, not authenticated, redirecting to login page");
             setRedirectAttempted(true);
             router.push('/auth/login');
         }
-    }, [isAuthenticated, isLoading, router, user, session, sessionStatus, redirectAttempted]);
+    }, [isAuthenticated, isLoading, router, user, session, sessionStatus, redirectAttempted, gracePeriod, mountTime]);
 
-    // Check if we have direct session data even if useAuth reports not authenticated
-    const hasDirectSession = !!session?.user;
+    // Check for direct session cookie or token existence regardless of auth state
+    const hasDirectSession =
+        !!session?.user ||
+        (typeof window !== 'undefined' && (
+            document.cookie.includes('next-auth.session-token') ||
+            document.cookie.includes('direct-auth-token')
+        ));
 
-    // Show nothing while loading
-    if (isLoading) {
-        console.log("Dashboard is loading...");
+    // Show loading state during grace period or while auth is loading
+    if (gracePeriod || isLoading) {
+        console.log(gracePeriod ? "In grace period..." : "Auth is loading...");
         return (
             <div className="flex h-screen items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                <p className="ml-2 text-sm text-gray-400">Loading your dashboard...</p>
+                <p className="ml-2 text-sm text-gray-400">
+                    {gracePeriod ? "Initializing your session..." : "Loading your dashboard..."}
+                </p>
             </div>
         );
     }
 
     // If we have a direct session but useAuth reports not authenticated,
-    // render the dashboard anyway but show a warning
+    // render the dashboard anyway with a warning
     if (hasDirectSession && !isAuthenticated) {
-        console.log("Direct session found but useAuth reports not authenticated");
+        console.log("Session token found but auth context reports not authenticated");
         return (
             <div className="flex h-screen bg-zinc-900 text-white">
                 <DashboardSidebar />
@@ -74,8 +100,7 @@ export default function Layout({
         );
     }
 
-    // If not authenticated and not loading, render nothing
-    // (the useEffect will redirect)
+    // If not authenticated, show login prompt
     if (!isAuthenticated) {
         console.log("Not authenticated in render check");
         return (
