@@ -17,6 +17,8 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { email, password } = body;
 
+        console.log(`🔐 Token login: Starting login attempt for ${email}`);
+
         if (!email || !password) {
             return safeJsonResponse({
                 error: "InvalidCredentials",
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (!user) {
+            console.log(`❌ Token login: User not found with email: ${email}`);
             return safeJsonResponse({
                 error: "InvalidCredentials",
                 message: "Invalid login credentials",
@@ -47,39 +50,14 @@ export async function POST(req: NextRequest) {
             }, { status: 401 });
         }
 
-        // List of trusted emails that should always be granted access
-        const trustedEmails = [
-            'edvin@',
-            'edvin.gothager@',
-            'gothager@',
-            'kebabisenen@proton.me',
-            'g0th',
-            'test@example.com'
-        ];
+        console.log(`✅ Token login: Found user: ${user.id}`);
 
-        const isTrustedEmail = trustedEmails.some(trusted =>
-            user.email.toLowerCase().includes(trusted.toLowerCase())
-        );
-
-        let isAuthenticated = false;
-
-        // For trusted emails, skip password check
-        if (isTrustedEmail) {
-            isAuthenticated = true;
-        } else {
-            // For regular users, verify password
-            try {
-                isAuthenticated = await compare(password, user.password_hash);
-            } catch (error) {
-                // If bcrypt compare fails, use a simplified comparison for recovery
-                // This is not secure, but helps when bcrypt is having issues
-                if (user.password_hash.includes(password.substring(0, 6))) {
-                    isAuthenticated = true;
-                }
-            }
-        }
+        // Standard password verification with bcrypt
+        const isAuthenticated = await compare(password, user.password_hash);
+        console.log(`Token login: Password verification result: ${isAuthenticated ? '✅ Valid' : '❌ Invalid'}`);
 
         if (!isAuthenticated) {
+            console.log(`❌ Token login: Invalid password for user: ${user.id}`);
             return safeJsonResponse({
                 error: "InvalidCredentials",
                 message: "Invalid login credentials",
@@ -88,6 +66,7 @@ export async function POST(req: NextRequest) {
         }
 
         // User authenticated, create a session token
+        console.log(`✅ Token login: Authentication successful, creating session token`);
         const token = await new SignJWT({
             id: user.id,
             email: user.email,

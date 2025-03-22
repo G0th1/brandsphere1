@@ -30,7 +30,7 @@ declare module "next-auth/jwt" {
 // Get user by email using Prisma
 export async function getUserByEmail(email: string) {
     try {
-        console.log(`🔍 Auth: Looking up user by email: ${email.substring(0, 3)}...`);
+        console.log(`🔍 Auth: Looking up user by email: ${email}`);
 
         // Query database using Prisma
         const user = await prisma.user.findUnique({
@@ -47,7 +47,7 @@ export async function getUserByEmail(email: string) {
         });
 
         if (!user) {
-            console.log(`⚠️ Auth: User not found in database for email: ${email.substring(0, 3)}...`);
+            console.log(`⚠️ Auth: User not found in database for email: ${email}`);
             return null;
         }
 
@@ -90,7 +90,7 @@ export const authOptions: NextAuthOptions = {
 
                     if (!user) {
                         console.log("❌ Auth: User not found");
-                        // For test user in development
+                        // For test user in development only
                         if (
                             process.env.NODE_ENV === 'development' &&
                             credentials.email === 'test@example.com' &&
@@ -107,63 +107,23 @@ export const authOptions: NextAuthOptions = {
                     }
 
                     console.log(`✅ Auth: User found, verifying password`);
-                    console.log(`Debug hash: ${user.password_hash ? user.password_hash.substring(0, 10) + '...' : 'missing'}`);
 
-                    try {
-                        // Enhanced password validation for different bcrypt formats
-                        let passwordValid = false;
+                    // Simple direct password verification with bcrypt compare
+                    const passwordValid = await compare(credentials.password, user.password_hash);
 
-                        // First try standard bcrypt compare
-                        try {
-                            passwordValid = await compare(credentials.password, user.password_hash);
-                            console.log(`Standard bcrypt compare result: ${passwordValid}`);
-                        } catch (err) {
-                            console.log(`Standard bcrypt compare failed: ${err.message}`);
-                        }
-
-                        // If standard method failed, use our fallback for known users
-                        if (!passwordValid) {
-                            const knownUsers = [
-                                'edvin@',
-                                'edvin.gothager@',
-                                'gothager@',
-                                'kebabisenen@proton.me',
-                                'g0th',
-                                'test@example.com'
-                            ];
-
-                            const isKnownUser = knownUsers.some(emailPattern =>
-                                user.email.toLowerCase().includes(emailPattern.toLowerCase())
-                            );
-
-                            if (isKnownUser) {
-                                console.log("✅ Auth: Known user fallback authentication");
-                                return {
-                                    id: user.id,
-                                    email: user.email,
-                                    role: user.role || 'user',
-                                    name: user.name || null,
-                                };
-                            }
-                        }
-
-                        if (!passwordValid) {
-                            console.log("❌ Auth: Invalid password");
-                            return null;
-                        }
-
-                        console.log(`✅ Auth: Password valid, authentication successful`);
-                        // Format user object correctly for NextAuth
-                        return {
-                            id: user.id,
-                            email: user.email,
-                            role: user.role || 'user',
-                            name: user.name || null,
-                        };
-                    } catch (passwordError) {
-                        console.error("❌ Auth: Password comparison error", passwordError);
+                    if (!passwordValid) {
+                        console.log("❌ Auth: Invalid password");
                         return null;
                     }
+
+                    console.log(`✅ Auth: Password valid, authentication successful`);
+                    // Format user object correctly for NextAuth
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        role: user.role || 'user',
+                        name: user.name || null,
+                    };
                 } catch (error) {
                     console.error("❌ Auth: Authentication error", error);
                     return null;
