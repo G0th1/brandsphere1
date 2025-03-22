@@ -15,7 +15,7 @@ function createPrismaClient() {
                     url: process.env.DATABASE_URL
                 },
             },
-            // Add retries and better error handling to all queries
+            // Add better error handling to all queries
             errorFormat: 'pretty',
         });
     } catch (e) {
@@ -29,48 +29,85 @@ function createPrismaClient() {
     }
 }
 
-// Use existing Prisma instance if available, otherwise create a new one
+// Use the global prisma instance if available (development) or create a new one
 export const prisma = globalForPrisma.prisma || createPrismaClient();
 
-// Only cache in development mode
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+// Add prisma to the global object in development
+if (process.env.NODE_ENV === 'development') {
+    globalForPrisma.prisma = prisma;
+}
 
-// Helper function to handle database connection errors with retry logic
+/**
+ * Wraps a Prisma database operation with error handling and automatic retries
+ * for transient database errors like connection timeouts
+ */
 export async function withErrorHandling<T>(
-    databaseOperation: () => Promise<T>,
-    maxRetries = 2
+    operation: () => Promise<T>,
+    options: {
+        maxRetries?: number;
+        initialDelay?: number;
+        shouldRetry?: (error: any) => boolean;
+    } = {}
 ): Promise<T> {
-    let retries = 0;
+    const maxRetries = options.maxRetries ?? 3;
+    const initialDelay = options.initialDelay ?? 250; // ms
 
-    while (true) {
+    // Default function to determine if an error should trigger a retry
+    const shouldRetry = options.shouldRetry ?? ((error: any) => {
+        const errorCode = error?.code || '';
+        const errorMessage = error?.message || '';
+
+        // Common transient database errors
+        const transientErrors = [
+            'P1001', // Connection error
+            'P1002', // Timeout connecting to database
+            'P1008', // Operations timed out
+            'P1017', // Server close connection
+            'ECONNRESET', // Connection reset
+            'ETIMEDOUT', // Connection timeout
+            'EPIPE', // Broken pipe
+        ];
+
+        // Error messages that indicate transient issues
+        const transientMessages = [
+            'connection',
+            'timeout',
+            'timed out',
+            'closed',
+            'terminating',
+            'forcibly closed',
+        ];
+
+        return transientErrors.some(code => errorCode.includes(code)) ||
+            transientMessages.some(msg => errorMessage.toLowerCase().includes(msg));
+    });
+
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-            return await databaseOperation();
-        } catch (error) {
-            console.error(`Database operation failed (attempt ${retries + 1}/${maxRetries + 1}):`, error);
+            if (attempt > 0) {
+                console.log(`Retry attempt ${attempt}/${maxRetries} for database operation`);
+            }
 
-            // If we've reached the max number of retries, throw the error
-            if (retries >= maxRetries) {
+            return await operation();
+        } catch (error) {
+            lastError = error;
+
+            // If we've used all retries or this isn't a retryable error, throw
+            if (attempt >= maxRetries || !shouldRetry(error)) {
                 throw error;
             }
 
-            // Attempt to reconnect if the error is connection-related
-            if (error instanceof Error &&
-                (error.message.includes('Connection') ||
-                    error.message.includes('timeout') ||
-                    error.message.includes('connect'))) {
-                try {
-                    console.log('Attempting to reconnect to database...');
-                    await prisma.$disconnect();
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (retries + 1))); // Exponential backoff
-                    await prisma.$connect();
-                    console.log('Reconnected to database successfully');
-                } catch (reconnectError) {
-                    console.error('Failed to reconnect to database:', reconnectError);
-                }
-            }
+            // Exponential backoff with jitter
+            const delay = initialDelay * Math.pow(2, attempt) * (0.5 + Math.random() * 0.5);
+            console.log(`Database operation failed, retrying in ${Math.round(delay)}ms:`, error);
 
-            // Increment retry counter
-            retries++;
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
+
+    // This shouldn't happen due to the throw in the loop, but TypeScript needs it
+    throw lastError;
 } 

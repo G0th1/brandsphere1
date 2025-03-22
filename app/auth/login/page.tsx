@@ -26,71 +26,140 @@ export default function LoginPage() {
         setErrorMessage('');
 
         try {
-            // Check database connection first
-            const dbCheckResponse = await fetch('/api/db-health-check', {
-                method: 'GET',
-                cache: 'no-store',
-            });
+            // Check database connection first with enhanced error handling
+            let dbIsAvailable = false;
+            try {
+                const dbCheckResponse = await fetch('/api/db-health-check', {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache' },
+                    // Add timeout to prevent hanging on network issues
+                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                });
+                
+                dbIsAvailable = dbCheckResponse.ok;
+                
+                if (!dbIsAvailable) {
+                    const errorText = await dbCheckResponse.text();
+                    console.error('Database connection error:', errorText);
+                    
+                    setErrorMessage('Database connection error. Please try again in a few moments.');
+                    toast({
+                        title: "Database Error",
+                        description: "We're having trouble connecting to our database. Please try again later.",
+                        variant: "destructive",
+                    });
+                    
+                    setIsLoading(false);
+                    return;
+                }
+            } catch (dbError) {
+                console.error('Database health check failed:', dbError);
+                // Continue with login attempt even if db check fails
+                // The actual authentication might still work
+            }
 
-            if (!dbCheckResponse.ok) {
-                console.error('Database connection error:', await dbCheckResponse.text());
-                setErrorMessage('Database connection error. Please try again in a few moments.');
+            // Try NextAuth signIn with enhanced error handling and timeout
+            const signInController = new AbortController();
+            const signInTimeout = setTimeout(() => signInController.abort(), 10000); // 10 seconds timeout
+            
+            try {
+                const result = await signIn('credentials', {
+                    redirect: false,
+                    email,
+                    password,
+                });
+                
+                clearTimeout(signInTimeout);
+                
+                if (!result?.error) {
+                    toast({
+                        title: "Success",
+                        description: "Login successful!",
+                        variant: "default",
+                    });
+                    router.push(callbackUrl);
+                    router.refresh();
+                    return;
+                }
+                
+                // If NextAuth fails but error is specifically about credentials,
+                // don't try fallback method
+                if (result.error.includes('credentials') || 
+                    result.error.includes('password') || 
+                    result.error.includes('email')) {
+                    throw new Error(result.error);
+                }
+                
+                // Log the specific error for debugging
+                console.warn('NextAuth login failed, trying fallback:', result.error);
+            } catch (signInError) {
+                clearTimeout(signInTimeout);
+                
+                // If it's an abort error, the request timed out
+                if (signInError.name === 'AbortError') {
+                    console.error('Sign-in request timed out');
+                } else {
+                    console.error('Sign-in error:', signInError);
+                }
+                
+                // Continue to fallback method
+            }
+
+            // Fallback: Try direct token login
+            try {
+                const tokenController = new AbortController();
+                const tokenTimeout = setTimeout(() => tokenController.abort(), 8000); // 8 seconds timeout
+                
+                const tokenResponse = await fetch('/api/auth/token-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                    signal: tokenController.signal
+                });
+                
+                clearTimeout(tokenTimeout);
+                
+                if (tokenResponse.ok) {
+                    const tokenData = await tokenResponse.json();
+                    
+                    if (tokenData.status === 'success') {
+                        toast({
+                            title: "Success",
+                            description: "Login successful!",
+                            variant: "default",
+                        });
+                        router.push(callbackUrl);
+                        router.refresh();
+                        return;
+                    }
+                }
+                
+                // If both methods fail with specific credential errors, show invalid credentials message
+                setErrorMessage('Login failed. Please check your credentials and try again.');
                 toast({
-                    title: "Database Error",
-                    description: "We're having trouble connecting to our database. Please try again later.",
+                    title: "Error",
+                    description: "Login failed. Please check your credentials.",
                     variant: "destructive",
                 });
-                setIsLoading(false);
-                return;
+            } catch (tokenError) {
+                // Handle token login errors
+                console.error('Token login error:', tokenError);
+                
+                // If it's an abort error, the request timed out
+                if (tokenError.name === 'AbortError') {
+                    setErrorMessage('Login request timed out. Please try again later.');
+                    toast({
+                        title: "Timeout",
+                        description: "Login request took too long. Please try again.",
+                        variant: "destructive",
+                    });
+                } else {
+                    throw tokenError; // Let the outer catch handle it
+                }
             }
-
-            // Try NextAuth signIn
-            const result = await signIn('credentials', {
-                redirect: false,
-                email,
-                password,
-            });
-
-            if (!result?.error) {
-                toast({
-                    title: "Success",
-                    description: "Login successful!",
-                    variant: "default",
-                });
-                router.push(callbackUrl);
-                router.refresh();
-                return;
-            }
-
-            // If NextAuth fails, try direct token login
-            const tokenResponse = await fetch('/api/auth/token-login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-
-            const tokenData = await tokenResponse.json();
-
-            if (tokenResponse.ok && tokenData.status === 'success') {
-                toast({
-                    title: "Success",
-                    description: "Login successful!",
-                    variant: "default",
-                });
-                router.push(callbackUrl);
-                router.refresh();
-                return;
-            }
-
-            // If both methods fail, show error message
-            setErrorMessage('Login failed. Please check your credentials and try again.');
-            toast({
-                title: "Error",
-                description: "Login failed. Please check your credentials.",
-                variant: "destructive",
-            });
         } catch (error) {
             console.error('Login error:', error);
 
@@ -112,7 +181,7 @@ export default function LoginPage() {
                 setErrorMessage('An error occurred during login. Please try again later.');
                 toast({
                     title: "Error",
-                    description: "Login service is unavailable. Please try again later.",
+                    description: "Login service is temporarily unavailable. Please try again later.",
                     variant: "destructive",
                 });
             }

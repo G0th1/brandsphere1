@@ -8,9 +8,11 @@ import { neon, neonConfig } from '@neondatabase/serverless';
 // Configure Neon for serverless environment with optimal settings
 neonConfig.useSecureWebSocket = true;
 neonConfig.pipelineTLS = true;
-neonConfig.poolQueryTimeoutMs = 15000; // 15 second query timeout
+neonConfig.poolQueryTimeoutMs = 30000; // 30 second query timeout (increased from 15s)
 neonConfig.poolMaxUses = 100; // Max pool connection reuse
-neonConfig.poolConnectionTimeoutMs = 10000; // 10 second connection timeout
+neonConfig.poolConnectionTimeoutMs = 15000; // 15 second connection timeout (increased from 10s)
+neonConfig.wsConnectionMaxLifetime = 1800000; // 30 minutes max WebSocket lifetime
+neonConfig.webSocketConstructor = globalThis.WebSocket; // Custom WebSocket setting for cross-platform
 
 // Database configuration
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -41,58 +43,42 @@ if (isDevelopment && DATABASE_URL.startsWith('file:')) {
             // Check if database file exists and is valid
             if (fs.existsSync(DB_PATH)) {
                 try {
-                    const stats = fs.statSync(DB_PATH);
-                    // File is too small to be valid SQLite
-                    if (stats.size < 100) {
-                        fs.unlinkSync(DB_PATH);
-                        needsMigration = true;
-                    } else {
-                        // Verify database integrity
-                        try {
-                            execSync(`npx prisma db execute --file="scripts/test-query.sql"`, {
-                                stdio: 'pipe',
-                                env: { ...process.env, DATABASE_URL: absoluteDatabaseUrl },
-                            });
-                            return true; // Database is valid
-                        } catch {
-                            fs.unlinkSync(DB_PATH);
-                            needsMigration = true;
-                        }
-                    }
-                } catch {
-                    try {
-                        fs.unlinkSync(DB_PATH);
-                    } catch {
-                        return false;
-                    }
+                    // Try basic SQLite operation to check file validity
+                    const { Database } = require('sqlite3');
+                    const db = new Database(DB_PATH);
+                    db.close();
+                    console.log('SQLite database exists and is valid.');
+                } catch (error) {
+                    console.warn('SQLite database exists but appears to be invalid. Recreating...');
+                    fs.unlinkSync(DB_PATH);
                     needsMigration = true;
                 }
             } else {
+                console.log('SQLite database does not exist. Creating...');
                 needsMigration = true;
             }
 
-            // Create new database file if needed
+            // Create database if needed by running migrations
             if (needsMigration) {
-                fs.writeFileSync(DB_PATH, '', { mode: 0o666 });
-
                 try {
-                    // Apply database schema
-                    execSync('npx prisma db push --force-reset', {
-                        stdio: 'pipe',
-                        env: { ...process.env, DATABASE_URL: absoluteDatabaseUrl },
+                    console.log('Running Prisma migrations to create SQLite database...');
+                    execSync('npx prisma migrate dev --name init', {
+                        stdio: 'inherit',
+                        env: { ...process.env, DATABASE_URL: absoluteDatabaseUrl }
                     });
-                    return true;
+                    console.log('Prisma migrations completed successfully.');
                 } catch (error) {
-                    return false;
+                    console.error('Failed to run Prisma migrations:', error);
+                    process.exit(1);
                 }
             }
-        } catch {
-            return false;
+        } catch (error) {
+            console.error('Error setting up SQLite database:', error);
+            process.exit(1);
         }
-        return true;
     }
 
-    // Run database setup
+    // Setup SQLite database
     setupDatabase();
 }
 
@@ -108,8 +94,43 @@ prisma = new PrismaClient({
     errorFormat: 'pretty',
 });
 
-// Create a Neon SQL executor for raw queries
+// Enhance Prisma client with connection resilience
+const originalConnect = prisma.$connect.bind(prisma);
+const originalDisconnect = prisma.$disconnect.bind(prisma);
+
+// Add retry logic to connection
+prisma.$connect = async function () {
+    let retries = 3;
+    while (retries > 0) {
+        try {
+            await originalConnect();
+            return;
+        } catch (error) {
+            retries--;
+            if (retries === 0) throw error;
+            console.error(`Database connection failed. Retrying (${retries} attempts left)...`, error);
+            await new Promise(r => setTimeout(r, 1000));
+        }
+    }
+}
+
+// Create a Neon SQL executor for raw queries with retries
 export const sql = neon(DATABASE_URL);
+
+// Add a wrapper function for SQL queries with retry logic
+export async function executeSQL(query: string, params: any[] = []): Promise<any> {
+    let retries = 3;
+    while (retries > 0) {
+        try {
+            return await sql(query, params);
+        } catch (error) {
+            retries--;
+            if (retries === 0) throw error;
+            console.error(`SQL query failed. Retrying (${retries} attempts left)...`, error);
+            await new Promise(r => setTimeout(r, 1000));
+        }
+    }
+}
 
 // Make sure DATABASE_URL is set for other tools that might read it
 if (!process.env.DATABASE_URL) {

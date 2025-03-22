@@ -3,26 +3,48 @@
  * with optimized connection parameters for Neon serverless.
  */
 
-// Default Neon PostgreSQL connection string with optimized serverless configuration
-const DEFAULT_POSTGRES_URL = "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3-pooler.eu-central-1.aws.neon.tech/neondb?connect_timeout=30&sslmode=require&pgbouncer=true&pool_timeout=30";
+import { parseUrl } from "@neondatabase/serverless";
+
+// Default connection string for Neon database - as a fallback
+const DEFAULT_POSTGRES_URL = "postgres://neondb_owner:npg_5RtxlHfPjv4d@ep-super-fire-a2zkgpm3.eu-central-1.aws.neon.tech/neondb?connect_timeout=30&sslmode=require";
 
 /**
- * Ensures a URL has all the necessary Neon optimization parameters
+ * Optimize a Neon database URL by ensuring it has the correct parameters
+ * for reliable connections in serverless environments
  */
 function optimizeNeonUrl(url: URL): URL {
-    // Required for SSL
-    url.searchParams.set('sslmode', 'require');
+    // Always ensure critical parameters
+    const searchParams = new URLSearchParams(url.search);
 
-    // Connection timeouts - increase for more reliability with slower connections
-    url.searchParams.set('connect_timeout', '30'); // Increased from 10 to 30
-
-    // Check if using pooler endpoint
-    if (url.hostname.includes('-pooler')) {
-        // Configure PgBouncer for pooler endpoints
-        url.searchParams.set('pgbouncer', 'true');
-        url.searchParams.set('pool_timeout', '30'); // Increased from 10 to 30
+    // Add standard connection parameters if missing
+    if (!searchParams.has('sslmode')) {
+        searchParams.set('sslmode', 'require');
     }
 
+    // Add more robust timeout settings
+    if (!searchParams.has('connect_timeout')) {
+        searchParams.set('connect_timeout', '30');
+    } else if (parseInt(searchParams.get('connect_timeout') || '0') < 15) {
+        // Ensure connect timeout is at least 15 seconds for reliability
+        searchParams.set('connect_timeout', '30');
+    }
+
+    // Add additional reliability parameters
+    if (!searchParams.has('application_name')) {
+        searchParams.set('application_name', 'brandsphere');
+    }
+
+    // Keep-alive settings for better connection stability
+    if (!searchParams.has('keepalives')) {
+        searchParams.set('keepalives', '1');
+    }
+
+    if (!searchParams.has('keepalives_idle')) {
+        searchParams.set('keepalives_idle', '30');
+    }
+
+    // Update the search portion of the URL
+    url.search = searchParams.toString();
     return url;
 }
 
@@ -73,5 +95,5 @@ export function getDatabaseUrl(): string {
     return DEFAULT_POSTGRES_URL;
 }
 
-// Export the DATABASE_URL for use throughout the application
+// Export the optimized database URL for use throughout the application
 export const DATABASE_URL = getDatabaseUrl(); 
