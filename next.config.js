@@ -6,6 +6,7 @@ const nextConfig = {
     domains: ['lh3.googleusercontent.com', 'platform-lookaside.fbsbx.com', 'images.unsplash.com', 'placekitten.com']
   },
   experimental: {
+    appDir: true,
     serverComponentsExternalPackages: ['@prisma/client']
   },
   // Disable TypeScript errors during development
@@ -25,14 +26,7 @@ const nextConfig = {
   compiler: {
     // Remove console and debugger statements in production
     removeConsole: process.env.NODE_ENV === 'production',
-  },
-  // Configure module aliases
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': '.',
-    };
-    return config;
+    styledComponents: true,
   },
   // Configure security headers
   async headers() {
